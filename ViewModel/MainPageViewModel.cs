@@ -61,14 +61,13 @@ namespace LabelAnnotator {
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly List<LabelRecord> NeedDelete = new List<LabelRecord>();
         private double CurrentScale;
         private readonly List<LabelRecord> Labels = new List<LabelRecord>();
         public MainWindow View { get; }
         private Point? DragStartPoint = null;
         private ContentControl? PreviewBbox = null;
 
-        #region ZIndex
+        #region ZIndice, Tags
         private const int ZIndex_Image = 0;
         private const int ZIndex_PreviewBbox = 1;
         private const int ZIndex_Crosshair = 2;
@@ -76,6 +75,7 @@ namespace LabelAnnotator {
         private const int Tag_HorizontalCrosshair = -1;
         private const int Tag_VerticalCrosshair = -2;
         private const int Tag_PreviewBbox = -3;
+        private const int Tag_UncommittedBbox = -4;
         #endregion
         #endregion
 
@@ -97,7 +97,6 @@ namespace LabelAnnotator {
             get => _SelectedCategory;
             set {
                 if (SetProperty(ref _SelectedCategory, value)) {
-                    ClearPendingDeletes();
                     UpdateBoundaryBoxes();
                     if (value is null || value.All) BboxInsertMode = false;
                 }
@@ -213,7 +212,6 @@ namespace LabelAnnotator {
             };
             if (dlg.ShowDialog().GetValueOrDefault()) {
                 ClearBoundaryBoxes();
-                ClearPendingDeletes();
                 Labels.Clear();
                 Images.Clear();
                 Categories.Clear();
@@ -285,24 +283,34 @@ namespace LabelAnnotator {
             if (SelectedImage is null || SelectedCategory is null || MainImage is null) return;
 
             double invScale = 1 / CurrentScale;
-            foreach (ContentControl i in View.ViewImageCanvas.Children.OfType<ContentControl>()) {
-                int idx = (int)i.Tag;
+            int DeletedBboxesCount = 0;
+            foreach (ContentControl i in View.ViewImageCanvas.Children.OfType<ContentControl>().OrderBy(s => (int)s.Tag)) {
+                int tag = (int)i.Tag;
+                int idx = tag - DeletedBboxesCount;
                 double left = Math.Clamp(Canvas.GetLeft(i) * invScale, 0, MainImage.PixelWidth);
                 double top = Math.Clamp(Canvas.GetTop(i) * invScale, 0, MainImage.PixelHeight);
                 double right = Math.Clamp((Canvas.GetLeft(i) + i.Width) * invScale, 0, MainImage.PixelWidth);
                 double bottom = Math.Clamp((Canvas.GetTop(i) + i.Height) * invScale, 0, MainImage.PixelHeight);
-                if (idx >= Labels.Count) {
-                    Labels.Add(new LabelRecord(SelectedImage, left, top, right, bottom, SelectedCategory));
-                } else if (idx >= 0) {
-                    LabelRecord lbl = Labels[idx];
-                    double errorThreshold = Math.Max(invScale, 1);
-                    // 계산한 좌표와 현재 좌표의 오차가 클 때에만 반영. (스케일링 과정에서의 잠재적 오차 감안)
-                    if (Math.Abs(lbl.Left - left) > errorThreshold) lbl.Left = left;
-                    if (Math.Abs(lbl.Top - top) > errorThreshold) lbl.Top = top;
-                    if (Math.Abs(lbl.Right - right) > errorThreshold) lbl.Right = right;
-                    if (Math.Abs(lbl.Bottom - bottom) > errorThreshold) lbl.Bottom = bottom;
+                if (i.Visibility == Visibility.Collapsed) {
+                    // 삭제
+                    Labels.RemoveAt(idx);
+                    DeletedBboxesCount++;
+                } else {
+                    if (tag == Tag_UncommittedBbox) {
+                        Labels.Add(new LabelRecord(SelectedImage, left, top, right, bottom, SelectedCategory));
+                    } else if (tag >= 0) {
+                        LabelRecord lbl = Labels[idx];
+                        double errorThreshold = Math.Max(invScale, 1);
+                        // 계산한 좌표와 현재 좌표의 오차가 클 때에만 반영. (스케일링 과정에서의 잠재적 오차 감안)
+                        if (Math.Abs(lbl.Left - left) > errorThreshold) lbl.Left = left;
+                        if (Math.Abs(lbl.Top - top) > errorThreshold) lbl.Top = top;
+                        if (Math.Abs(lbl.Right - right) > errorThreshold) lbl.Right = right;
+                        if (Math.Abs(lbl.Bottom - bottom) > errorThreshold) lbl.Bottom = bottom;
+                    }
                 }
             }
+            // 경계 상자 다시 그리기
+            UpdateBoundaryBoxes();
         }
         public ICommand CmdToggleBboxMode { get; }
         private void ToggleBboxMode() {
@@ -414,8 +422,7 @@ namespace LabelAnnotator {
             double endY = dragEnd.Y;
             Extensions.SortTwoValues(ref startX, ref endX);
             Extensions.SortTwoValues(ref startY, ref endY);
-            int currentBboxesCount = View.ViewImageCanvas.Children.OfType<ContentControl>().Count();
-            AddBoundaryBox(currentBboxesCount, startX, startY, endX, endY, SelectedCategory, false);
+            AddBoundaryBox(Tag_UncommittedBbox, startX, startY, endX, endY, SelectedCategory, false);
             DragStartPoint = null;
             PreviewBbox = null;
         }
@@ -554,7 +561,6 @@ namespace LabelAnnotator {
                 RefreshCommonPath();
             }
             ClearBoundaryBoxes();
-            ClearPendingDeletes();
         }
         #endregion
 
@@ -695,17 +701,10 @@ namespace LabelAnnotator {
             return cont;
         }
         private void DeleteLabel(object sender, RoutedEventArgs e) {
-            if (!(sender is FrameworkElement fe)) return;
-            int idx = (int)fe.Tag;
-            // 내부 컬렉션에 존재하는 경계 상자일 경우 삭제 대기열에 추가
-            if (idx < Labels.Count) NeedDelete.Add(Labels[idx]);
-            // UI에서 삭제
-            List<ContentControl> delete_cc = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => idx.Equals(s.Tag)).ToList();
-            foreach (ContentControl i in delete_cc) View.ViewImageCanvas.Children.Remove(i);
-        }
-        /// <summary>삭제 대기중인 경계 상자를 초기화합니다.</summary>
-        private void ClearPendingDeletes() {
-            NeedDelete.Clear();
+            if (!(sender is MenuItem mn)) return;
+            // 대응되는 경계상자 숨김
+            List<ContentControl> bbox = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
+            foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
         }
         private SolidColorBrush GenerateColor(IEnumerable<ClassRecord> OldCategories, double Threshold = 100) {
             Random random = new Random();
@@ -725,7 +724,6 @@ namespace LabelAnnotator {
         private void RefreshImage() {
             ClearBoundaryBoxes();
             MainImage = null;
-            ClearPendingDeletes();
 
             if (SelectedImage is null) return;
 
