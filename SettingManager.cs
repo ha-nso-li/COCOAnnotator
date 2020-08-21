@@ -8,18 +8,19 @@ namespace LabelAnnotator {
         private static string SettingPath => AppDomain.CurrentDomain.BaseDirectory is null ? "setting.yaml" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "setting.yaml");
         private static YamlStream YamlStream {
             get {
-                if (_YamlStream is YamlStream) return _YamlStream;
-
-                if (File.Exists(SettingPath)) {
-                    using StreamReader file = new StreamReader(SettingPath);
-                    _YamlStream = new YamlStream();
-                    _YamlStream.Load(file);
-                    if (_YamlStream.Documents.Count == 0 || !(_YamlStream.Documents[0].RootNode is YamlMappingNode)) {
-                        _YamlStream.Documents.Insert(0, new YamlDocument(new YamlMappingNode()));
+                if (!(_YamlStream is YamlStream)) {
+                    if (File.Exists(SettingPath)) {
+                        using StreamReader file = new StreamReader(SettingPath);
+                        _YamlStream = new YamlStream();
+                        _YamlStream.Load(file);
+                        if (_YamlStream.Documents.Count == 0 || !(_YamlStream.Documents[0].RootNode is YamlMappingNode)) {
+                            _YamlStream.Documents.Insert(0, new YamlDocument(new YamlMappingNode()));
+                        }
+                    } else {
+                        _YamlStream = new YamlStream { new YamlDocument(new YamlMappingNode()) };
                     }
-                } else {
-                    _YamlStream = new YamlStream { new YamlDocument(new YamlMappingNode()) };
                 }
+
                 return _YamlStream;
             }
         }
