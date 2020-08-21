@@ -27,7 +27,7 @@ namespace LabelAnnotator {
             string path = Extensions.GetRelativePath(BasePath, Image.FullPath);
             switch (SettingManager.Format) {
                 case "LTRB":
-                    return $"{path},{Left:0},{Top:0},{Right:0},{Bottom:0},{Class}";
+                    return $"{path},{Math.Floor(Left):0},{Math.Floor(Top):0},{Math.Ceiling(Right):0},{Math.Ceiling(Bottom):0},{Class}";
                 case "XYWH":
                     double x = (Left + Right) / 2;
                     double y = (Top + Bottom) / 2;
