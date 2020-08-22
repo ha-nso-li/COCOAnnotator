@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
