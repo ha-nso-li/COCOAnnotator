@@ -12,6 +12,8 @@ namespace LabelAnnotator {
         public double Bottom { get; set; }
         public ClassRecord Class { get; set; }
 
+        public double Size => Math.Abs(Right - Left) * Math.Abs(Bottom - Top);
+
         public LabelRecord(ImageRecord Image, double Left, double Top, double Right, double Bottom, ClassRecord Classname) {
             this.Image = Image;
             this.Left = Left;

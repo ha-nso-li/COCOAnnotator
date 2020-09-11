@@ -21,15 +21,19 @@ namespace LabelAnnotator {
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
             TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
+            _LogNMSLabel = "";
+            IoUThreshold = 0.5;
 
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
-            CmdExportValidLabel = new DelegateCommand(ExportValidLabel);
+            CmdExportVerifiedLabel = new DelegateCommand(ExportVerifiedLabel);
             CmdAddFileForUnionLabel = new DelegateCommand(AddFileForUnionLabel);
             CmdAddFolderForUnionLabel = new DelegateCommand(AddFolderForUnionLabel);
             CmdRemoveFileForUnionLabel = new DelegateCommand<IList>(RemoveFileForUnionLabel);
             CmdResetFileForUnionLabel = new DelegateCommand(ResetFileForUnionLabel);
             CmdExportUnionLabel = new DelegateCommand(ExportUnionLabel);
             CmdSplitLabel = new DelegateCommand(SplitLabel);
+            CmdNMSLabel = new DelegateCommand(NMSLabel);
+            CmdExportNMSLabel = new DelegateCommand(ExportNMSLabel);
 
             CmdClose = new DelegateCommand(Close);
         }
@@ -41,9 +45,11 @@ namespace LabelAnnotator {
 
         #region 필드, 바인딩되지 않는 프로퍼티
         public ManageWindow View { get; }
-        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategory = new SortedDictionary<ClassRecord, List<LabelRecord>>();
-        private readonly SortedSet<ImageRecord> PositiveImages = new SortedSet<ImageRecord>();
-        private readonly SortedSet<ImageRecord> NegativeImages = new SortedSet<ImageRecord>();
+        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
+        private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
+        private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
+        private readonly List<LabelRecord> LabelsForNMS = new List<LabelRecord>();
+        private readonly SortedSet<ImageRecord> ImagesForNMS = new SortedSet<ImageRecord>();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -81,6 +87,20 @@ namespace LabelAnnotator {
             get => _NValueForSplitLabel;
             set => SetProperty(ref _NValueForSplitLabel, value);
         }
+        private double _IoUThreshold;
+        public double IoUThreshold {
+            get => _IoUThreshold;
+            set => SetProperty(ref _IoUThreshold, value);
+        }
+        private string _LogNMSLabel;
+        public string LogNMSLabel {
+            get => _LogNMSLabel;
+            set {
+                if (SetProperty(ref _LogNMSLabel, value)) {
+                    View.Dispatcher.Invoke(View.TxtLogNMSLabel.ScrollToEnd);
+                }
+            }
+        }
         #endregion
 
         #region 커맨드
@@ -99,9 +119,9 @@ namespace LabelAnnotator {
             string fileName = dlg.FileName;
             LogVerifyLabel = "";
             Task.Run(() => {
-                PositiveLabelsByCategory.Clear();
-                PositiveImages.Clear();
-                NegativeImages.Clear();
+                PositiveLabelsByCategoryForVerify.Clear();
+                PositiveImagesForVerify.Clear();
+                NegativeImagesForVerify.Clear();
                 string basePath = Path.GetDirectoryName(fileName) ?? "";
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>(
                     Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => Extensions.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
@@ -119,18 +139,18 @@ namespace LabelAnnotator {
                     }
                     // 참조된 이미지가 실존하는지 검사.
                     // 음성 샘플일 경우 레이블이 2개 이상 존재할 수 없으므로, 참조된 이미지가 실존하더라도 이미 음성 샘플로 검출된 적이 있는 이미지라면 안됨.
-                    if (NegativeImages.Contains(img)) {
+                    if (NegativeImagesForVerify.Contains(img)) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 한번 음성 샘플로 사용된 이미지에 대한 레이블이 또 발견되었습니다.");
                         continue;
                     }
-                    if (!images.Contains(img) && !PositiveImages.Contains(img)) {
+                    if (!images.Contains(img) && !PositiveImagesForVerify.Contains(img)) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 해당 경로에 실존하지 않습니다.");
                         continue;
                     }
                     if (lbl is null) {
                         // 음성 샘플
                         images.Remove(img);
-                        NegativeImages.Add(img);
+                        NegativeImagesForVerify.Add(img);
                         continue;
                     }
                     // 경계 상자 위치 좌표가 위아래 혹은 좌우가 뒤집혀있는지 검사.
@@ -163,7 +183,7 @@ namespace LabelAnnotator {
                             continue;
                         }
                     }
-                    if (PositiveLabelsByCategory.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInCategory)) {
+                    if (PositiveLabelsByCategoryForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInCategory)) {
                         // 완전히 동일한 레이블이 이미 존재하는지 검사
                         if (positiveLabelsInCategory.Contains(lbl)) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 동일한 레이블이 이미 존재합니다.");
@@ -171,15 +191,15 @@ namespace LabelAnnotator {
                         } else {
                             // 유효한 양성 레이블. (같은 분류가 이미 있음)
                             images.Remove(img);
-                            PositiveImages.Add(img);
+                            PositiveImagesForVerify.Add(img);
                             positiveLabelsInCategory.Add(lbl);
                         }
                     } else {
                         // 유효한 양성 레이블. (같은 분류가 없음)
                         images.Remove(img);
-                        PositiveImages.Add(img);
+                        PositiveImagesForVerify.Add(img);
                         List<LabelRecord> labels = new List<LabelRecord> { lbl };
-                        PositiveLabelsByCategory.Add(lbl.Class, labels);
+                        PositiveLabelsByCategoryForVerify.Add(lbl.Class, labels);
                     }
                 }
                 ProgressVerifyLabelValue = 100;
@@ -208,20 +228,20 @@ namespace LabelAnnotator {
                 }
                 AppendLogVerifyLabel(
                     "분석이 완료되었습니다.",
-                    $"유효한 레이블 개수: {PositiveLabelsByCategory.Sum(s => s.Value.Count) + NegativeImages.Count}",
-                    $"유효한 양성 레이블 개수: {PositiveLabelsByCategory.Sum(s => s.Value.Count)}",
-                    $"유효한 음성 레이블 개수: {NegativeImages.Count}",
-                    $"유효한 양성 레이블에 사용된 이미지 개수: {PositiveImages.Count}",
-                    $"유효한 레이블에 사용된 이미지 개수: {NegativeImages.Count + PositiveImages.Count}",
-                    $"총 분류 개수: {PositiveLabelsByCategory.Count}",
+                    $"유효한 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
+                    $"유효한 양성 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count)}",
+                    $"유효한 음성 레이블 개수: {NegativeImagesForVerify.Count}",
+                    $"유효한 양성 레이블에 사용된 이미지 개수: {PositiveImagesForVerify.Count}",
+                    $"유효한 레이블에 사용된 이미지 개수: {NegativeImagesForVerify.Count + PositiveImagesForVerify.Count}",
+                    $"총 분류 개수: {PositiveLabelsByCategoryForVerify.Count}",
                     "분류 목록:"
                 );
-                AppendLogVerifyLabel(PositiveLabelsByCategory.Select(s => $"분류 이름: {s.Key}, 양성 레이블 개수: {s.Value.Count}").ToArray());
+                AppendLogVerifyLabel(PositiveLabelsByCategoryForVerify.Select(s => $"분류 이름: {s.Key}, 양성 레이블 개수: {s.Value.Count}").ToArray());
             });
         }
-        public ICommand CmdExportValidLabel { get; }
-        private void ExportValidLabel() {
-            if (NegativeImages.Count == 0 && PositiveLabelsByCategory.Count == 0) {
+        public ICommand CmdExportVerifiedLabel { get; }
+        private void ExportVerifiedLabel() {
+            if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByCategoryForVerify.Count == 0) {
                 MessageBox.Show("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
                 return;
             }
@@ -234,14 +254,14 @@ namespace LabelAnnotator {
             string saveBasePath = Path.GetDirectoryName(dlg.FileName) ?? "";
             using StreamWriter f = File.CreateText(dlg.FileName);
             // 양성 레이블
-            List<LabelRecord> positiveLabels = PositiveLabelsByCategory.SelectMany(s => s.Value).ToList();
+            List<LabelRecord> positiveLabels = PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).ToList();
             foreach (IGrouping<ImageRecord, LabelRecord> i in positiveLabels.GroupBy(s => s.Image)) {
                 foreach (LabelRecord j in i) {
                     f.WriteLine(j.Serialize(saveBasePath));
                 }
             }
             // 음성 레이블
-            foreach (ImageRecord i in NegativeImages) {
+            foreach (ImageRecord i in NegativeImagesForVerify) {
                 f.WriteLine(i.SerializeAsNegative(saveBasePath));
             }
         }
@@ -401,6 +421,97 @@ namespace LabelAnnotator {
         }
         #endregion
 
+        #region 레이블 NMS
+        public ICommand CmdNMSLabel { get; }
+        private void NMSLabel() {
+            OpenFileDialog dlg = new OpenFileDialog {
+                Filter = "CSV 파일|*.csv",
+                DefaultExt = ".csv"
+            };
+            if (dlg.ShowDialog().GetValueOrDefault()) {
+                LogNMSLabel = "";
+                AppendLogNMSLabel($"{dlg.FileName}에서 NMS 알고리즘을 이용하여 중복된 경계상자를 제거합니다.");
+                // 로드
+                LabelsForNMS.Clear();
+                ImagesForNMS.Clear();
+                string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
+                IEnumerable<string> lines = File.ReadLines(dlg.FileName);
+                foreach (string line in lines) {
+                    (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, line);
+                    if (img is object) {
+                        if (lbl is object) LabelsForNMS.Add(lbl);
+                        ImagesForNMS.Add(img);
+                    }
+                }
+                // NMS
+                int TotalSuppressedBoxesCount = 0;
+                var labelsByImageAndCategory = LabelsForNMS.ToLookup(s => (s.Image, s.Class));
+                foreach (var labelsInImage in labelsByImageAndCategory) {
+                    // 넓이가 작은 경계 상자를 우선
+                    List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
+                    int SuppressedBoxesCount = 0;
+                    while (sortedBySize.Count > 0) {
+                        // pick
+                        LabelRecord pick = sortedBySize[0];
+                        sortedBySize.Remove(pick);
+                        // compare
+                        List<LabelRecord> labelsToSuppress = new List<LabelRecord>();
+                        foreach (LabelRecord i in sortedBySize) {
+                            double left = Math.Max(pick.Left, i.Left);
+                            double top = Math.Max(pick.Top, i.Top);
+                            double right = Math.Min(pick.Right, i.Right);
+                            double bottom = Math.Min(pick.Bottom, i.Bottom);
+                            if (left >= right || top >= bottom) continue;
+                            double sizeIntersection = (right - left) * (bottom - top);
+                            double sizeUnion = pick.Size + i.Size - sizeIntersection;
+                            double iou = sizeIntersection / sizeUnion;
+                            if (iou < IoUThreshold) continue;
+                            labelsToSuppress.Add(i);
+                        }
+                        // suppress
+                        foreach (LabelRecord i in labelsToSuppress) {
+                            sortedBySize.Remove(i);
+                            LabelsForNMS.Remove(i);
+                        }
+                        SuppressedBoxesCount += labelsToSuppress.Count;
+                        TotalSuppressedBoxesCount += labelsToSuppress.Count;
+                    }
+                    if (SuppressedBoxesCount > 0) AppendLogNMSLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.Key.Image.FullPath}");
+                }
+                if (TotalSuppressedBoxesCount == 0) AppendLogNMSLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
+                else {
+                    AppendLogNMSLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
+                }
+            }
+        }
+        public ICommand CmdExportNMSLabel { get; }
+        private void ExportNMSLabel() {
+            if (LabelsForNMS.Count == 0 && ImagesForNMS.Count == 0) {
+                MessageBox.Show("NMS 알고리즘을 실행한 적이 없습니다.");
+                return;
+            }
+            SaveFileDialog dlg = new SaveFileDialog {
+                Filter = "CSV 파일|*.csv",
+                DefaultExt = ".csv"
+            };
+            if (dlg.ShowDialog().GetValueOrDefault()) {
+                string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
+                using StreamWriter f = File.CreateText(dlg.FileName);
+                ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForNMS.ToLookup(s => s.Image);
+                foreach (ImageRecord i in ImagesForNMS) {
+                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                    if (labelsInImage.Any()) {
+                        // 양성 레이블
+                        foreach (LabelRecord j in labelsInImage) f.WriteLine(j.Serialize(basePath));
+                    } else {
+                        // 음성 레이블
+                        f.WriteLine(i.SerializeAsNegative(basePath));
+                    }
+                }
+            }
+        }
+        #endregion
+
         public ICommand CmdClose { get; }
         private void Close() {
             View.Close();
@@ -410,6 +521,9 @@ namespace LabelAnnotator {
         #region 프라이빗 메서드
         private void AppendLogVerifyLabel(params string[] logs) {
             LogVerifyLabel = LogVerifyLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
+        }
+        private void AppendLogNMSLabel(params string[] logs) {
+            LogNMSLabel = LogNMSLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         #endregion
     }
