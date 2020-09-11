@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -25,7 +26,7 @@ namespace LabelAnnotator {
             CmdExportValidLabel = new DelegateCommand(ExportValidLabel);
             CmdAddFileForUnionLabel = new DelegateCommand(AddFileForUnionLabel);
             CmdAddFolderForUnionLabel = new DelegateCommand(AddFolderForUnionLabel);
-            CmdRemoveFileForUnionLabel = new DelegateCommand(RemoveFileForUnionLabel);
+            CmdRemoveFileForUnionLabel = new DelegateCommand<IList>(RemoveFileForUnionLabel);
             CmdResetFileForUnionLabel = new DelegateCommand(ResetFileForUnionLabel);
             CmdExportUnionLabel = new DelegateCommand(ExportUnionLabel);
             CmdSplitLabel = new DelegateCommand(SplitLabel);
@@ -268,9 +269,12 @@ namespace LabelAnnotator {
             }
         }
         public ICommand CmdRemoveFileForUnionLabel { get; }
-        private void RemoveFileForUnionLabel() {
-            if (SelectedFileForUnionLabel is null) return;
-            FilesForUnionLabel.Remove(SelectedFileForUnionLabel);
+        private void RemoveFileForUnionLabel(IList SelectedItems) {
+            List<string> remove = SelectedItems.OfType<string>().ToList();
+            foreach (string i in remove) {
+                if (i is null) continue;
+                FilesForUnionLabel.Remove(i);
+            }
         }
         public ICommand CmdResetFileForUnionLabel { get; }
         private void ResetFileForUnionLabel() {

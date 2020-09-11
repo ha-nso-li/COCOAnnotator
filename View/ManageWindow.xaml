@@ -1,7 +1,7 @@
 <Window x:Class="LabelAnnotator.ManageWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:LabelAnnotator" mc:Ignorable="d" Title="레이블 관리"
-        Height="350" Width="550" ResizeMode="NoResize">
+        Height="400" Width="550" MinHeight="300" MinWidth="450">
     <Window.Resources>
         <local:TacticConverter x:Key="TacticConverter" />
     </Window.Resources>
@@ -33,14 +33,15 @@
                                 <Button Content="폴더 추가" TabIndex="5" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                         Command="{Binding CmdAddFolderForUnionLabel}" />
                                 <Button Content="선택 파일 삭제" TabIndex="6" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
-                                        HorizontalAlignment="Right" Command="{Binding CmdRemoveFileForUnionLabel}" />
+                                        HorizontalAlignment="Right" Command="{Binding CmdRemoveFileForUnionLabel}"
+                                        CommandParameter="{Binding ElementName=ListViewFilesForUnionLabel, Path=SelectedItems}" />
                                 <Button Content="초기화" TabIndex="7" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                         Command="{Binding CmdResetFileForUnionLabel}" />
                                 <Button Content="내보내기" TabIndex="8" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                         Command="{Binding CmdExportUnionLabel}" />
                             </StackPanel>
                         </DockPanel>
-                        <ListView ItemsSource="{Binding FilesForUnionLabel}" SelectedItem="{Binding SelectedFileForUnionLabel}" TabIndex="3" />
+                        <ListView x:Name="ListViewFilesForUnionLabel" ItemsSource="{Binding FilesForUnionLabel}" TabIndex="3" />
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="레이블 분리">
