@@ -21,7 +21,7 @@ namespace LabelAnnotator {
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
             TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
-            _LogNMSLabel = "";
+            _LogUndupeLabel = "";
             IoUThreshold = 0.5;
 
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
@@ -32,8 +32,8 @@ namespace LabelAnnotator {
             CmdResetFileForUnionLabel = new DelegateCommand(ResetFileForUnionLabel);
             CmdExportUnionLabel = new DelegateCommand(ExportUnionLabel);
             CmdSplitLabel = new DelegateCommand(SplitLabel);
-            CmdNMSLabel = new DelegateCommand(NMSLabel);
-            CmdExportNMSLabel = new DelegateCommand(ExportNMSLabel);
+            CmdUndupeLabel = new DelegateCommand(UndupeLabel);
+            CmdExportUndupedLabel = new DelegateCommand(ExportUndupeLabel);
 
             CmdClose = new DelegateCommand(Close);
         }
@@ -48,8 +48,8 @@ namespace LabelAnnotator {
         private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
         private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
-        private readonly List<LabelRecord> LabelsForNMS = new List<LabelRecord>();
-        private readonly SortedSet<ImageRecord> ImagesForNMS = new SortedSet<ImageRecord>();
+        private readonly List<LabelRecord> LabelsForUndupe = new List<LabelRecord>();
+        private readonly SortedSet<ImageRecord> ImagesForUndupe = new SortedSet<ImageRecord>();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -92,12 +92,12 @@ namespace LabelAnnotator {
             get => _IoUThreshold;
             set => SetProperty(ref _IoUThreshold, value);
         }
-        private string _LogNMSLabel;
-        public string LogNMSLabel {
-            get => _LogNMSLabel;
+        private string _LogUndupeLabel;
+        public string LogUndupeLabel {
+            get => _LogUndupeLabel;
             set {
-                if (SetProperty(ref _LogNMSLabel, value)) {
-                    View.Dispatcher.Invoke(View.TxtLogNMSLabel.ScrollToEnd);
+                if (SetProperty(ref _LogUndupeLabel, value)) {
+                    View.Dispatcher.Invoke(View.TxtLogUndupeLabel.ScrollToEnd);
                 }
             }
         }
@@ -421,31 +421,31 @@ namespace LabelAnnotator {
         }
         #endregion
 
-        #region 레이블 NMS
-        public ICommand CmdNMSLabel { get; }
-        private void NMSLabel() {
+        #region 레이블 중복 제거
+        public ICommand CmdUndupeLabel { get; }
+        private void UndupeLabel() {
             OpenFileDialog dlg = new OpenFileDialog {
                 Filter = "CSV 파일|*.csv",
                 DefaultExt = ".csv"
             };
             if (dlg.ShowDialog().GetValueOrDefault()) {
-                LogNMSLabel = "";
-                AppendLogNMSLabel($"{dlg.FileName}에서 NMS 알고리즘을 이용하여 중복된 경계상자를 제거합니다.");
+                LogUndupeLabel = "";
+                AppendLogNMSLabel($"{dlg.FileName}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                 // 로드
-                LabelsForNMS.Clear();
-                ImagesForNMS.Clear();
+                LabelsForUndupe.Clear();
+                ImagesForUndupe.Clear();
                 string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
                 IEnumerable<string> lines = File.ReadLines(dlg.FileName);
                 foreach (string line in lines) {
                     (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, line);
                     if (img is object) {
-                        if (lbl is object) LabelsForNMS.Add(lbl);
-                        ImagesForNMS.Add(img);
+                        if (lbl is object) LabelsForUndupe.Add(lbl);
+                        ImagesForUndupe.Add(img);
                     }
                 }
-                // NMS
+                // 중복 제거
                 int TotalSuppressedBoxesCount = 0;
-                var labelsByImageAndCategory = LabelsForNMS.ToLookup(s => (s.Image, s.Class));
+                var labelsByImageAndCategory = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
                 foreach (var labelsInImage in labelsByImageAndCategory) {
                     // 넓이가 작은 경계 상자를 우선
                     List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
@@ -471,7 +471,7 @@ namespace LabelAnnotator {
                         // suppress
                         foreach (LabelRecord i in labelsToSuppress) {
                             sortedBySize.Remove(i);
-                            LabelsForNMS.Remove(i);
+                            LabelsForUndupe.Remove(i);
                         }
                         SuppressedBoxesCount += labelsToSuppress.Count;
                         TotalSuppressedBoxesCount += labelsToSuppress.Count;
@@ -484,10 +484,10 @@ namespace LabelAnnotator {
                 }
             }
         }
-        public ICommand CmdExportNMSLabel { get; }
-        private void ExportNMSLabel() {
-            if (LabelsForNMS.Count == 0 && ImagesForNMS.Count == 0) {
-                MessageBox.Show("NMS 알고리즘을 실행한 적이 없습니다.");
+        public ICommand CmdExportUndupedLabel { get; }
+        private void ExportUndupeLabel() {
+            if (LabelsForUndupe.Count == 0 && ImagesForUndupe.Count == 0) {
+                MessageBox.Show("레이블 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
             SaveFileDialog dlg = new SaveFileDialog {
@@ -497,8 +497,8 @@ namespace LabelAnnotator {
             if (dlg.ShowDialog().GetValueOrDefault()) {
                 string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
                 using StreamWriter f = File.CreateText(dlg.FileName);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForNMS.ToLookup(s => s.Image);
-                foreach (ImageRecord i in ImagesForNMS) {
+                ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
+                foreach (ImageRecord i in ImagesForUndupe) {
                     IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
                         // 양성 레이블
@@ -523,7 +523,7 @@ namespace LabelAnnotator {
             LogVerifyLabel = LogVerifyLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         private void AppendLogNMSLabel(params string[] logs) {
-            LogNMSLabel = LogNMSLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
+            LogUndupeLabel = LogUndupeLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         #endregion
     }

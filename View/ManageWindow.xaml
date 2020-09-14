@@ -65,17 +65,17 @@
                                 HorizontalAlignment="Right" Command="{Binding CmdSplitLabel}" />
                     </DockPanel>
                 </TabItem>
-                <TabItem Header="NMS">
+                <TabItem Header="레이블 중복 제거">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom" LastChildFill="False">
-                            <Button DockPanel.Dock="Right" TabIndex="16" Content="중복 제거할 레이블 파일 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdNMSLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="16" Content="중복 제거할 레이블 파일 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
                             <Button DockPanel.Dock="Right" TabIndex="15" Content="중복되지 않은 레이블만 내보내기" Margin="2" Padding="5" Height="28"
-                                    VerticalAlignment="Center" Command="{Binding CmdExportNMSLabel}" />
+                                    VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
                         </DockPanel>
                         <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
                         <TextBox TabIndex="14" DockPanel.Dock="Top" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
-                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogNMSLabel"
-                                 Text="{Binding LogNMSLabel}" IsReadOnly="True" IsTabStop="False" />
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel"
+                                 Text="{Binding LogUndupeLabel}" IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
                 </TabItem>
             </TabControl>
