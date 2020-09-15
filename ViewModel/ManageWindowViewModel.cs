@@ -101,6 +101,11 @@ namespace LabelAnnotator {
                 }
             }
         }
+        private int _ProgressUndupeLabelValue;
+        public int ProgressUndupeLabelValue {
+            get => _ProgressUndupeLabelValue;
+            set => SetProperty(ref _ProgressUndupeLabelValue, value);
+        }
         #endregion
 
         #region 커맨드
@@ -118,6 +123,7 @@ namespace LabelAnnotator {
             bool imageSizeCheck = res_msg == MessageBoxResult.Yes;
             string fileName = dlg.FileName;
             LogVerifyLabel = "";
+            ProgressVerifyLabelValue = 0;
             Task.Run(() => {
                 PositiveLabelsByCategoryForVerify.Clear();
                 PositiveImagesForVerify.Clear();
@@ -127,7 +133,6 @@ namespace LabelAnnotator {
                     Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => Extensions.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
                 );
                 string[] lines = File.ReadAllLines(fileName);
-                ProgressVerifyLabelValue = 0;
                 AppendLogVerifyLabel($"{fileName}의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
                     ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
@@ -430,58 +435,66 @@ namespace LabelAnnotator {
             };
             if (dlg.ShowDialog().GetValueOrDefault()) {
                 LogUndupeLabel = "";
-                AppendLogNMSLabel($"{dlg.FileName}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
-                // 로드
-                LabelsForUndupe.Clear();
-                ImagesForUndupe.Clear();
-                string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
-                IEnumerable<string> lines = File.ReadLines(dlg.FileName);
-                foreach (string line in lines) {
-                    (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, line);
-                    if (img is object) {
-                        if (lbl is object) LabelsForUndupe.Add(lbl);
-                        ImagesForUndupe.Add(img);
-                    }
-                }
-                // 중복 제거
-                int TotalSuppressedBoxesCount = 0;
-                var labelsByImageAndCategory = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
-                foreach (var labelsInImage in labelsByImageAndCategory) {
-                    // 넓이가 작은 경계 상자를 우선
-                    List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
-                    int SuppressedBoxesCount = 0;
-                    while (sortedBySize.Count > 0) {
-                        // pick
-                        LabelRecord pick = sortedBySize[0];
-                        sortedBySize.Remove(pick);
-                        // compare
-                        List<LabelRecord> labelsToSuppress = new List<LabelRecord>();
-                        foreach (LabelRecord i in sortedBySize) {
-                            double left = Math.Max(pick.Left, i.Left);
-                            double top = Math.Max(pick.Top, i.Top);
-                            double right = Math.Min(pick.Right, i.Right);
-                            double bottom = Math.Min(pick.Bottom, i.Bottom);
-                            if (left >= right || top >= bottom) continue;
-                            double sizeIntersection = (right - left) * (bottom - top);
-                            double sizeUnion = pick.Size + i.Size - sizeIntersection;
-                            double iou = sizeIntersection / sizeUnion;
-                            if (iou < IoUThreshold) continue;
-                            labelsToSuppress.Add(i);
+                ProgressUndupeLabelValue = 0;
+                Task.Run(() => {
+                    AppendLogUndupeLabel($"{dlg.FileName}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
+                    // 로드
+                    LabelsForUndupe.Clear();
+                    ImagesForUndupe.Clear();
+                    string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
+                    string[] lines = File.ReadAllLines(dlg.FileName);
+                    for (int i = 0; i < lines.Length; i++) {
+                        ProgressUndupeLabelValue = (int)((double)i / lines.Length * 20); // 0 to 20
+                        (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, lines[i]);
+                        if (img is object) {
+                            if (lbl is object) LabelsForUndupe.Add(lbl);
+                            ImagesForUndupe.Add(img);
                         }
-                        // suppress
-                        foreach (LabelRecord i in labelsToSuppress) {
-                            sortedBySize.Remove(i);
-                            LabelsForUndupe.Remove(i);
-                        }
-                        SuppressedBoxesCount += labelsToSuppress.Count;
-                        TotalSuppressedBoxesCount += labelsToSuppress.Count;
                     }
-                    if (SuppressedBoxesCount > 0) AppendLogNMSLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.Key.Image.FullPath}");
-                }
-                if (TotalSuppressedBoxesCount == 0) AppendLogNMSLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
-                else {
-                    AppendLogNMSLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                }
+                    ProgressUndupeLabelValue = 20;
+                    // 중복 제거
+                    int TotalSuppressedBoxesCount = 0;
+                    var labelsByImageAndCategory = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
+                    int TotalUniqueImageAndCategoryCount = labelsByImageAndCategory.Count;
+                    foreach (var (idx, labelsInImage) in labelsByImageAndCategory.Select((s, idx) => (idx, s))) {
+                        ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
+                        // 넓이가 작은 경계 상자를 우선
+                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
+                        int SuppressedBoxesCount = 0;
+                        while (sortedBySize.Count > 0) {
+                            // pick
+                            LabelRecord pick = sortedBySize[0];
+                            sortedBySize.Remove(pick);
+                            // compare
+                            List<LabelRecord> labelsToSuppress = new List<LabelRecord>();
+                            foreach (LabelRecord i in sortedBySize) {
+                                double left = Math.Max(pick.Left, i.Left);
+                                double top = Math.Max(pick.Top, i.Top);
+                                double right = Math.Min(pick.Right, i.Right);
+                                double bottom = Math.Min(pick.Bottom, i.Bottom);
+                                if (left >= right || top >= bottom) continue;
+                                double sizeIntersection = (right - left) * (bottom - top);
+                                double sizeUnion = pick.Size + i.Size - sizeIntersection;
+                                double iou = sizeIntersection / sizeUnion;
+                                if (iou < IoUThreshold) continue;
+                                labelsToSuppress.Add(i);
+                            }
+                            // suppress
+                            foreach (LabelRecord i in labelsToSuppress) {
+                                sortedBySize.Remove(i);
+                                LabelsForUndupe.Remove(i);
+                            }
+                            SuppressedBoxesCount += labelsToSuppress.Count;
+                            TotalSuppressedBoxesCount += labelsToSuppress.Count;
+                        }
+                        if (SuppressedBoxesCount > 0) AppendLogUndupeLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.Key.Image.FullPath}");
+                    }
+                    ProgressUndupeLabelValue = 100;
+                    if (TotalSuppressedBoxesCount == 0) AppendLogUndupeLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
+                    else {
+                        AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
+                    }
+                });
             }
         }
         public ICommand CmdExportUndupedLabel { get; }
@@ -522,7 +535,7 @@ namespace LabelAnnotator {
         private void AppendLogVerifyLabel(params string[] logs) {
             LogVerifyLabel = LogVerifyLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
-        private void AppendLogNMSLabel(params string[] logs) {
+        private void AppendLogUndupeLabel(params string[] logs) {
             LogUndupeLabel = LogUndupeLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         #endregion

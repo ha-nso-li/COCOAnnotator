@@ -14,10 +14,10 @@
                 <TabItem Header="레이블 분석">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="2" Content="분석할 레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
-                                    Command="{Binding CmdVerifyLabel}" />
-                            <Button DockPanel.Dock="Right" TabIndex="1" Content="유효한 레이블만 내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
+                            <Button DockPanel.Dock="Right" TabIndex="2" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
                                     Command="{Binding CmdExportVerifiedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="1" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
+                                    Command="{Binding CmdVerifyLabel}" />
                             <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyLabelValue}" Margin="5" Height="20" />
                         </DockPanel>
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyLabel"
@@ -61,16 +61,18 @@
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
                         <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="12" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}" Width="150"
                                 HorizontalAlignment="Left" Margin="2" />
-                        <Button DockPanel.Dock="Bottom" TabIndex="13" Content="분할할 레이블 파일 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
+                        <Button DockPanel.Dock="Bottom" TabIndex="13" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
                                 HorizontalAlignment="Right" Command="{Binding CmdSplitLabel}" />
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="레이블 중복 제거">
                     <DockPanel>
-                        <DockPanel DockPanel.Dock="Bottom" LastChildFill="False">
-                            <Button DockPanel.Dock="Right" TabIndex="16" Content="중복 제거할 레이블 파일 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
-                            <Button DockPanel.Dock="Right" TabIndex="15" Content="중복되지 않은 레이블만 내보내기" Margin="2" Padding="5" Height="28"
-                                    VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="16" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
+                                    Command="{Binding CmdExportUndupedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="15" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
+                                    Command="{Binding CmdUndupeLabel}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeLabelValue}" Margin="5" Height="20" />
                         </DockPanel>
                         <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
                         <TextBox TabIndex="14" DockPanel.Dock="Top" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
