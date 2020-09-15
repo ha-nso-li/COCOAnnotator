@@ -230,7 +230,7 @@ namespace LabelAnnotator {
                             if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) {
                                 lbl.Class = found;
                             } else {
-                                lbl.Class.ColorBrush = GenerateColor(categories);
+                                lbl.Class.ColorBrush = GenerateColor(lbl.Class.Name, categories);
                                 categories.Add(lbl.Class);
                             }
                         }
@@ -457,7 +457,7 @@ namespace LabelAnnotator {
         private void AddCategory() {
             ClassRecord add = ClassRecord.FromName(CategoryNameToAdd);
             if (!Categories.Contains(add)) {
-                add.ColorBrush = GenerateColor(Categories);
+                add.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
                 Categories.Add(add);
             }
         }
@@ -467,7 +467,7 @@ namespace LabelAnnotator {
             MessageBoxResult res = MessageBox.Show($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.", "", MessageBoxButton.OKCancel);
             if (res == MessageBoxResult.Cancel) return;
             ClassRecord newCat = ClassRecord.FromName(CategoryNameToAdd);
-            newCat.ColorBrush = SelectedCategory.ColorBrush;
+            newCat.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
             int idx = Categories.IndexOf(SelectedCategory);
             foreach (LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
                 label.Class = newCat;
@@ -706,8 +706,8 @@ namespace LabelAnnotator {
             List<ContentControl> bbox = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
             foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
         }
-        private SolidColorBrush GenerateColor(IEnumerable<ClassRecord> OldCategories, double Threshold = 100) {
-            Random random = new Random();
+        private SolidColorBrush GenerateColor(string CategoryName, IEnumerable<ClassRecord> OldCategories, double Threshold = 100) {
+            Random random = new Random(CategoryName.GetHashCode());
             while (true) {
                 Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
                 // 흰색과 유사한 색도 제외 (카테고리 리스트 배경이 흰색이므로...)
