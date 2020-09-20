@@ -421,15 +421,27 @@ namespace LabelAnnotator {
                     }
                     {
                         using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.1{Path.GetExtension(dlg.FileName)}"));
-                        using StreamWriter OutFileTook = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.2{Path.GetExtension(dlg.FileName)}"));
+                        using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.2{Path.GetExtension(dlg.FileName)}"));
+                        int ImageCountOfSplit = 0;
+                        HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
+                        HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
                         foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
                             IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                            if (idx < NValueForSplitLabel) {
-                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileTook.WriteLine(label.Serialize(basePath));
-                                else OutFileTook.WriteLine(image.SerializeAsNegative(basePath));
+                            int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
+                            int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
+                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (DiversifyLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                                // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
+                                // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
+                                // 2. 분류 다양성 보정 켜져 있고, 추출 레이블에 없는 분류가 현재 이미지에 있는 갯수가, 원본 레이블의 그것보다 많은 경우.
+                                //    즉 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높은 경우
+                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(label.Serialize(basePath));
+                                else OutFileSplit.WriteLine(image.SerializeAsNegative(basePath));
+                                ImageCountOfSplit++;
+                                ClassesSplit.UnionWith(labelsInImage.Select(s => s.Class));
                             } else {
                                 if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(label.Serialize(basePath));
                                 else OutFileOriginal.WriteLine(image.SerializeAsNegative(basePath));
+                                ClassesOriginal.UnionWith(labelsInImage.Select(s => s.Class));
                             }
                         }
                     }

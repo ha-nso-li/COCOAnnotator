@@ -10,7 +10,7 @@ namespace LabelAnnotator {
             if (Enum.TryParse((string)parameter, out ManageWindowViewModel.TacticsForSplitLabel tactic)) {
                 return value.Equals(tactic);
             } else if ((string)parameter == nameof(ManageWindowViewModel.DiversifyLabel)) {
-                return value.Equals(ManageWindowViewModel.TacticsForSplitLabel.DevideToNLabels);
+                return !value.Equals(ManageWindowViewModel.TacticsForSplitLabel.SplitToSubFolders);
             } else if ((string)parameter == nameof(ManageWindow.TxtNValueForSplitLabel)) {
                 return !value.Equals(ManageWindowViewModel.TacticsForSplitLabel.SplitToSubFolders);
             } else {
