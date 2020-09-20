@@ -390,7 +390,7 @@ namespace LabelAnnotator {
                             // 분류 다양화 보정 켜져 있고 양성 이미지인 경우.
                             // 해당 파티션에 없는 분류가 현재 이미지에 많은 순 -> 파티션에 포함된 이미지 갯수가 적은 순.
                             (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count()))
-                                                         .OrderBy(s => s.Item3).ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
+                                                         .OrderByDescending(s => s.Item3).ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
                         } else {
                             // 분류 다양화 보정 꺼져 있거나 음성 이미지인 경우.
                             // 파티션에 포함된 이미지 갯수가 적은 순으로만 선택.
