@@ -20,7 +20,9 @@ namespace LabelAnnotator {
             this.View = View;
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
-            TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
+            _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
+            _NValueForSplitLabel = 2;
+            _DiversifyLabel = true;
             _LogUndupeLabel = "";
             IoUThreshold = 0.5;
 
@@ -76,16 +78,17 @@ namespace LabelAnnotator {
         private TacticsForSplitLabel _TacticForSplitLabel;
         public TacticsForSplitLabel TacticForSplitLabel {
             get => _TacticForSplitLabel;
-            set {
-                if (SetProperty(ref _TacticForSplitLabel, value)) {
-                    View.TxtNValueForSplitLabel.IsEnabled = value != TacticsForSplitLabel.SplitToSubFolders;
-                }
-            }
+            set => SetProperty(ref _TacticForSplitLabel, value);
         }
         private int _NValueForSplitLabel;
         public int NValueForSplitLabel {
             get => _NValueForSplitLabel;
             set => SetProperty(ref _NValueForSplitLabel, value);
+        }
+        private bool _DiversifyLabel;
+        public bool DiversifyLabel {
+            get => _DiversifyLabel;
+            set => SetProperty(ref _DiversifyLabel, value);
         }
         private double _IoUThreshold;
         public double IoUThreshold {
@@ -373,15 +376,38 @@ namespace LabelAnnotator {
                         return;
                     }
                     List<StreamWriter> files = new List<StreamWriter>();
+                    var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
                     for (int i = 0; i < NValueForSplitLabel; i++) {
                         // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
                         StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.{i + 1}{Path.GetExtension(dlg.FileName)}"));
                         files.Add(file);
+                        infoByPartition.Add((new HashSet<ClassRecord>(), 0));
                     }
-                    foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
+                    foreach (ImageRecord image in shuffledImages) {
                         IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) files[idx % NValueForSplitLabel].WriteLine(label.Serialize(basePath));
-                        else files[idx % NValueForSplitLabel].WriteLine(image.SerializeAsNegative(basePath));
+                        int idx;
+                        if (DiversifyLabel && labelsInImage.Any()) {
+                            // 분류 다양화 보정 켜져 있고 양성 이미지인 경우.
+                            // 해당 파티션에 없는 분류가 현재 이미지에 많은 순 -> 파티션에 포함된 이미지 갯수가 적은 순.
+                            (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count()))
+                                                         .OrderBy(s => s.Item3).ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
+                        } else {
+                            // 분류 다양화 보정 꺼져 있거나 음성 이미지인 경우.
+                            // 파티션에 포함된 이미지 갯수가 적은 순으로만 선택.
+                            (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, s.Classes.Count)).OrderBy(s => s.ImagesCount)
+                                                         .ThenBy(s => r.Next()).First();
+                        }
+                        StreamWriter writer = files[idx];
+                        if (labelsInImage.Any()) {
+                            foreach (LabelRecord label in labelsInImage) writer.WriteLine(label.Serialize(basePath));
+                        } else writer.WriteLine(image.SerializeAsNegative(basePath));
+                        {
+                            // 파티션별 정보 갱신
+                            var (Classes, ImagesCount) = infoByPartition[idx];
+                            Classes.UnionWith(labelsInImage.Select(s => s.Class));
+                            ImagesCount++;
+                            infoByPartition[idx] = (Classes, ImagesCount);
+                        }
                     }
                     foreach (StreamWriter file in files) {
                         file.Dispose();
@@ -458,7 +484,7 @@ namespace LabelAnnotator {
                     int TotalUniqueImageAndCategoryCount = labelsByImageAndCategory.Count;
                     foreach (var (idx, labelsInImage) in labelsByImageAndCategory.Select((s, idx) => (idx, s))) {
                         ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
-                        // 넓이가 작은 경계 상자를 우선
+                                                                                                                    // 넓이가 작은 경계 상자를 우선
                         List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
                         int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count > 0) {
