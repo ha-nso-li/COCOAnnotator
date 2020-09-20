@@ -429,11 +429,10 @@ namespace LabelAnnotator {
                             IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
                             int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
                             int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
-                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (DiversifyLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (DiversifyLabel && ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
                                 // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
                                 // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                                // 2. 분류 다양성 보정 켜져 있고, 추출 레이블에 없는 분류가 현재 이미지에 있는 갯수가, 원본 레이블의 그것보다 많은 경우.
-                                //    즉 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높은 경우
+                                // 2. 분류 다양성 보정 켜져 있고, 아직 추출량이 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높은 경우
                                 if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(label.Serialize(basePath));
                                 else OutFileSplit.WriteLine(image.SerializeAsNegative(basePath));
                                 ImageCountOfSplit++;
