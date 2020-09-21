@@ -8,11 +8,11 @@ namespace LabelAnnotator {
             switch (SettingManager.Format) {
                 case "LTRB":
                     RadLTRB.IsChecked = true;
-                    RadXYWH.IsChecked = false;
+                    RadCXCYWH.IsChecked = false;
                     break;
-                case "XYWH":
+                case "CXCYWH":
                     RadLTRB.IsChecked = false;
-                    RadXYWH.IsChecked = true;
+                    RadCXCYWH.IsChecked = true;
                     break;
             }
         }
@@ -23,7 +23,7 @@ namespace LabelAnnotator {
 
         private void OnRadioClick(object sender, RoutedEventArgs e) {
             if (RadLTRB.IsChecked.GetValueOrDefault()) SettingManager.Format = "LTRB";
-            else if (RadXYWH.IsChecked.GetValueOrDefault()) SettingManager.Format = "XYWH";
+            else if (RadCXCYWH.IsChecked.GetValueOrDefault()) SettingManager.Format = "CXCYWH";
         }
     }
 }

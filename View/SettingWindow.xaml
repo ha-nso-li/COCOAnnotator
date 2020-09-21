@@ -6,9 +6,9 @@
             <GroupBox Header="좌표 형식 설정" Margin="3">
                 <StackPanel Orientation="Vertical">
                     <RadioButton x:Name="RadLTRB" GroupName="Format" Margin="2" Click="OnRadioClick">좌-상-우-하 (LTRB)</RadioButton>
-                    <RadioButton x:Name="RadXYWH" GroupName="Format" Margin="2" Click="OnRadioClick">X-Y-가로-세로 (XYWH)</RadioButton>
+                    <RadioButton x:Name="RadCXCYWH" GroupName="Format" Margin="2" Click="OnRadioClick">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
                     <TextBlock TextWrapping="Wrap" Margin="2,3,2,2">
-                        레이블 파일을 불러오기, 내보내기 할 때의 좌표 형식을 지정합니다. LTRB는 정수, XYWH는 실수 형태로 저장합니다.
+                        레이블 파일을 불러오기, 내보내기 할 때의 좌표 형식을 지정합니다. LTRB는 정수, CXCYWH는 실수 형태로 저장합니다.
                     </TextBlock>
                 </StackPanel>
             </GroupBox>

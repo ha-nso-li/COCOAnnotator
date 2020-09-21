@@ -30,7 +30,7 @@ namespace LabelAnnotator {
             switch (SettingManager.Format) {
                 case "LTRB":
                     return $"{path},{Math.Floor(Left):0},{Math.Floor(Top):0},{Math.Ceiling(Right):0},{Math.Ceiling(Bottom):0},{Class}";
-                case "XYWH":
+                case "CXCYWH":
                     double x = (Left + Right) / 2;
                     double y = (Top + Bottom) / 2;
                     double w = Right - Left;

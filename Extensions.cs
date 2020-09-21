@@ -123,7 +123,7 @@ namespace LabelAnnotator {
             switch (SettingManager.Format) {
                 case "LTRB":
                     return (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname)));
-                case "XYWH":
+                case "CXCYWH":
                     // num1 = x, num2 = y, num3 = w, num4 = h
                     double left = num1 - num3 / 2;
                     double right = num1 + num3 / 2;
