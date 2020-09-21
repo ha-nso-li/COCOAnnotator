@@ -22,7 +22,6 @@ namespace LabelAnnotator {
             FilesForUnionLabel = new ObservableCollection<string>();
             _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
             _NValueForSplitLabel = 2;
-            _DiversifyLabel = true;
             _LogUndupeLabel = "";
             IoUThreshold = 0.5;
 
@@ -84,11 +83,6 @@ namespace LabelAnnotator {
         public int NValueForSplitLabel {
             get => _NValueForSplitLabel;
             set => SetProperty(ref _NValueForSplitLabel, value);
-        }
-        private bool _DiversifyLabel;
-        public bool DiversifyLabel {
-            get => _DiversifyLabel;
-            set => SetProperty(ref _DiversifyLabel, value);
         }
         private double _IoUThreshold;
         public double IoUThreshold {
@@ -386,28 +380,24 @@ namespace LabelAnnotator {
                     foreach (ImageRecord image in shuffledImages) {
                         IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
                         int idx;
-                        if (DiversifyLabel && labelsInImage.Any()) {
-                            // 분류 다양화 보정 켜져 있고 양성 이미지인 경우.
-                            // 해당 파티션에 없는 분류가 현재 이미지에 많은 순 -> 파티션에 포함된 이미지 갯수가 적은 순.
+                        if (labelsInImage.Any()) {
+                            // 양성 이미지인 경우.
+                            // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 갯수가 적은 순.
                             (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count()))
                                                          .OrderByDescending(s => s.Item3).ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
+                            foreach (LabelRecord label in labelsInImage) files[idx].WriteLine(label.Serialize(basePath));
                         } else {
-                            // 분류 다양화 보정 꺼져 있거나 음성 이미지인 경우.
+                            // 음성 이미지인 경우.
                             // 파티션에 포함된 이미지 갯수가 적은 순으로만 선택.
                             (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, s.Classes.Count)).OrderBy(s => s.ImagesCount)
                                                          .ThenBy(s => r.Next()).First();
+                            files[idx].WriteLine(image.SerializeAsNegative(basePath));
                         }
-                        StreamWriter writer = files[idx];
-                        if (labelsInImage.Any()) {
-                            foreach (LabelRecord label in labelsInImage) writer.WriteLine(label.Serialize(basePath));
-                        } else writer.WriteLine(image.SerializeAsNegative(basePath));
-                        {
-                            // 파티션별 정보 갱신
-                            var (Classes, ImagesCount) = infoByPartition[idx];
-                            Classes.UnionWith(labelsInImage.Select(s => s.Class));
-                            ImagesCount++;
-                            infoByPartition[idx] = (Classes, ImagesCount);
-                        }
+                        // 파티션별 정보 갱신
+                        var (Classes, ImagesCount) = infoByPartition[idx];
+                        Classes.UnionWith(labelsInImage.Select(s => s.Class));
+                        ImagesCount++;
+                        infoByPartition[idx] = (Classes, ImagesCount);
                     }
                     foreach (StreamWriter file in files) {
                         file.Dispose();
@@ -429,10 +419,10 @@ namespace LabelAnnotator {
                             IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
                             int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
                             int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
-                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (DiversifyLabel && ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
                                 // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
                                 // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                                // 2. 분류 다양성 보정 켜져 있고, 아직 추출량이 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높은 경우
+                                // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높은 경우
                                 if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(label.Serialize(basePath));
                                 else OutFileSplit.WriteLine(image.SerializeAsNegative(basePath));
                                 ImageCountOfSplit++;
@@ -495,8 +485,7 @@ namespace LabelAnnotator {
                     int TotalUniqueImageAndCategoryCount = labelsByImageAndCategory.Count;
                     foreach (var (idx, labelsInImage) in labelsByImageAndCategory.Select((s, idx) => (idx, s))) {
                         ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
-                                                                                                                    // 넓이가 작은 경계 상자를 우선
-                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList();
+                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
                         int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count > 0) {
                             // pick

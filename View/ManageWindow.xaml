@@ -57,9 +57,6 @@
                             <RadioButton TabIndex="11" GroupName="TacticsForSplitLabel" Content="각 하위 폴더에 폴더 안의 이미지만을 포함하는 레이블 파일 생성"
                                     IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=SplitToSubFolders}"
                                     Margin="1" />
-                            <CheckBox IsChecked="{Binding DiversifyLabel}" Content="분할된 모든 각 레이블 파일에 최대한 다양한 분류가 존재하도록 보정"
-                                    IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=DiversifyLabel}"
-                                    TabIndex="12" Margin="1,5,1,1" />
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
                         <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="12" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
