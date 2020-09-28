@@ -487,7 +487,7 @@ namespace LabelAnnotator {
                         ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
                         List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
                         int SuppressedBoxesCount = 0;
-                        while (sortedBySize.Count > 0) {
+                        while (sortedBySize.Count >= 2) {
                             // pick
                             LabelRecord pick = sortedBySize[0];
                             sortedBySize.Remove(pick);
