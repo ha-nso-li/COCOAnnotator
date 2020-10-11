@@ -15,4 +15,14 @@
 
 ## Requirements
 
- * .NET Core 3.1에서 동작합니다. [닷넷 다운로드 웹사이트](https://dotnet.microsoft.com/download)에서 .NET Core 3.1 데스크탑 앱 런타임 또는 SDK를 다운로드 받아 설치하세요.
+.NET Core 3.1에서 동작합니다. [닷넷 다운로드 웹사이트](https://dotnet.microsoft.com/download)에서 .NET Core 3.1 데스크탑 앱 런타임 또는 SDK를 다운로드 받아 설치하세요.
+
+## How to Build
+
+저장소의 최상위 폴더에서 다음 명령어를 실행하세요.
+
+```
+dotnet publish -c Release -p:PublishProfile=Properties\PublishProfiles\ReleaseBuild.pubxml
+```
+
+또는 Visual Studio 2019에서 솔루션을 열어 Build - Publish LabelAnnotator 메뉴를 통해서도 게시할 수 있습니다.
