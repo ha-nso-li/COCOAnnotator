@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace LabelAnnotator {
+namespace LabelAnnotator.Views {
     public partial class SettingWindow : Window {
         public SettingWindow() {
             InitializeComponent();

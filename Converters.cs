@@ -3,14 +3,14 @@ using System.Globalization;
 using System.Windows.Data;
 
 namespace LabelAnnotator {
-    [ValueConversion(typeof(ManageWindowViewModel.TacticsForSplitLabel), typeof(bool))]
+    [ValueConversion(typeof(ViewModels.ManageWindowViewModel.TacticsForSplitLabel), typeof(bool))]
     public class TacticConverter : IValueConverter {
         // enum to bool
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-            if (Enum.TryParse((string)parameter, out ManageWindowViewModel.TacticsForSplitLabel tactic)) {
+            if (Enum.TryParse((string)parameter, out ViewModels.ManageWindowViewModel.TacticsForSplitLabel tactic)) {
                 return value.Equals(tactic);
-            } else if ((string)parameter == nameof(ManageWindow.TxtNValueForSplitLabel)) {
-                return !value.Equals(ManageWindowViewModel.TacticsForSplitLabel.SplitToSubFolders);
+            } else if ((string)parameter == nameof(Views.ManageWindow.TxtNValueForSplitLabel)) {
+                return !value.Equals(ViewModels.ManageWindowViewModel.TacticsForSplitLabel.SplitToSubFolders);
             } else {
                 return Binding.DoNothing;
             }
@@ -18,7 +18,7 @@ namespace LabelAnnotator {
 
         // bool to enum
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
-            if (Enum.TryParse((string)parameter, out ManageWindowViewModel.TacticsForSplitLabel tactic)) {
+            if (Enum.TryParse((string)parameter, out ViewModels.ManageWindowViewModel.TacticsForSplitLabel tactic)) {
                 return (bool)value ? tactic : Binding.DoNothing;
             } else {
                 return Binding.DoNothing;

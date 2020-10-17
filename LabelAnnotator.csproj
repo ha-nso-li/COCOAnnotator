@@ -17,8 +17,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.19" />
-    <PackageReference Include="Prism.Core" Version="7.2.0.1422" />
+    <PackageReference Include="Prism.DryIoc" Version="7.2.0.1422" />
     <PackageReference Include="YamlDotNet" Version="8.1.2" />
   </ItemGroup>
 </Project>

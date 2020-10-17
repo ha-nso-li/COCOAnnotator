@@ -13,10 +13,10 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using WinForm = System.Windows.Forms;
 
-namespace LabelAnnotator {
+namespace LabelAnnotator.ViewModels {
     public class ManageWindowViewModel : BindableBase {
         #region 생성자
-        public ManageWindowViewModel(ManageWindow View) {
+        public ManageWindowViewModel(Views.ManageWindow View) {
             this.View = View;
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
@@ -45,7 +45,7 @@ namespace LabelAnnotator {
         }
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        public ManageWindow View { get; }
+        public Views.ManageWindow View { get; }
         private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
         private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();

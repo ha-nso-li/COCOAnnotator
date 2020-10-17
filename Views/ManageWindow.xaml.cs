@@ -1,11 +1,11 @@
 using System.Windows;
 
-namespace LabelAnnotator {
+namespace LabelAnnotator.Views {
     public partial class ManageWindow : Window {
         public ManageWindow() {
             InitializeComponent();
 
-            DataContext = new ManageWindowViewModel(this);
+            DataContext = new ViewModels.ManageWindowViewModel(this);
         }
     }
 }

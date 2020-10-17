@@ -1,3 +1,4 @@
+using LabelAnnotator.Views;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -14,7 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace LabelAnnotator {
+namespace LabelAnnotator.ViewModels {
     public class MainWindowViewModel : BindableBase {
         #region 생성자
         public MainWindowViewModel(MainWindow View) {
