@@ -9,7 +9,7 @@ namespace LabelAnnotator {
         }
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry) {
-            // TODO: Register services
+            containerRegistry.RegisterSingleton<Services.CommonDialogService>();
         }
     }
 }

@@ -1,5 +1,4 @@
 using LabelAnnotator.Views;
-using Microsoft.Win32;
 using Prism.Commands;
 using System;
 using System.Collections.Generic;
@@ -206,17 +205,13 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 불러오기, 내보내기, 설정
         public ICommand CmdLoadLabel { get; }
         private void LoadLabel() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
-                Multiselect = false
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
+            if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
                 ClearBoundaryBoxes();
                 Labels.Clear();
                 Images.Clear();
                 Categories.Clear();
-                string basePath = System.IO.Path.GetDirectoryName(dlg.FileName) ?? "";
-                IEnumerable<string> lines = File.ReadLines(dlg.FileName);
+                string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
+                IEnumerable<string> lines = File.ReadLines(filePath);
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
                 SortedSet<ClassRecord> categories = new SortedSet<ClassRecord> {
                     ClassRecord.AllLabel()
@@ -245,13 +240,9 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdSaveLabel { get; }
         private void SaveLabel() {
-            SaveFileDialog dlg = new SaveFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
-                string basePath = System.IO.Path.GetDirectoryName(dlg.FileName) ?? "";
-                using StreamWriter f = File.CreateText(dlg.FileName);
+            if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
+                string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
+                using StreamWriter f = File.CreateText(filePath);
                 ILookup<ImageRecord, LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
                 foreach (ImageRecord i in Images) {
                     IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
@@ -530,17 +521,13 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddImage { get; }
         private void AddImage() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = $"이미지 파일|{string.Join(";", Extensions.ApprovedImageExtension.Select(s => $"*{s}"))}",
-                Multiselect = true,
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
-                SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(dlg.FileNames.Select(s => new ImageRecord(s)));
+            if (CommonDialogService.OpenImagesDialog(out string[] filePaths)) {
+                SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Select(s => new ImageRecord(s)));
                 add.ExceptWith(Images);
                 foreach (ImageRecord img in add) {
                     Images.Add(img);
                 }
-                if (dlg.FileNames.Length != add.Count) MessageBox.Show("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.", "", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (filePaths.Length != add.Count) MessageBox.Show("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.", "", MessageBoxButton.OK, MessageBoxImage.Warning);
                 if (add.Count > 0) RefreshCommonPath();
             }
         }

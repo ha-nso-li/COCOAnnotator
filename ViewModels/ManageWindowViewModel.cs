@@ -1,4 +1,3 @@
-using Microsoft.Win32;
 using Prism.Commands;
 using System;
 using System.Collections;
@@ -10,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using WinForm = System.Windows.Forms;
 
 namespace LabelAnnotator.ViewModels {
     public class ManageWindowViewModel : Commons.ViewModelBase {
@@ -108,28 +106,23 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 분석
         public ICommand CmdVerifyLabel { get; }
         private void VerifyLabel() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
-                Multiselect = false
-            };
-            if (!dlg.ShowDialog().GetValueOrDefault()) return;
+            if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
             MessageBoxResult res_msg = MessageBox.Show(
                 "검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.", "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (res_msg == MessageBoxResult.Cancel) return;
             bool imageSizeCheck = res_msg == MessageBoxResult.Yes;
-            string fileName = dlg.FileName;
             LogVerifyLabel = "";
             ProgressVerifyLabelValue = 0;
             Task.Run(() => {
                 PositiveLabelsByCategoryForVerify.Clear();
                 PositiveImagesForVerify.Clear();
                 NegativeImagesForVerify.Clear();
-                string basePath = Path.GetDirectoryName(fileName) ?? "";
+                string basePath = Path.GetDirectoryName(filePath) ?? "";
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>(
                     Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => Extensions.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
                 );
-                string[] lines = File.ReadAllLines(fileName);
-                AppendLogVerifyLabel($"{fileName}의 분석을 시작합니다.");
+                string[] lines = File.ReadAllLines(filePath);
+                AppendLogVerifyLabel($"{filePath}의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
                     ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
                     if (string.IsNullOrWhiteSpace(lines[i])) continue;
@@ -246,14 +239,10 @@ namespace LabelAnnotator.ViewModels {
                 MessageBox.Show("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
                 return;
             }
-            SaveFileDialog dlg = new SaveFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            if (!dlg.ShowDialog().GetValueOrDefault()) return;
+            if (!CommonDialogService.SaveCSVFileDialog(out string filePath)) return;
             MessageBox.Show("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
-            string saveBasePath = Path.GetDirectoryName(dlg.FileName) ?? "";
-            using StreamWriter f = File.CreateText(dlg.FileName);
+            string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
+            using StreamWriter f = File.CreateText(filePath);
             // 양성 레이블
             List<LabelRecord> positiveLabels = PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).ToList();
             foreach (IGrouping<ImageRecord, LabelRecord> i in positiveLabels.GroupBy(s => s.Image)) {
@@ -271,12 +260,8 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 병합
         public ICommand CmdAddFileForUnionLabel { get; }
         private void AddFileForUnionLabel() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
-                Multiselect = true
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
-                foreach (string FileName in dlg.FileNames) {
+            if (CommonDialogService.OpenCSVFilesDialog(out string[] filePaths)) {
+                foreach (string FileName in filePaths) {
                     FilesForUnionLabel.Add(FileName);
                 }
             }
@@ -284,9 +269,8 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdAddFolderForUnionLabel { get; }
         private void AddFolderForUnionLabel() {
             MessageBox.Show("선택한 폴더 아래에 존재하는 모든 csv 파일을 재귀적으로 탐색하여 목록에 추가합니다.");
-            WinForm.FolderBrowserDialog dlg = new WinForm.FolderBrowserDialog();
-            if (dlg.ShowDialog() == WinForm.DialogResult.OK) {
-                foreach (string i in Directory.EnumerateFiles(dlg.SelectedPath, "*.csv", SearchOption.AllDirectories)) FilesForUnionLabel.Add(i);
+            if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
+                foreach (string i in Directory.EnumerateFiles(folderPath, "*.csv", SearchOption.AllDirectories)) FilesForUnionLabel.Add(i);
             }
         }
         public ICommand CmdRemoveFileForUnionLabel { get; }
@@ -303,17 +287,13 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdExportUnionLabel { get; }
         private void ExportUnionLabel() {
-            SaveFileDialog dlg = new SaveFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
+            if (CommonDialogService.SaveCSVFileDialog(out string outFilePath)) {
                 // 로드
                 List<LabelRecord> labels = new List<LabelRecord>();
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-                foreach (string labelPath in FilesForUnionLabel) {
-                    string basePath = Path.GetDirectoryName(labelPath) ?? "";
-                    IEnumerable<string> lines = File.ReadLines(labelPath);
+                foreach (string inFilePath in FilesForUnionLabel) {
+                    string basePath = Path.GetDirectoryName(inFilePath) ?? "";
+                    IEnumerable<string> lines = File.ReadLines(inFilePath);
                     foreach (string line in lines) {
                         (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, line);
                         if (img is object) {
@@ -323,8 +303,8 @@ namespace LabelAnnotator.ViewModels {
                     }
                 }
                 // 저장
-                string saveBasePath = Path.GetDirectoryName(dlg.FileName) ?? "";
-                using StreamWriter f = File.CreateText(dlg.FileName);
+                string saveBasePath = Path.GetDirectoryName(outFilePath) ?? "";
+                using StreamWriter f = File.CreateText(outFilePath);
                 ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
                 foreach (ImageRecord i in images) {
                     IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
@@ -343,15 +323,12 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 분리
         public ICommand CmdSplitLabel { get; }
         private void SplitLabel() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
-            };
-            if (!dlg.ShowDialog().GetValueOrDefault()) return;
+            if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
             Random r = new Random();
             List<LabelRecord> labels = new List<LabelRecord>();
             HashSet<ImageRecord> images = new HashSet<ImageRecord>();
-            IEnumerable<string> lines = File.ReadLines(dlg.FileName);
-            string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
+            IEnumerable<string> lines = File.ReadLines(filePath);
+            string basePath = Path.GetDirectoryName(filePath) ?? "";
             foreach (string line in lines) {
                 (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, line);
                 if (img is object) {
@@ -372,7 +349,7 @@ namespace LabelAnnotator.ViewModels {
                     var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
                     for (int i = 0; i < NValueForSplitLabel; i++) {
                         // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
-                        StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.{i + 1}{Path.GetExtension(dlg.FileName)}"));
+                        StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.{i + 1}{Path.GetExtension(filePath)}"));
                         files.Add(file);
                         infoByPartition.Add((new HashSet<ClassRecord>(), 0));
                     }
@@ -409,8 +386,8 @@ namespace LabelAnnotator.ViewModels {
                         return;
                     }
                     {
-                        using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.1{Path.GetExtension(dlg.FileName)}"));
-                        using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(dlg.FileName)}", $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.2{Path.GetExtension(dlg.FileName)}"));
+                        using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.1{Path.GetExtension(filePath)}"));
+                        using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.2{Path.GetExtension(filePath)}"));
                         int ImageCountOfSplit = 0;
                         HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
                         HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
@@ -438,9 +415,9 @@ namespace LabelAnnotator.ViewModels {
                     // 하위 폴더로 분할
                     IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
                     foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
-                        string TargetDir = Path.Combine(Path.GetDirectoryName(dlg.FileName) ?? "", imagesInDir.Key);
+                        string TargetDir = Path.Combine(Path.GetDirectoryName(filePath) ?? "", imagesInDir.Key);
                         // 파일 이름: (원래 파일 이름).(최종 폴더 이름).(원래 확장자)
-                        using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(dlg.FileName)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(dlg.FileName)}"));
+                        using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
                         foreach (ImageRecord image in imagesInDir) {
                             IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
                             if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(label.Serialize(basePath));
@@ -455,20 +432,16 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 중복 제거
         public ICommand CmdUndupeLabel { get; }
         private void UndupeLabel() {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
+            if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
                 LogUndupeLabel = "";
                 ProgressUndupeLabelValue = 0;
                 Task.Run(() => {
-                    AppendLogUndupeLabel($"{dlg.FileName}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
+                    AppendLogUndupeLabel($"{filePath}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                     // 로드
                     LabelsForUndupe.Clear();
                     ImagesForUndupe.Clear();
-                    string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
-                    string[] lines = File.ReadAllLines(dlg.FileName);
+                    string basePath = Path.GetDirectoryName(filePath) ?? "";
+                    string[] lines = File.ReadAllLines(filePath);
                     for (int i = 0; i < lines.Length; i++) {
                         ProgressUndupeLabelValue = (int)((double)i / lines.Length * 20); // 0 to 20
                         (ImageRecord? img, LabelRecord? lbl) = Extensions.DeserializeRecords(basePath, lines[i]);
@@ -528,13 +501,9 @@ namespace LabelAnnotator.ViewModels {
                 MessageBox.Show("레이블 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
-            SaveFileDialog dlg = new SaveFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            if (dlg.ShowDialog().GetValueOrDefault()) {
-                string basePath = Path.GetDirectoryName(dlg.FileName) ?? "";
-                using StreamWriter f = File.CreateText(dlg.FileName);
+            if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
+                string basePath = Path.GetDirectoryName(filePath) ?? "";
+                using StreamWriter f = File.CreateText(filePath);
                 ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
                 foreach (ImageRecord i in ImagesForUndupe) {
                     IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
