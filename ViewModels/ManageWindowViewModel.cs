@@ -1,6 +1,5 @@
 using Microsoft.Win32;
 using Prism.Commands;
-using Prism.Mvvm;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ using System.Windows.Media.Imaging;
 using WinForm = System.Windows.Forms;
 
 namespace LabelAnnotator.ViewModels {
-    public class ManageWindowViewModel : BindableBase {
+    public class ManageWindowViewModel : Commons.ViewModelBase {
         #region 생성자
         public ManageWindowViewModel(Views.ManageWindow View) {
             this.View = View;

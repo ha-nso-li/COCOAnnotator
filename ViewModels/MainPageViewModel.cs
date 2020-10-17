@@ -1,7 +1,6 @@
 using LabelAnnotator.Views;
 using Microsoft.Win32;
 using Prism.Commands;
-using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace LabelAnnotator.ViewModels {
-    public class MainWindowViewModel : BindableBase {
+    public class MainWindowViewModel : Commons.ViewModelBase {
         #region 생성자
         public MainWindowViewModel(MainWindow View) {
             ShortcutSaveBbox = Key.S;
