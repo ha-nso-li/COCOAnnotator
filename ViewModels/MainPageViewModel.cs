@@ -455,8 +455,8 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
-            MessageBoxResult res = MessageBox.Show($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.", "", MessageBoxButton.OKCancel);
-            if (res == MessageBoxResult.Cancel) return;
+            bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
+            if (!res) return;
             ClassRecord newCat = ClassRecord.FromName(CategoryNameToAdd);
             newCat.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
             int idx = Categories.IndexOf(SelectedCategory);
@@ -470,26 +470,30 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdDeleteCategory { get; }
         private void DeleteCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
-            MessageBoxResult res = MessageBox.Show($"분류가 {SelectedCategory}인 모든 경계 상자를 삭제합니다.", "", MessageBoxButton.OKCancel);
-            if (res == MessageBoxResult.Cancel) return;
-            res = MessageBox.Show("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.", "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (res == MessageBoxResult.Cancel) return;
-
-            Categories.Remove(SelectedCategory);
-            SelectedCategory = Categories.First(s => s.All);
-
-            if (res == MessageBoxResult.No) {
-                List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
-                foreach (LabelRecord i in delete) Labels.Remove(i);
-                foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
-                if (SelectedImage is object) {
-                    if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
-                } else {
+            bool res1 = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 삭제합니다.");
+            if (!res1) return;
+            bool? res2 = CommonDialogService.MessageBoxYesNoCancel("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
+            switch (res2) {
+                case true:
+                    Categories.Remove(SelectedCategory);
+                    SelectedCategory = Categories.First(s => s.All);
+                    List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
+                    foreach (LabelRecord i in delete) Labels.Remove(i);
+                    foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                    if (SelectedImage is object) {
+                        if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
+                    } else {
+                        UpdateBoundaryBoxes();
+                    }
+                    break;
+                case false:
+                    Categories.Remove(SelectedCategory);
+                    SelectedCategory = Categories.First(s => s.All);
+                    Labels.RemoveAll(s => s.Class == SelectedCategory);
                     UpdateBoundaryBoxes();
-                }
-            } else {
-                Labels.RemoveAll(s => s.Class == SelectedCategory);
-                UpdateBoundaryBoxes();
+                    break;
+                case null:
+                    return;
             }
         }
         #endregion
@@ -527,27 +531,36 @@ namespace LabelAnnotator.ViewModels {
                 foreach (ImageRecord img in add) {
                     Images.Add(img);
                 }
-                if (filePaths.Length != add.Count) MessageBox.Show("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.", "", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (filePaths.Length != add.Count) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
                 if (add.Count > 0) RefreshCommonPath();
             }
         }
         public ICommand CmdDeleteImage { get; }
         private void DeleteImage() {
-            MessageBoxResult res = MessageBox.Show("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.",
-                "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (res == MessageBoxResult.Cancel) return;
-            SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
-            if (selected.Count == 0) return;
-            Labels.RemoveAll(s => selected.Contains(s.Image));
-            if (res == MessageBoxResult.No) {
-                // 아예 삭제하는 경우 선택중인 이미지 삭제
-                SelectedImage = null;
-                foreach (ImageRecord i in selected) {
-                    Images.Remove(i);
-                }
-                RefreshCommonPath();
+            bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
+            switch (res) {
+                case true: {
+                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
+                        if (selected.Count == 0) return;
+                        Labels.RemoveAll(s => selected.Contains(s.Image));
+                        ClearBoundaryBoxes();
+                        break;
+                    }
+                case false: {
+                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
+                        if (selected.Count == 0) return;
+                        Labels.RemoveAll(s => selected.Contains(s.Image));
+                        SelectedImage = null;
+                        foreach (ImageRecord i in selected) {
+                            Images.Remove(i);
+                        }
+                        RefreshCommonPath();
+                        ClearBoundaryBoxes();
+                        break;
+                    }
+                case null:
+                    return;
             }
-            ClearBoundaryBoxes();
         }
         #endregion
 
@@ -728,9 +741,9 @@ namespace LabelAnnotator.ViewModels {
                 // 이미지 화면 크기를 확정시킨 후에 실행해야 함.
                 View.Dispatcher.Invoke(() => { UpdateBoundaryBoxes(); }, DispatcherPriority.Loaded);
             } catch (FileNotFoundException) {
-                MessageBox.Show($"해당하는 이미지 파일이 존재하지 않습니다. ({SelectedImage.FullPath})");
+                CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({SelectedImage.FullPath})");
             } catch (NotSupportedException) {
-                MessageBox.Show($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
+                CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
             }
         }
         #endregion

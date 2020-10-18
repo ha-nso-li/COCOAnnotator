@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.Linq;
+using System.Windows;
 using WinForm = System.Windows.Forms;
 
 namespace LabelAnnotator.Services {
@@ -49,6 +50,25 @@ namespace LabelAnnotator.Services {
             WinForm.DialogResult result = dlg.ShowDialog();
             FolderPath = dlg.SelectedPath;
             return result == WinForm.DialogResult.OK;
+        }
+
+        public void MessageBox(string Message) {
+            System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        public bool MessageBoxOKCancel(string Message) {
+            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+            return result == MessageBoxResult.OK;
+        }
+
+        public bool? MessageBoxYesNoCancel(string Message) {
+            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            return result switch
+            {
+                MessageBoxResult.Yes => true,
+                MessageBoxResult.No => false,
+                _ => null,
+            };
         }
     }
 }

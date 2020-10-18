@@ -107,10 +107,9 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdVerifyLabel { get; }
         private void VerifyLabel() {
             if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
-            MessageBoxResult res_msg = MessageBox.Show(
-                "검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.", "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (res_msg == MessageBoxResult.Cancel) return;
-            bool imageSizeCheck = res_msg == MessageBoxResult.Yes;
+            bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
+            if (res is null) return;
+            bool imageSizeCheck = res.GetValueOrDefault();
             LogVerifyLabel = "";
             ProgressVerifyLabelValue = 0;
             Task.Run(() => {
@@ -236,11 +235,12 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdExportVerifiedLabel { get; }
         private void ExportVerifiedLabel() {
             if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByCategoryForVerify.Count == 0) {
-                MessageBox.Show("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
+                CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
                 return;
             }
             if (!CommonDialogService.SaveCSVFileDialog(out string filePath)) return;
-            MessageBox.Show("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
+            if (!res) return;
             string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
             using StreamWriter f = File.CreateText(filePath);
             // 양성 레이블
@@ -268,7 +268,6 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddFolderForUnionLabel { get; }
         private void AddFolderForUnionLabel() {
-            MessageBox.Show("선택한 폴더 아래에 존재하는 모든 csv 파일을 재귀적으로 탐색하여 목록에 추가합니다.");
             if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
                 foreach (string i in Directory.EnumerateFiles(folderPath, "*.csv", SearchOption.AllDirectories)) FilesForUnionLabel.Add(i);
             }
@@ -342,7 +341,7 @@ namespace LabelAnnotator.ViewModels {
                 case TacticsForSplitLabel.DevideToNLabels:
                     // 균등 분할
                     if (NValueForSplitLabel < 2 || NValueForSplitLabel > images.Count) {
-                        MessageBox.Show("입력한 숫자가 올바르지 않습니다.", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                         return;
                     }
                     List<StreamWriter> files = new List<StreamWriter>();
@@ -382,7 +381,7 @@ namespace LabelAnnotator.ViewModels {
                 case TacticsForSplitLabel.TakeNSamples:
                     // 일부 추출
                     if (NValueForSplitLabel < 1 || NValueForSplitLabel >= images.Count) {
-                        MessageBox.Show("입력한 숫자가 올바르지 않습니다.", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                         return;
                     }
                     {
@@ -498,7 +497,7 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdExportUndupedLabel { get; }
         private void ExportUndupeLabel() {
             if (LabelsForUndupe.Count == 0 && ImagesForUndupe.Count == 0) {
-                MessageBox.Show("레이블 중복 제거를 실행한 적이 없습니다.");
+                CommonDialogService.MessageBox("레이블 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
