@@ -1,4 +1,3 @@
-using LabelAnnotator.Views;
 using Prism.Commands;
 using System;
 using System.Collections.Generic;
@@ -14,9 +13,9 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace LabelAnnotator.ViewModels {
-    public class MainWindowViewModel : Commons.ViewModelBase {
+    public class MainWindowViewModel : ViewModelBase {
         #region 생성자
-        public MainWindowViewModel(MainWindow View) {
+        public MainWindowViewModel(Views.MainWindow View) {
             ShortcutSaveBbox = Key.S;
             ShortcutImageUp = Key.E;
             ShortcutImageDown = Key.D;
@@ -62,7 +61,7 @@ namespace LabelAnnotator.ViewModels {
         #region 필드, 바인딩되지 않는 프로퍼티
         private double CurrentScale;
         private readonly List<LabelRecord> Labels = new List<LabelRecord>();
-        public MainWindow View { get; }
+        public Views.MainWindow View { get; }
         private Point? DragStartPoint = null;
         private ContentControl? PreviewBbox = null;
 
@@ -205,7 +204,7 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 불러오기, 내보내기, 설정
         public ICommand CmdLoadLabel { get; }
         private void LoadLabel() {
-            if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
+            if (DialogService.OpenCSVFileDialog(out string filePath)) {
                 ClearBoundaryBoxes();
                 Labels.Clear();
                 Images.Clear();
@@ -240,7 +239,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdSaveLabel { get; }
         private void SaveLabel() {
-            if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
+            if (DialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
                 ILookup<ImageRecord, LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
@@ -258,13 +257,11 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdManageLabel { get; }
         private void ManageLabel() {
-            ManageWindow win = new ManageWindow();
-            win.ShowDialog();
+            DialogService.ManageLabelDialog();
         }
         public ICommand CmdSetting { get; }
         private void Setting() {
-            SettingWindow win = new SettingWindow();
-            win.ShowDialog();
+            DialogService.SettingDialog();
         }
         #endregion
 
@@ -455,7 +452,7 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
-            bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
+            bool res = DialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
             ClassRecord newCat = ClassRecord.FromName(CategoryNameToAdd);
             newCat.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
@@ -470,9 +467,9 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdDeleteCategory { get; }
         private void DeleteCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
-            bool res1 = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 삭제합니다.");
+            bool res1 = DialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 삭제합니다.");
             if (!res1) return;
-            bool? res2 = CommonDialogService.MessageBoxYesNoCancel("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
+            bool? res2 = DialogService.MessageBoxYesNoCancel("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res2) {
                 case true:
                     Categories.Remove(SelectedCategory);
@@ -525,19 +522,19 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddImage { get; }
         private void AddImage() {
-            if (CommonDialogService.OpenImagesDialog(out string[] filePaths)) {
+            if (DialogService.OpenImagesDialog(out string[] filePaths)) {
                 SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Select(s => new ImageRecord(s)));
                 add.ExceptWith(Images);
                 foreach (ImageRecord img in add) {
                     Images.Add(img);
                 }
-                if (filePaths.Length != add.Count) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
+                if (filePaths.Length != add.Count) DialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
                 if (add.Count > 0) RefreshCommonPath();
             }
         }
         public ICommand CmdDeleteImage { get; }
         private void DeleteImage() {
-            bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
+            bool? res = DialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
                 case true: {
                         SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
@@ -741,9 +738,9 @@ namespace LabelAnnotator.ViewModels {
                 // 이미지 화면 크기를 확정시킨 후에 실행해야 함.
                 View.Dispatcher.Invoke(() => { UpdateBoundaryBoxes(); }, DispatcherPriority.Loaded);
             } catch (FileNotFoundException) {
-                CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({SelectedImage.FullPath})");
+                DialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({SelectedImage.FullPath})");
             } catch (NotSupportedException) {
-                CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
+                DialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
             }
         }
         #endregion

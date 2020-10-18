@@ -6,12 +6,11 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace LabelAnnotator.ViewModels {
-    public class ManageWindowViewModel : Commons.ViewModelBase {
+    public class ManageWindowViewModel : ViewModelBase {
         #region 생성자
         public ManageWindowViewModel(Views.ManageWindow View) {
             this.View = View;
@@ -106,8 +105,8 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 분석
         public ICommand CmdVerifyLabel { get; }
         private void VerifyLabel() {
-            if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
-            bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
+            if (!DialogService.OpenCSVFileDialog(out string filePath)) return;
+            bool? res = DialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
             if (res is null) return;
             bool imageSizeCheck = res.GetValueOrDefault();
             LogVerifyLabel = "";
@@ -235,11 +234,11 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdExportVerifiedLabel { get; }
         private void ExportVerifiedLabel() {
             if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByCategoryForVerify.Count == 0) {
-                CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
+                DialogService.MessageBox("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
                 return;
             }
-            if (!CommonDialogService.SaveCSVFileDialog(out string filePath)) return;
-            bool res = CommonDialogService.MessageBoxOKCancel("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
+            if (!DialogService.SaveCSVFileDialog(out string filePath)) return;
+            bool res = DialogService.MessageBoxOKCancel("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
             if (!res) return;
             string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
             using StreamWriter f = File.CreateText(filePath);
@@ -260,7 +259,7 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 병합
         public ICommand CmdAddFileForUnionLabel { get; }
         private void AddFileForUnionLabel() {
-            if (CommonDialogService.OpenCSVFilesDialog(out string[] filePaths)) {
+            if (DialogService.OpenCSVFilesDialog(out string[] filePaths)) {
                 foreach (string FileName in filePaths) {
                     FilesForUnionLabel.Add(FileName);
                 }
@@ -268,7 +267,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddFolderForUnionLabel { get; }
         private void AddFolderForUnionLabel() {
-            if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
+            if (DialogService.OpenFolderDialog(out string folderPath)) {
                 foreach (string i in Directory.EnumerateFiles(folderPath, "*.csv", SearchOption.AllDirectories)) FilesForUnionLabel.Add(i);
             }
         }
@@ -286,7 +285,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdExportUnionLabel { get; }
         private void ExportUnionLabel() {
-            if (CommonDialogService.SaveCSVFileDialog(out string outFilePath)) {
+            if (DialogService.SaveCSVFileDialog(out string outFilePath)) {
                 // 로드
                 List<LabelRecord> labels = new List<LabelRecord>();
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
@@ -322,7 +321,7 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 분리
         public ICommand CmdSplitLabel { get; }
         private void SplitLabel() {
-            if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
+            if (!DialogService.OpenCSVFileDialog(out string filePath)) return;
             Random r = new Random();
             List<LabelRecord> labels = new List<LabelRecord>();
             HashSet<ImageRecord> images = new HashSet<ImageRecord>();
@@ -341,7 +340,7 @@ namespace LabelAnnotator.ViewModels {
                 case TacticsForSplitLabel.DevideToNLabels:
                     // 균등 분할
                     if (NValueForSplitLabel < 2 || NValueForSplitLabel > images.Count) {
-                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
+                        DialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                         return;
                     }
                     List<StreamWriter> files = new List<StreamWriter>();
@@ -381,7 +380,7 @@ namespace LabelAnnotator.ViewModels {
                 case TacticsForSplitLabel.TakeNSamples:
                     // 일부 추출
                     if (NValueForSplitLabel < 1 || NValueForSplitLabel >= images.Count) {
-                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
+                        DialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                         return;
                     }
                     {
@@ -431,7 +430,7 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 중복 제거
         public ICommand CmdUndupeLabel { get; }
         private void UndupeLabel() {
-            if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
+            if (DialogService.OpenCSVFileDialog(out string filePath)) {
                 LogUndupeLabel = "";
                 ProgressUndupeLabelValue = 0;
                 Task.Run(() => {
@@ -497,10 +496,10 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdExportUndupedLabel { get; }
         private void ExportUndupeLabel() {
             if (LabelsForUndupe.Count == 0 && ImagesForUndupe.Count == 0) {
-                CommonDialogService.MessageBox("레이블 중복 제거를 실행한 적이 없습니다.");
+                DialogService.MessageBox("레이블 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
-            if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
+            if (DialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
                 ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);

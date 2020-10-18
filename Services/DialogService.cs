@@ -4,7 +4,7 @@ using System.Windows;
 using WinForm = System.Windows.Forms;
 
 namespace LabelAnnotator.Services {
-    public class CommonDialogService {
+    public class DialogService {
         public bool OpenCSVFileDialog(out string FilePath) {
             OpenFileDialog dlg = new OpenFileDialog {
                 Filter = "CSV 파일|*.csv",
@@ -69,6 +69,16 @@ namespace LabelAnnotator.Services {
                 MessageBoxResult.No => false,
                 _ => null,
             };
+        }
+
+        public void ManageLabelDialog() {
+            Views.ManageWindow win = new Views.ManageWindow();
+            win.ShowDialog();
+        }
+
+        public void SettingDialog() {
+            Views.SettingWindow win = new Views.SettingWindow();
+            win.ShowDialog();
         }
     }
 }
