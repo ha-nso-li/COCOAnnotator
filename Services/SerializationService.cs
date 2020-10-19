@@ -7,7 +7,7 @@ namespace LabelAnnotator.Services {
         /// 주어진 레이블을 직렬화합니다.
         /// </summary>
         /// <param name="Path">레이블 파일이 위치한 경로에서 이미지 파일로 가는 상대 경로입니다.</param>
-        public string SerializePositive(string Path, LabelRecord Label, string Format) {
+        public string SerializePositive(string Path, Records.LabelRecord Label, string Format) {
             //string path = Extensions.GetRelativePath(BasePath, Image.FullPath);
             switch (Format) {
                 case "LTRB":
@@ -38,12 +38,12 @@ namespace LabelAnnotator.Services {
         /// <item><description><seealso cref="LabelRecord"/>만 <see langword="null"/>이면 음성 샘플임을 의미합니다.</description></item>
         /// </list>
         /// </returns>
-        public (ImageRecord?, LabelRecord?) Deserialize(string BasePath, string Text, string Format) {
+        public (Records.ImageRecord?, Records.LabelRecord?) Deserialize(string BasePath, string Text, string Format) {
             string[] split = Text.Split(',');
             if (split.Length < 6) return (null, null);
             string path = Path.Combine(BasePath, split[0]);
             path = path.Replace('/', '\\');
-            ImageRecord img = new ImageRecord(path);
+            Records.ImageRecord img = new Records.ImageRecord(path);
             string classname = split[5];
             if (string.IsNullOrWhiteSpace(classname)) return (img, null);
             bool success = double.TryParse(split[1], out double num1);
@@ -53,14 +53,14 @@ namespace LabelAnnotator.Services {
             if (!success) return (null, null);
             switch (Format) {
                 case "LTRB":
-                    return (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname)));
+                    return (img, new Records.LabelRecord(img, num1, num2, num3, num4, Records.ClassRecord.FromName(classname)));
                 case "CXCYWH":
                     // num1 = x, num2 = y, num3 = w, num4 = h
                     double left = num1 - num3 / 2;
                     double right = num1 + num3 / 2;
                     double top = num2 - num4 / 2;
                     double bottom = num2 + num4 / 2;
-                    return (img, new LabelRecord(img, left, top, right, bottom, ClassRecord.FromName(classname)));
+                    return (img, new Records.LabelRecord(img, left, top, right, bottom, Records.ClassRecord.FromName(classname)));
                 default:
                     return (null, null);
             }

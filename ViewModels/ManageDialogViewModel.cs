@@ -43,11 +43,11 @@ namespace LabelAnnotator.ViewModels {
         }
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
-        private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
-        private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
-        private readonly List<LabelRecord> LabelsForUndupe = new List<LabelRecord>();
-        private readonly SortedSet<ImageRecord> ImagesForUndupe = new SortedSet<ImageRecord>();
+        private readonly SortedDictionary<Records.ClassRecord, List<Records.LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<Records.ClassRecord, List<Records.LabelRecord>>();
+        private readonly SortedSet<Records.ImageRecord> PositiveImagesForVerify = new SortedSet<Records.ImageRecord>();
+        private readonly SortedSet<Records.ImageRecord> NegativeImagesForVerify = new SortedSet<Records.ImageRecord>();
+        private readonly List<Records.LabelRecord> LabelsForUndupe = new List<Records.LabelRecord>();
+        private readonly SortedSet<Records.ImageRecord> ImagesForUndupe = new SortedSet<Records.ImageRecord>();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -117,15 +117,15 @@ namespace LabelAnnotator.ViewModels {
                 PositiveImagesForVerify.Clear();
                 NegativeImagesForVerify.Clear();
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
-                SortedSet<ImageRecord> images = new SortedSet<ImageRecord>(
-                    Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => PathService.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
+                SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>(
+                    Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => PathService.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new Records.ImageRecord(s))
                 );
                 string[] lines = File.ReadAllLines(filePath);
                 AppendLogVerifyLabel($"{filePath}의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
                     ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
                     if (string.IsNullOrWhiteSpace(lines[i])) continue;
-                    (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
+                    (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
                     if (img is null) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. CSV 값 개수가 6개 미만이거나 좌표값이 정수 값이 아닙니다.");
                         continue;
@@ -176,7 +176,7 @@ namespace LabelAnnotator.ViewModels {
                             continue;
                         }
                     }
-                    if (PositiveLabelsByCategoryForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInCategory)) {
+                    if (PositiveLabelsByCategoryForVerify.TryGetValue(lbl.Class, out List<Records.LabelRecord>? positiveLabelsInCategory)) {
                         // 완전히 동일한 레이블이 이미 존재하는지 검사
                         if (positiveLabelsInCategory.Contains(lbl)) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 동일한 레이블이 이미 존재합니다.");
@@ -191,7 +191,7 @@ namespace LabelAnnotator.ViewModels {
                         // 유효한 양성 레이블. (같은 분류가 없음)
                         images.Remove(img);
                         PositiveImagesForVerify.Add(img);
-                        List<LabelRecord> labels = new List<LabelRecord> { lbl };
+                        List<Records.LabelRecord> labels = new List<Records.LabelRecord> { lbl };
                         PositiveLabelsByCategoryForVerify.Add(lbl.Class, labels);
                     }
                 }
@@ -244,14 +244,14 @@ namespace LabelAnnotator.ViewModels {
             string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
             using StreamWriter f = File.CreateText(filePath);
             // 양성 레이블
-            List<LabelRecord> positiveLabels = PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).ToList();
-            foreach (IGrouping<ImageRecord, LabelRecord> i in positiveLabels.GroupBy(s => s.Image)) {
-                foreach (LabelRecord j in i) {
+            List<Records.LabelRecord> positiveLabels = PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).ToList();
+            foreach (IGrouping<Records.ImageRecord, Records.LabelRecord> i in positiveLabels.GroupBy(s => s.Image)) {
+                foreach (Records.LabelRecord j in i) {
                     f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(saveBasePath, i.Key.FullPath), j, SettingService.Format));
                 }
             }
             // 음성 레이블
-            foreach (ImageRecord i in NegativeImagesForVerify) {
+            foreach (Records.ImageRecord i in NegativeImagesForVerify) {
                 f.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(saveBasePath, i.FullPath)));
             }
         }
@@ -288,13 +288,13 @@ namespace LabelAnnotator.ViewModels {
         private void ExportUnionLabel() {
             if (CommonDialogService.SaveCSVFileDialog(out string outFilePath)) {
                 // 로드
-                List<LabelRecord> labels = new List<LabelRecord>();
-                SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
+                List<Records.LabelRecord> labels = new List<Records.LabelRecord>();
+                SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>();
                 foreach (string inFilePath in FilesForUnionLabel) {
                     string basePath = Path.GetDirectoryName(inFilePath) ?? "";
                     IEnumerable<string> lines = File.ReadLines(inFilePath);
                     foreach (string line in lines) {
-                        (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
+                        (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
                         if (img is object) {
                             if (lbl is object) labels.Add(lbl);
                             images.Add(img);
@@ -304,12 +304,12 @@ namespace LabelAnnotator.ViewModels {
                 // 저장
                 string saveBasePath = Path.GetDirectoryName(outFilePath) ?? "";
                 using StreamWriter f = File.CreateText(outFilePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
-                foreach (ImageRecord i in images) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
+                foreach (Records.ImageRecord i in images) {
+                    IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
                         // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(saveBasePath, i.FullPath), j, SettingService.Format));
+                        foreach (Records.LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(saveBasePath, i.FullPath), j, SettingService.Format));
                     } else {
                         // 음성 레이블
                         f.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(saveBasePath, i.FullPath)));
@@ -324,19 +324,19 @@ namespace LabelAnnotator.ViewModels {
         private void SplitLabel() {
             if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
             Random r = new Random();
-            List<LabelRecord> labels = new List<LabelRecord>();
-            HashSet<ImageRecord> images = new HashSet<ImageRecord>();
+            List<Records.LabelRecord> labels = new List<Records.LabelRecord>();
+            HashSet<Records.ImageRecord> images = new HashSet<Records.ImageRecord>();
             IEnumerable<string> lines = File.ReadLines(filePath);
             string basePath = Path.GetDirectoryName(filePath) ?? "";
             foreach (string line in lines) {
-                (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
+                (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
                 if (img is object) {
                     if (lbl is object) labels.Add(lbl);
                     images.Add(img);
                 }
             }
-            List<ImageRecord> shuffledImages = images.OrderBy(s => r.Next()).ToList();
-            ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
+            List<Records.ImageRecord> shuffledImages = images.OrderBy(s => r.Next()).ToList();
+            ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
             switch (TacticForSplitLabel) {
                 case TacticsForSplitLabel.DevideToNLabels:
                     // 균등 분할
@@ -345,22 +345,22 @@ namespace LabelAnnotator.ViewModels {
                         return;
                     }
                     List<StreamWriter> files = new List<StreamWriter>();
-                    var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
+                    var infoByPartition = new List<(HashSet<Records.ClassRecord> Classes, int ImagesCount)>();
                     for (int i = 0; i < NValueForSplitLabel; i++) {
                         // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
                         StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.{i + 1}{Path.GetExtension(filePath)}"));
                         files.Add(file);
-                        infoByPartition.Add((new HashSet<ClassRecord>(), 0));
+                        infoByPartition.Add((new HashSet<Records.ClassRecord>(), 0));
                     }
-                    foreach (ImageRecord image in shuffledImages) {
-                        IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                    foreach (Records.ImageRecord image in shuffledImages) {
+                        IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[image];
                         int idx;
                         if (labelsInImage.Any()) {
                             // 양성 이미지인 경우.
                             // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 갯수가 적은 순.
                             (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count()))
                                                          .OrderByDescending(s => s.Item3).ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
-                            foreach (LabelRecord label in labelsInImage) files[idx].WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
+                            foreach (Records.LabelRecord label in labelsInImage) files[idx].WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
                         } else {
                             // 음성 이미지인 경우.
                             // 파티션에 포함된 이미지 갯수가 적은 순으로만 선택.
@@ -388,22 +388,22 @@ namespace LabelAnnotator.ViewModels {
                         using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.1{Path.GetExtension(filePath)}"));
                         using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.2{Path.GetExtension(filePath)}"));
                         int ImageCountOfSplit = 0;
-                        HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
-                        HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
-                        foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
-                            IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                        HashSet<Records.ClassRecord> ClassesOriginal = new HashSet<Records.ClassRecord>();
+                        HashSet<Records.ClassRecord> ClassesSplit = new HashSet<Records.ClassRecord>();
+                        foreach ((int idx, Records.ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
+                            IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[image];
                             int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
                             int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
                             if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= 1 && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
                                 // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
                                 // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
                                 // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하며, 그 정도가 추출 레이블 쪽이 더 높거나 같은 경우
-                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
+                                if (labelsInImage.Any()) foreach (Records.LabelRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
                                 else OutFileSplit.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, image.FullPath)));
                                 ImageCountOfSplit++;
                                 ClassesSplit.UnionWith(labelsInImage.Select(s => s.Class));
                             } else {
-                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
+                                if (labelsInImage.Any()) foreach (Records.LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
                                 else OutFileOriginal.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, image.FullPath)));
                                 ClassesOriginal.UnionWith(labelsInImage.Select(s => s.Class));
                             }
@@ -412,14 +412,14 @@ namespace LabelAnnotator.ViewModels {
                     break;
                 case TacticsForSplitLabel.SplitToSubFolders:
                     // 하위 폴더로 분할
-                    IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
-                    foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
+                    IEnumerable<IGrouping<string, Records.ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
+                    foreach (IGrouping<string, Records.ImageRecord> imagesInDir in imagesByDir) {
                         string TargetDir = Path.Combine(Path.GetDirectoryName(filePath) ?? "", imagesInDir.Key);
                         // 파일 이름: (원래 파일 이름).(최종 폴더 이름).(원래 확장자)
                         using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
-                        foreach (ImageRecord image in imagesInDir) {
-                            IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                            if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
+                        foreach (Records.ImageRecord image in imagesInDir) {
+                            IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[image];
+                            if (labelsInImage.Any()) foreach (Records.LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, image.FullPath), label, SettingService.Format));
                             else OutputFile.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, image.FullPath)));
                         }
                     }
@@ -443,7 +443,7 @@ namespace LabelAnnotator.ViewModels {
                     string[] lines = File.ReadAllLines(filePath);
                     for (int i = 0; i < lines.Length; i++) {
                         ProgressUndupeLabelValue = (int)((double)i / lines.Length * 20); // 0 to 20
-                        (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
+                        (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
                         if (img is object) {
                             if (lbl is object) LabelsForUndupe.Add(lbl);
                             ImagesForUndupe.Add(img);
@@ -456,15 +456,15 @@ namespace LabelAnnotator.ViewModels {
                     int TotalUniqueImageAndCategoryCount = labelsByImageAndCategory.Count;
                     foreach (var (idx, labelsInImage) in labelsByImageAndCategory.Select((s, idx) => (idx, s))) {
                         ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
-                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
+                        List<Records.LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
                         int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count >= 2) {
                             // pick
-                            LabelRecord pick = sortedBySize[0];
+                            Records.LabelRecord pick = sortedBySize[0];
                             sortedBySize.Remove(pick);
                             // compare
-                            List<LabelRecord> labelsToSuppress = new List<LabelRecord>();
-                            foreach (LabelRecord i in sortedBySize) {
+                            List<Records.LabelRecord> labelsToSuppress = new List<Records.LabelRecord>();
+                            foreach (Records.LabelRecord i in sortedBySize) {
                                 double left = Math.Max(pick.Left, i.Left);
                                 double top = Math.Max(pick.Top, i.Top);
                                 double right = Math.Min(pick.Right, i.Right);
@@ -477,7 +477,7 @@ namespace LabelAnnotator.ViewModels {
                                 labelsToSuppress.Add(i);
                             }
                             // suppress
-                            foreach (LabelRecord i in labelsToSuppress) {
+                            foreach (Records.LabelRecord i in labelsToSuppress) {
                                 sortedBySize.Remove(i);
                                 LabelsForUndupe.Remove(i);
                             }
@@ -503,12 +503,12 @@ namespace LabelAnnotator.ViewModels {
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
-                foreach (ImageRecord i in ImagesForUndupe) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
+                foreach (Records.ImageRecord i in ImagesForUndupe) {
+                    IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
                         // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, i.FullPath), j, SettingService.Format));
+                        foreach (Records.LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, i.FullPath), j, SettingService.Format));
                     } else {
                         // 음성 레이블
                         f.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, i.FullPath)));

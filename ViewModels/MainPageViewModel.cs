@@ -32,8 +32,8 @@ namespace LabelAnnotator.ViewModels {
             _MainImage = null;
             _CategoryNameToAdd = "";
             this.View = View;
-            Images = new ObservableCollection<ImageRecord>();
-            Categories = new ObservableCollection<ClassRecord>();
+            Images = new ObservableCollection<Records.ImageRecord>();
+            Categories = new ObservableCollection<Records.ClassRecord>();
 
             Panel.SetZIndex(View.ViewImageControl, ZIndex_Image);
 
@@ -63,7 +63,7 @@ namespace LabelAnnotator.ViewModels {
 
         #region 필드, 바인딩되지 않는 프로퍼티
         private double CurrentScale;
-        private readonly List<LabelRecord> Labels = new List<LabelRecord>();
+        private readonly List<Records.LabelRecord> Labels = new List<Records.LabelRecord>();
         public Views.MainWindow View { get; }
         private Point? DragStartPoint = null;
         private ContentControl? PreviewBbox = null;
@@ -81,9 +81,9 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 바인딩되는 프로퍼티
-        public ObservableCollection<ImageRecord> Images { get; }
-        private ImageRecord? _SelectedImage;
-        public ImageRecord? SelectedImage {
+        public ObservableCollection<Records.ImageRecord> Images { get; }
+        private Records.ImageRecord? _SelectedImage;
+        public Records.ImageRecord? SelectedImage {
             get => _SelectedImage;
             set {
                 if (SetProperty(ref _SelectedImage, value)) {
@@ -92,9 +92,9 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
         }
-        public ObservableCollection<ClassRecord> Categories { get; }
-        private ClassRecord? _SelectedCategory;
-        public ClassRecord? SelectedCategory {
+        public ObservableCollection<Records.ClassRecord> Categories { get; }
+        private Records.ClassRecord? _SelectedCategory;
+        public Records.ClassRecord? SelectedCategory {
             get => _SelectedCategory;
             set {
                 if (SetProperty(ref _SelectedCategory, value)) {
@@ -214,17 +214,17 @@ namespace LabelAnnotator.ViewModels {
                 Categories.Clear();
                 string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
                 IEnumerable<string> lines = File.ReadLines(filePath);
-                SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-                SortedSet<ClassRecord> categories = new SortedSet<ClassRecord> {
-                    ClassRecord.AllLabel()
+                SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>();
+                SortedSet<Records.ClassRecord> categories = new SortedSet<Records.ClassRecord> {
+                    Records.ClassRecord.AllLabel()
                 };
                 foreach (string line in lines) {
-                    (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
+                    (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
                     if (img is object) {
                         images.Add(img);
                         if (lbl is object) {
                             Labels.Add(lbl);
-                            if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) {
+                            if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
                                 lbl.Class = found;
                             } else {
                                 lbl.Class.ColorBrush = GenerateColor(lbl.Class.Name, categories);
@@ -233,9 +233,9 @@ namespace LabelAnnotator.ViewModels {
                         }
                     }
                 }
-                foreach (ImageRecord i in images) Images.Add(i);
+                foreach (Records.ImageRecord i in images) Images.Add(i);
                 RefreshCommonPath();
-                foreach (ClassRecord classname in categories) Categories.Add(classname);
+                foreach (Records.ClassRecord classname in categories) Categories.Add(classname);
                 if (Images.Count > 0) SelectedImage = Images[0];
                 SelectedCategory = Categories[0];
             }
@@ -245,12 +245,12 @@ namespace LabelAnnotator.ViewModels {
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
-                foreach (ImageRecord i in Images) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
+                foreach (Records.ImageRecord i in Images) {
+                    IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
                         // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, i.FullPath), j, SettingService.Format));
+                        foreach (Records.LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(basePath, i.FullPath), j, SettingService.Format));
                     } else {
                         // 음성 레이블
                         f.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, i.FullPath)));
@@ -288,9 +288,9 @@ namespace LabelAnnotator.ViewModels {
                     DeletedBboxesCount++;
                 } else {
                     if (tag == Tag_UncommittedBbox) {
-                        Labels.Add(new LabelRecord(SelectedImage, left, top, right, bottom, SelectedCategory));
+                        Labels.Add(new Records.LabelRecord(SelectedImage, left, top, right, bottom, SelectedCategory));
                     } else if (tag >= 0) {
-                        LabelRecord lbl = Labels[idx];
+                        Records.LabelRecord lbl = Labels[idx];
                         double errorThreshold = Math.Max(invScale, 1);
                         // 계산한 좌표와 현재 좌표의 오차가 클 때에만 반영. (스케일링 과정에서의 잠재적 오차 감안)
                         if (Math.Abs(lbl.Left - left) > errorThreshold) lbl.Left = left;
@@ -446,7 +446,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddCategory { get; }
         private void AddCategory() {
-            ClassRecord add = ClassRecord.FromName(CategoryNameToAdd);
+            Records.ClassRecord add = Records.ClassRecord.FromName(CategoryNameToAdd);
             if (!Categories.Contains(add)) {
                 add.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
                 Categories.Add(add);
@@ -457,10 +457,10 @@ namespace LabelAnnotator.ViewModels {
             if (SelectedCategory is null || SelectedCategory.All) return;
             bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
-            ClassRecord newCat = ClassRecord.FromName(CategoryNameToAdd);
+            Records.ClassRecord newCat = Records.ClassRecord.FromName(CategoryNameToAdd);
             newCat.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
             int idx = Categories.IndexOf(SelectedCategory);
-            foreach (LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
+            foreach (Records.LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
                 label.Class = newCat;
             }
             Categories[idx] = newCat;
@@ -477,9 +477,9 @@ namespace LabelAnnotator.ViewModels {
                 case true:
                     Categories.Remove(SelectedCategory);
                     SelectedCategory = Categories.First(s => s.All);
-                    List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
-                    foreach (LabelRecord i in delete) Labels.Remove(i);
-                    foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                    List<Records.LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
+                    foreach (Records.LabelRecord i in delete) Labels.Remove(i);
+                    foreach (Records.ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
                     if (SelectedImage is object) {
                         if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
                     } else {
@@ -526,9 +526,9 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdAddImage { get; }
         private void AddImage() {
             if (CommonDialogService.OpenImagesDialog(PathService.ApprovedImageExtension, out string[] filePaths)) {
-                SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Select(s => new ImageRecord(s)));
+                SortedSet<Records.ImageRecord> add = new SortedSet<Records.ImageRecord>(filePaths.Select(s => new Records.ImageRecord(s)));
                 add.ExceptWith(Images);
-                foreach (ImageRecord img in add) {
+                foreach (Records.ImageRecord img in add) {
                     Images.Add(img);
                 }
                 if (filePaths.Length != add.Count) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
@@ -540,18 +540,18 @@ namespace LabelAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
                 case true: {
-                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
+                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(View.ViewImagesList.SelectedItems.OfType<Records.ImageRecord>());
                         if (selected.Count == 0) return;
                         Labels.RemoveAll(s => selected.Contains(s.Image));
                         ClearBoundaryBoxes();
                         break;
                     }
                 case false: {
-                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(View.ViewImagesList.SelectedItems.OfType<ImageRecord>());
+                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(View.ViewImagesList.SelectedItems.OfType<Records.ImageRecord>());
                         if (selected.Count == 0) return;
                         Labels.RemoveAll(s => selected.Contains(s.Image));
                         SelectedImage = null;
-                        foreach (ImageRecord i in selected) {
+                        foreach (Records.ImageRecord i in selected) {
                             Images.Remove(i);
                         }
                         RefreshCommonPath();
@@ -589,7 +589,7 @@ namespace LabelAnnotator.ViewModels {
                     double newHeight = box.Height / CurrentScale * afterScale;
                     if (Labels.Count > (int)box.Tag) {
                         // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
-                        LabelRecord realBox = Labels[(int)box.Tag];
+                        Records.LabelRecord realBox = Labels[(int)box.Tag];
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
                         double newLeftFromOriginal = realBox.Left * afterScale;
                         double newTopFromOriginal = realBox.Top * afterScale;
@@ -649,11 +649,11 @@ namespace LabelAnnotator.ViewModels {
             if (SelectedCategory.All) {
                 // 전체 카테고리 보기 모드에서는 경계상자 추가 모드 사용 불가
                 BboxInsertMode = false;
-                foreach ((int idx, LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage)) {
+                foreach ((int idx, Records.LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage)) {
                     AddBoundaryBox(idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
                 }
             } else {
-                foreach ((int idx, LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage && s.lbl.Class == SelectedCategory)) {
+                foreach ((int idx, Records.LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage && s.lbl.Class == SelectedCategory)) {
                     AddBoundaryBox(idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
                 }
             }
@@ -665,7 +665,7 @@ namespace LabelAnnotator.ViewModels {
         /// </param>
         /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
-        private ContentControl AddBoundaryBox(int tag, double left, double top, double right, double bottom, ClassRecord category, bool needScale) {
+        private ContentControl AddBoundaryBox(int tag, double left, double top, double right, double bottom, Records.ClassRecord category, bool needScale) {
             // 화면의 배율에 맞춰 스케일링
             if (needScale && MainImage is object) {
                 CurrentScale = View.ViewImageControl.ActualWidth / MainImage.PixelWidth;
@@ -706,7 +706,7 @@ namespace LabelAnnotator.ViewModels {
             List<ContentControl> bbox = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
             foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
         }
-        private SolidColorBrush GenerateColor(string CategoryName, IEnumerable<ClassRecord> OldCategories, double Threshold = 100) {
+        private SolidColorBrush GenerateColor(string CategoryName, IEnumerable<Records.ClassRecord> OldCategories, double Threshold = 100) {
             Random random = new Random(CategoryName.GetHashCode());
             while (true) {
                 Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
@@ -718,7 +718,7 @@ namespace LabelAnnotator.ViewModels {
         }
         private void RefreshCommonPath() {
             string CommonPath = PathService.GetCommonParentPath(Images.Select(s => s.FullPath));
-            foreach (ImageRecord i in Images) {
+            foreach (Records.ImageRecord i in Images) {
                 i.CommonPath = CommonPath;
                 i.DisplayFilename = PathService.GetRelativePath(CommonPath, i.FullPath);
             }
