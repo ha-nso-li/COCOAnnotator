@@ -260,7 +260,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdManageLabel { get; }
         private void ManageLabel() {
-            CommonDialogService.ManageLabelDialog();
+            UserDialogSerivce.ShowDialog(nameof(Views.ManageDialog), new DialogParameters(), _ => { });
         }
         public ICommand CmdSetting { get; }
         private void Setting() {

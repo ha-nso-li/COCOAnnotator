@@ -5,6 +5,7 @@ using System.Windows.Input;
 namespace LabelAnnotator.ViewModels {
     public class SettingDialogViewModel : Commons.DialogViewModelBase {
         public SettingDialogViewModel() {
+            Title = "설정";
             _LTRB = SettingService.Format == Utility.SettingNames.FormatLTRB;
 
             CmdClose = new DelegateCommand(Close);
@@ -27,6 +28,14 @@ namespace LabelAnnotator.ViewModels {
                     RaisePropertyChanged(nameof(LTRB));
                 }
             }
+        }
+
+        public override void OnDialogClosed() {
+            SettingService.Format = LTRB switch
+            {
+                true => Utility.SettingNames.FormatLTRB,
+                false => Utility.SettingNames.FormatCXCYWH
+            };
         }
 
         public ICommand CmdClose { get; }

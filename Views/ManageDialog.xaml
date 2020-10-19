@@ -1,0 +1,87 @@
+<UserControl x:Class="LabelAnnotator.Views.ManageDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:LabelAnnotator" mc:Ignorable="d"
+        prism:ViewModelLocator.AutoWireViewModel="True" xmlns:prism="http://prismlibrary.com/">
+    <prism:Dialog.WindowStyle>
+        <Style TargetType="Window">
+            <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
+            <Setter Property="ShowInTaskbar" Value="False" />
+            <Setter Property="Width" Value="550" />
+            <Setter Property="Height" Value="400" />
+            <Setter Property="MinWidth" Value="450" />
+            <Setter Property="MinHeight" Value="300" />
+        </Style>
+    </prism:Dialog.WindowStyle>
+    <UserControl.Resources>
+        <local:TacticConverter x:Key="TacticConverter" />
+    </UserControl.Resources>
+    <Grid>
+        <DockPanel>
+            <StackPanel HorizontalAlignment="Right" DockPanel.Dock="Bottom">
+                <Button Content="닫기" TabIndex="17" Margin="2" Padding="5" Command="{Binding CmdClose}" Height="28" />
+            </StackPanel>
+            <TabControl TabIndex="0">
+                <TabItem Header="레이블 분석">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="2" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportVerifiedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="1" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdVerifyLabel}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyLabelValue}" Margin="5" Height="20" />
+                        </DockPanel>
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyLabel" Text="{Binding LogVerifyLabel}"
+                                IsReadOnly="True" IsTabStop="False" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="레이블 병합">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="파일 추가" TabIndex="4" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                        Command="{Binding CmdAddFileForUnionLabel}" />
+                                <Button Content="폴더 추가" TabIndex="5" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                        Command="{Binding CmdAddFolderForUnionLabel}" />
+                                <Button Content="선택 파일 삭제" TabIndex="6" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                        Command="{Binding CmdRemoveFileForUnionLabel}" CommandParameter="{Binding ElementName=ListViewFilesForUnionLabel, Path=SelectedItems}" />
+                                <Button Content="초기화" TabIndex="7" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                        Command="{Binding CmdResetFileForUnionLabel}" />
+                                <Button Content="내보내기" TabIndex="8" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding CmdExportUnionLabel}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <ListView x:Name="ListViewFilesForUnionLabel" ItemsSource="{Binding FilesForUnionLabel}" TabIndex="3" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="레이블 분할">
+                    <DockPanel LastChildFill="False">
+                        <Label DockPanel.Dock="Top" Content="분할 방법 선택:" />
+                        <StackPanel DockPanel.Dock="Top">
+                            <RadioButton TabIndex="9" GroupName="TacticsForSplitLabel" Content="각 파일에 균등한 갯수의 이미지가 포함되도록 n개의 레이블 파일로 분할"
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=DevideToNLabels}" Margin="1" />
+                            <RadioButton TabIndex="10" GroupName="TacticsForSplitLabel" Content="레이블 파일에 포함된 이미지중 n개를 다른 파일로 분리"
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
+                            <RadioButton TabIndex="11" GroupName="TacticsForSplitLabel" Content="각 하위 폴더에 폴더 안의 이미지만을 포함하는 레이블 파일 생성"
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=SplitToSubFolders}" Margin="1" />
+                        </StackPanel>
+                        <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
+                        <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="12" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
+                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
+                                Margin="2" />
+                        <Button DockPanel.Dock="Bottom" TabIndex="13" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                Command="{Binding CmdSplitLabel}" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="레이블 중복 제거">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="16" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="15" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeLabelValue}" Margin="5" Height="20" />
+                        </DockPanel>
+                        <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
+                        <TextBox TabIndex="14" DockPanel.Dock="Top" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeLabel}"
+                                IsReadOnly="True" IsTabStop="False" />
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
+    </Grid>
+</UserControl>

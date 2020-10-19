@@ -15,6 +15,7 @@ namespace LabelAnnotator {
             containerRegistry.RegisterSingleton<Services.SerializationService>();
 
             containerRegistry.RegisterDialog<Views.SettingDialog>();
+            containerRegistry.RegisterDialog<Views.ManageDialog>();
         }
     }
 }

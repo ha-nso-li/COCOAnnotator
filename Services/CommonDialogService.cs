@@ -71,10 +71,5 @@ namespace LabelAnnotator.Services {
                 _ => null,
             };
         }
-
-        public void ManageLabelDialog() {
-            Views.ManageWindow win = new Views.ManageWindow();
-            win.ShowDialog();
-        }
     }
 }

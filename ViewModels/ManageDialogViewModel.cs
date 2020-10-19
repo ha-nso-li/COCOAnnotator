@@ -1,4 +1,5 @@
 using Prism.Commands;
+using Prism.Services.Dialogs;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,12 +11,11 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace LabelAnnotator.ViewModels {
-    public class ManageWindowViewModel : Commons.ViewModelBase {
+    public class ManageDialogViewModel : Commons.DialogViewModelBase {
         #region 생성자
-        public ManageWindowViewModel(Views.ManageWindow View) {
+        public ManageDialogViewModel() {
             Title = "레이블 관리";
 
-            this.View = View;
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
             _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
@@ -43,7 +43,6 @@ namespace LabelAnnotator.ViewModels {
         }
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        public Views.ManageWindow View { get; }
         private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
         private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
@@ -57,7 +56,7 @@ namespace LabelAnnotator.ViewModels {
             get => _LogVerifyLabel;
             set {
                 if (SetProperty(ref _LogVerifyLabel, value)) {
-                    View.Dispatcher.Invoke(View.TxtLogVerifyLabel.ScrollToEnd);
+                    EventAggregator.GetEvent<Events.ScrollTxtLogVerifyLabel>().Publish();
                 }
             }
         }
@@ -92,7 +91,7 @@ namespace LabelAnnotator.ViewModels {
             get => _LogUndupeLabel;
             set {
                 if (SetProperty(ref _LogUndupeLabel, value)) {
-                    View.Dispatcher.Invoke(View.TxtLogUndupeLabel.ScrollToEnd);
+                    EventAggregator.GetEvent<Events.ScrollTxtLogUndupeLabel>().Publish();
                 }
             }
         }
@@ -521,7 +520,7 @@ namespace LabelAnnotator.ViewModels {
 
         public ICommand CmdClose { get; }
         private void Close() {
-            View.Close();
+            RaiseRequestClose(new DialogResult());
         }
         #endregion
 
