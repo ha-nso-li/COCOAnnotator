@@ -24,22 +24,6 @@ namespace LabelAnnotator {
         }
 
         public override string ToString() => $"{Class} ({Left},{Top},{Right},{Bottom})";
-
-        public string Serialize(string BasePath) {
-            string path = Extensions.GetRelativePath(BasePath, Image.FullPath);
-            switch (SettingManager.Format) {
-                case "LTRB":
-                    return $"{path},{Math.Floor(Left):0},{Math.Floor(Top):0},{Math.Ceiling(Right):0},{Math.Ceiling(Bottom):0},{Class}";
-                case "CXCYWH":
-                    double x = (Left + Right) / 2;
-                    double y = (Top + Bottom) / 2;
-                    double w = Right - Left;
-                    double h = Bottom - Top;
-                    return $"{path},{x:0.#},{y:0.#},{w:0.#},{h:0.#},{Class}";
-                default:
-                    return "";
-            }
-        }
     }
 
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
@@ -48,29 +32,22 @@ namespace LabelAnnotator {
         private string _CommonPath;
         public string CommonPath {
             get => _CommonPath;
-            set {
-                if (SetProperty(ref _CommonPath, value)) {
-                    RaisePropertyChanged(nameof(DisplayFilename));
-                }
-            }
+            set => SetProperty(ref _CommonPath, value);
         }
         #endregion
 
         #region 바인딩 전용 프로퍼티
+        private string _DisplayFilename;
         public string DisplayFilename {
-            get {
-                try {
-                    return Extensions.GetRelativePath(_CommonPath, FullPath);
-                } catch (ArgumentException) {
-                    return FullPath;
-                }
-            }
+            get => _DisplayFilename;
+            set => SetProperty(ref _DisplayFilename, value);
         }
         #endregion
 
         public ImageRecord(string FullPath) {
             this.FullPath = FullPath;
             _CommonPath = "";
+            _DisplayFilename = "";
         }
 
         #region 동일성
@@ -116,8 +93,6 @@ namespace LabelAnnotator {
         #endregion
 
         public override string ToString() => FullPath;
-
-        public string SerializeAsNegative(string basePath) => $"{Extensions.GetRelativePath(basePath, FullPath)},,,,,";
     }
 
     public class ClassRecord : BindableBase, IEquatable<ClassRecord>, IComparable, IComparable<ClassRecord> {

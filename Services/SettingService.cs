@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using YamlDotNet.RepresentationModel;
 
-namespace LabelAnnotator {
-    public static class SettingManager {
-        private static YamlStream? _YamlStream;
-        private static string SettingPath => AppDomain.CurrentDomain.BaseDirectory is null ? "setting.yaml" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "setting.yaml");
-        private static YamlStream YamlStream {
+namespace LabelAnnotator.Services {
+    public class SettingService {
+        private YamlStream? _YamlStream;
+        private string SettingPath => AppDomain.CurrentDomain.BaseDirectory is null ? "setting.yaml" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "setting.yaml");
+        private YamlStream YamlStream {
             get {
-                if (!(_YamlStream is YamlStream)) {
+                if (_YamlStream is null) {
                     if (File.Exists(SettingPath)) {
                         using StreamReader file = new StreamReader(SettingPath);
                         _YamlStream = new YamlStream();
@@ -24,7 +24,7 @@ namespace LabelAnnotator {
                 return _YamlStream;
             }
         }
-        private static string GetItem(string Key, string DefaultValue) {
+        private string GetItem(string Key, string DefaultValue) {
             YamlMappingNode root = (YamlMappingNode)YamlStream.Documents[0].RootNode;
             YamlScalarNode keyNode = new YamlScalarNode(Key);
             if (!root.Children.ContainsKey(keyNode)) {
@@ -34,7 +34,7 @@ namespace LabelAnnotator {
                 return ((YamlScalarNode)root.Children[keyNode]).Value ?? string.Empty;
             }
         }
-        private static void SetItem(string Key, string Value) {
+        private void SetItem(string Key, string Value) {
             YamlMappingNode root = (YamlMappingNode)YamlStream.Documents[0].RootNode;
             YamlScalarNode keyNode = new YamlScalarNode(Key);
             bool NeedSave = false;
@@ -51,7 +51,7 @@ namespace LabelAnnotator {
             if (NeedSave) using (StreamWriter file = new StreamWriter(SettingPath)) YamlStream.Save(file);
         }
 
-        public static string Format {
+        public string Format {
             get => GetItem("Format", "LTRB");
             set => SetItem("Format", value);
         }
