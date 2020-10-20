@@ -59,7 +59,12 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <ScrollViewer Margin="2" x:Name="ViewViewport" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer Margin="2" x:Name="ViewViewport" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled" AllowDrop="True">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="Drop">
+                    <prism:InvokeCommandAction Command="{Binding CmdViewportDrop}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             <Grid x:Name="ViewGrid">
                 <Canvas x:Name="ViewImageCanvas">
                     <i:Interaction.Triggers>

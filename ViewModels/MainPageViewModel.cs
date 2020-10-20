@@ -37,6 +37,7 @@ namespace LabelAnnotator.ViewModels {
 
             Panel.SetZIndex(View.ViewImageControl, ZIndex_Image);
 
+            CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadLabel = new DelegateCommand(LoadLabel);
             CmdSaveLabel = new DelegateCommand(SaveLabel);
             CmdManageLabel = new DelegateCommand(ManageLabel);
@@ -205,39 +206,17 @@ namespace LabelAnnotator.ViewModels {
 
         #region 커맨드
         #region 레이블 불러오기, 내보내기, 설정
+        public ICommand CmdViewportDrop { get; }
+        private void ViewportDrop(DragEventArgs e) {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files?.Length >= 1) {
+                InternalLoadLabel(files[0]);
+            }
+        }
         public ICommand CmdLoadLabel { get; }
         private void LoadLabel() {
             if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
-                ClearBoundaryBoxes();
-                Labels.Clear();
-                Images.Clear();
-                Categories.Clear();
-                string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
-                IEnumerable<string> lines = File.ReadLines(filePath);
-                SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>();
-                SortedSet<Records.ClassRecord> categories = new SortedSet<Records.ClassRecord> {
-                    Records.ClassRecord.AllLabel()
-                };
-                foreach (string line in lines) {
-                    (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
-                    if (img is object) {
-                        images.Add(img);
-                        if (lbl is object) {
-                            Labels.Add(lbl);
-                            if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
-                                lbl.Class = found;
-                            } else {
-                                lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color), 100));
-                                categories.Add(lbl.Class);
-                            }
-                        }
-                    }
-                }
-                foreach (Records.ImageRecord i in images) Images.Add(i);
-                RefreshCommonPath();
-                foreach (Records.ClassRecord classname in categories) Categories.Add(classname);
-                if (Images.Count > 0) SelectedImage = Images[0];
-                SelectedCategory = Categories[0];
+                InternalLoadLabel(filePath);
             }
         }
         public ICommand CmdSaveLabel { get; }
@@ -256,6 +235,7 @@ namespace LabelAnnotator.ViewModels {
                         f.WriteLine(SerializationService.SerializeAsNegative(PathService.GetRelativePath(basePath, i.FullPath)));
                     }
                 }
+                Title = $"CSV 데이터셋 편집기 - {filePath}";
             }
         }
         public ICommand CmdManageLabel { get; }
@@ -738,6 +718,39 @@ namespace LabelAnnotator.ViewModels {
             } catch (NotSupportedException) {
                 CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
             }
+        }
+        private void InternalLoadLabel(string filePath) {
+            ClearBoundaryBoxes();
+            Labels.Clear();
+            Images.Clear();
+            Categories.Clear();
+            string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
+            IEnumerable<string> lines = File.ReadLines(filePath);
+            SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>();
+            SortedSet<Records.ClassRecord> categories = new SortedSet<Records.ClassRecord> {
+                    Records.ClassRecord.AllLabel()
+                };
+            foreach (string line in lines) {
+                (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
+                if (img is object) {
+                    images.Add(img);
+                    if (lbl is object) {
+                        Labels.Add(lbl);
+                        if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
+                            lbl.Class = found;
+                        } else {
+                            lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color), 100));
+                            categories.Add(lbl.Class);
+                        }
+                    }
+                }
+            }
+            foreach (Records.ImageRecord i in images) Images.Add(i);
+            RefreshCommonPath();
+            foreach (Records.ClassRecord classname in categories) Categories.Add(classname);
+            if (Images.Count > 0) SelectedImage = Images[0];
+            SelectedCategory = Categories[0];
+            Title = $"CSV 데이터셋 편집기 - {filePath}";
         }
         #endregion
     }
