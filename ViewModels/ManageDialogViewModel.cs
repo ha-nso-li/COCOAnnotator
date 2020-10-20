@@ -394,7 +394,7 @@ namespace LabelAnnotator.ViewModels {
                             IEnumerable<Records.LabelRecord> labelsInImage = labelsByImage[image];
                             int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
                             int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
-                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= 1 && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
                                 // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
                                 // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
                                 // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하며, 그 정도가 추출 레이블 쪽이 더 높거나 같은 경우
