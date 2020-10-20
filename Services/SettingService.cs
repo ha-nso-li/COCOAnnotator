@@ -52,7 +52,7 @@ namespace LabelAnnotator.Services {
         }
 
         public string Format {
-            get => GetItem("Format", "LTRB");
+            get => GetItem("Format", Utilities.SettingNames.FormatLTRB);
             set => SetItem("Format", value);
         }
     }

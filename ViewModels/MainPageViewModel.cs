@@ -227,7 +227,7 @@ namespace LabelAnnotator.ViewModels {
                             if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
                                 lbl.Class = found;
                             } else {
-                                lbl.Class.ColorBrush = GenerateColor(lbl.Class.Name, categories);
+                                lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color), 100));
                                 categories.Add(lbl.Class);
                             }
                         }
@@ -371,8 +371,8 @@ namespace LabelAnnotator.ViewModels {
                         double startY = DragStartPoint.Value.Y;
                         double endX = current.X;
                         double endY = current.Y;
-                        Extensions.SortTwoValues(ref startX, ref endX);
-                        Extensions.SortTwoValues(ref startY, ref endY);
+                        Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
+                        Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
                         ContentControl bbox = AddBoundaryBox(Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, SelectedCategory, false);
                         Panel.SetZIndex(bbox, ZIndex_PreviewBbox);
                         PreviewBbox = bbox;
@@ -381,8 +381,8 @@ namespace LabelAnnotator.ViewModels {
                         double startY = DragStartPoint.Value.Y;
                         double endX = current.X;
                         double endY = current.Y;
-                        Extensions.SortTwoValues(ref startX, ref endX);
-                        Extensions.SortTwoValues(ref startY, ref endY);
+                        Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
+                        Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
                         PreviewBbox.Width = endX - startX;
                         PreviewBbox.Height = endY - startY;
                         Canvas.SetLeft(PreviewBbox, startX);
@@ -411,8 +411,8 @@ namespace LabelAnnotator.ViewModels {
             double startY = DragStartPoint.Value.Y;
             double endX = dragEnd.X;
             double endY = dragEnd.Y;
-            Extensions.SortTwoValues(ref startX, ref endX);
-            Extensions.SortTwoValues(ref startY, ref endY);
+            Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
+            Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
             AddBoundaryBox(Tag_UncommittedBbox, startX, startY, endX, endY, SelectedCategory, false);
             DragStartPoint = null;
             PreviewBbox = null;
@@ -448,7 +448,7 @@ namespace LabelAnnotator.ViewModels {
         private void AddCategory() {
             Records.ClassRecord add = Records.ClassRecord.FromName(CategoryNameToAdd);
             if (!Categories.Contains(add)) {
-                add.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
+                add.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color), 100));
                 Categories.Add(add);
             }
         }
@@ -458,7 +458,7 @@ namespace LabelAnnotator.ViewModels {
             bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
             Records.ClassRecord newCat = Records.ClassRecord.FromName(CategoryNameToAdd);
-            newCat.ColorBrush = GenerateColor(CategoryNameToAdd, Categories);
+            newCat.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color), 100));
             int idx = Categories.IndexOf(SelectedCategory);
             foreach (Records.LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
                 label.Class = newCat;
@@ -705,16 +705,6 @@ namespace LabelAnnotator.ViewModels {
             // 대응되는 경계상자 숨김
             List<ContentControl> bbox = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
             foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
-        }
-        private SolidColorBrush GenerateColor(string CategoryName, IEnumerable<Records.ClassRecord> OldCategories, double Threshold = 100) {
-            Random random = new Random(CategoryName.GetHashCode());
-            while (true) {
-                Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
-                // 흰색과 유사한 색도 제외 (카테고리 리스트 배경이 흰색이므로...)
-                if (OldCategories.All(s => newColor.GetColorDistance(s.ColorBrush.Color) >= Threshold) && newColor.GetColorDistance(Colors.White) >= Threshold) {
-                    return new SolidColorBrush(newColor);
-                }
-            }
         }
         private void RefreshCommonPath() {
             string CommonPath = PathService.GetCommonParentPath(Images.Select(s => s.FullPath));
