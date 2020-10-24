@@ -18,7 +18,7 @@ namespace LabelAnnotator.ViewModels {
 
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
-            _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
+            _TacticForSplitLabel = Records.TacticsForSplitLabel.DevideToNLabels;
             _NValueForSplitLabel = 2;
             _LogUndupeLabel = "";
             IoUThreshold = 0.5;
@@ -37,10 +37,6 @@ namespace LabelAnnotator.ViewModels {
             CmdClose = new DelegateCommand(Close);
         }
         #endregion
-
-        public enum TacticsForSplitLabel {
-            DevideToNLabels, TakeNSamples, SplitToSubFolders
-        }
 
         #region 필드, 바인딩되지 않는 프로퍼티
         private readonly SortedDictionary<Records.ClassRecord, List<Records.LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<Records.ClassRecord, List<Records.LabelRecord>>();
@@ -71,8 +67,8 @@ namespace LabelAnnotator.ViewModels {
             get => _SelectedFileForUnionLabel;
             set => SetProperty(ref _SelectedFileForUnionLabel, value);
         }
-        private TacticsForSplitLabel _TacticForSplitLabel;
-        public TacticsForSplitLabel TacticForSplitLabel {
+        private Records.TacticsForSplitLabel _TacticForSplitLabel;
+        public Records.TacticsForSplitLabel TacticForSplitLabel {
             get => _TacticForSplitLabel;
             set => SetProperty(ref _TacticForSplitLabel, value);
         }
@@ -338,7 +334,7 @@ namespace LabelAnnotator.ViewModels {
             List<Records.ImageRecord> shuffledImages = images.OrderBy(s => r.Next()).ToList();
             ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
             switch (TacticForSplitLabel) {
-                case TacticsForSplitLabel.DevideToNLabels:
+                case Records.TacticsForSplitLabel.DevideToNLabels:
                     // 균등 분할
                     if (NValueForSplitLabel < 2 || NValueForSplitLabel > images.Count) {
                         CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
@@ -378,7 +374,7 @@ namespace LabelAnnotator.ViewModels {
                         file.Dispose();
                     }
                     break;
-                case TacticsForSplitLabel.TakeNSamples:
+                case Records.TacticsForSplitLabel.TakeNSamples:
                     // 일부 추출
                     if (NValueForSplitLabel < 1 || NValueForSplitLabel >= images.Count) {
                         CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
@@ -410,7 +406,7 @@ namespace LabelAnnotator.ViewModels {
                         }
                     }
                     break;
-                case TacticsForSplitLabel.SplitToSubFolders:
+                case Records.TacticsForSplitLabel.SplitToSubFolders:
                     // 하위 폴더로 분할
                     IEnumerable<IGrouping<string, Records.ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
                     foreach (IGrouping<string, Records.ImageRecord> imagesInDir in imagesByDir) {

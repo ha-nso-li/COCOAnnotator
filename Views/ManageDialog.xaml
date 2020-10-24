@@ -1,6 +1,6 @@
 <UserControl x:Class="LabelAnnotator.Views.ManageDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:LabelAnnotator" mc:Ignorable="d"
-        prism:ViewModelLocator.AutoWireViewModel="True" xmlns:prism="http://prismlibrary.com/">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uc="clr-namespace:LabelAnnotator.UserControls"
+        mc:Ignorable="d" prism:ViewModelLocator.AutoWireViewModel="True" xmlns:prism="http://prismlibrary.com/">
     <prism:Dialog.WindowStyle>
         <Style TargetType="Window">
             <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
@@ -12,7 +12,7 @@
         </Style>
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
-        <local:TacticConverter x:Key="TacticConverter" />
+        <uc:TacticConverter x:Key="TacticConverter" />
     </UserControl.Resources>
     <Grid>
         <DockPanel>
