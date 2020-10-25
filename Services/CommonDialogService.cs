@@ -63,7 +63,7 @@ namespace LabelAnnotator.Services {
         }
 
         public bool? MessageBoxYesNoCancel(string Message) {
-            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             return result switch
             {
                 MessageBoxResult.Yes => true,

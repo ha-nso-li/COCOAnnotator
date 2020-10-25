@@ -1,6 +1,7 @@
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -9,14 +10,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace LabelAnnotator.ViewModels {
     public class MainWindowViewModel : Commons.ViewModelBase {
         #region 생성자
-        public MainWindowViewModel(Views.MainWindow View) {
+        public MainWindowViewModel() {
             Title = "CSV 데이터셋 편집기";
 
             ShortcutSaveBbox = Key.S;
@@ -28,25 +26,20 @@ namespace LabelAnnotator.ViewModels {
             ShortcutToggleFitToViewport = Key.F;
 
             _BboxInsertMode = false;
-            _FitToViewport = true;
-            _MainImage = null;
+            _FitViewport = true;
             _CategoryNameToAdd = "";
-            this.View = View;
             Images = new ObservableCollection<Records.ImageRecord>();
             Categories = new ObservableCollection<Records.ClassRecord>();
-
-            Panel.SetZIndex(View.ViewImageControl, ZIndex_Image);
+            VisibleLabels = new ObservableCollection<Records.LabelRecordWithIndex>();
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadLabel = new DelegateCommand(LoadLabel);
             CmdSaveLabel = new DelegateCommand(SaveLabel);
             CmdManageLabel = new DelegateCommand(ManageLabel);
             CmdSetting = new DelegateCommand(Setting);
-            CmdCommitBbox = new DelegateCommand(CommitBbox);
+            CmdTryCommitBbox = new DelegateCommand(TryCommitBbox);
+            CmdCommitBbox = new DelegateCommand<Events.CommitBboxEventArgs>(CommitBbox);
             CmdToggleBboxMode = new DelegateCommand(ToggleBboxMode);
-            CmdCanvasMouseLeftButtonDown = new DelegateCommand<MouseButtonEventArgs>(CanvasMouseLeftButtonDown);
-            CmdCanvasMouseMove = new DelegateCommand<MouseEventArgs>(CanvasMouseMove);
-            CmdCanvasMouseLeftButtonUp = new DelegateCommand<MouseButtonEventArgs>(CanvasMouseLeftButtonUp);
             CmdCategoryUp = new DelegateCommand(CategoryUp);
             CmdCategoryDown = new DelegateCommand(CategoryDown);
             CmdAddCategory = new DelegateCommand(AddCategory);
@@ -55,30 +48,14 @@ namespace LabelAnnotator.ViewModels {
             CmdImageUp = new DelegateCommand(ImageUp);
             CmdImageDown = new DelegateCommand(ImageDown);
             CmdAddImage = new DelegateCommand(AddImage);
-            CmdDeleteImage = new DelegateCommand(DeleteImage);
+            CmdDeleteImage = new DelegateCommand<IList>(DeleteImage);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
-            CmdCanvasSizeChanged = new DelegateCommand(CanvasSizeChanged);
             CmdWindowGotFocus = new DelegateCommand<RoutedEventArgs>(WindowGotFocus);
         }
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private double CurrentScale;
         private readonly List<Records.LabelRecord> Labels = new List<Records.LabelRecord>();
-        public Views.MainWindow View { get; }
-        private Point? DragStartPoint = null;
-        private ContentControl? PreviewBbox = null;
-
-        #region ZIndice, Tags
-        private const int ZIndex_Image = 0;
-        private const int ZIndex_PreviewBbox = 1;
-        private const int ZIndex_Crosshair = 2;
-        private const int ZIndex_Bbox = 3;
-        private const int Tag_HorizontalCrosshair = -1;
-        private const int Tag_VerticalCrosshair = -2;
-        private const int Tag_PreviewBbox = -3;
-        private const int Tag_UncommittedBbox = -4;
-        #endregion
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -88,8 +65,21 @@ namespace LabelAnnotator.ViewModels {
             get => _SelectedImage;
             set {
                 if (SetProperty(ref _SelectedImage, value)) {
-                    if (value is null) BboxInsertMode = false;
-                    RefreshImage();
+                    VisibleLabels.Clear();
+                    if (value is null) {
+                        BboxInsertMode = false;
+                        MainImageUri = null;
+                    } else {
+                        try {
+                            // 그림 업데이트
+                            MainImageUri = PathService.FilePathToUri(value.FullPath);
+                            UpdateBoundaryBoxes();
+                        } catch (FileNotFoundException) {
+                            CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({value.FullPath})");
+                        } catch (NotSupportedException) {
+                            CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({value.FullPath})");
+                        }
+                    }
                 }
             }
         }
@@ -99,11 +89,12 @@ namespace LabelAnnotator.ViewModels {
             get => _SelectedCategory;
             set {
                 if (SetProperty(ref _SelectedCategory, value)) {
-                    UpdateBoundaryBoxes();
                     if (value is null || value.All) BboxInsertMode = false;
+                    UpdateBoundaryBoxes();
                 }
             }
         }
+        public ObservableCollection<Records.LabelRecordWithIndex> VisibleLabels { get; }
 
         #region 단축키
         private Key _ShortcutSaveBbox;
@@ -149,53 +140,20 @@ namespace LabelAnnotator.ViewModels {
         /// </summary>
         public bool BboxInsertMode {
             get => _BboxInsertMode;
-            set => SetProperty(ref _BboxInsertMode, value);
-        }
-        private bool _FitToViewport;
-        public bool FitToViewport {
-            get => _FitToViewport;
             set {
-                if (SetProperty(ref _FitToViewport, value)) {
-                    if (MainImage is null) return;
-                    if (_FitToViewport) {
-                        View.ViewViewport.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-                        View.ViewViewport.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
-                        View.ViewGrid.Width = double.NaN;
-                        View.ViewGrid.Height = double.NaN;
-                        View.ViewGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
-                        View.ViewGrid.VerticalAlignment = VerticalAlignment.Stretch;
-                        View.Dispatcher.Invoke(() => {
-                            View.ViewImageControl.MaxWidth = View.ViewViewport.ViewportWidth;
-                            View.ViewImageControl.MaxHeight = View.ViewViewport.ViewportHeight;
-                        }, DispatcherPriority.Input);
-                    } else {
-                        View.ViewViewport.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
-                        View.ViewViewport.HorizontalScrollBarVisibility = ScrollBarVisibility.Visible;
-                        View.ViewImageControl.MaxWidth = MainImage.PixelWidth;
-                        View.ViewImageControl.MaxHeight = MainImage.PixelHeight;
-                        View.ViewGrid.Width = MainImage.PixelWidth;
-                        View.ViewGrid.Height = MainImage.PixelHeight;
-                        View.ViewGrid.HorizontalAlignment = HorizontalAlignment.Left;
-                        View.ViewGrid.VerticalAlignment = VerticalAlignment.Top;
-                    }
-                    View.Dispatcher.Invoke(UpdateBoundaryBoxes, DispatcherPriority.Loaded);
-                }
+                if (value && (SelectedCategory is null || SelectedCategory.All)) return;
+                SetProperty(ref _BboxInsertMode, value);
             }
         }
-        private BitmapSource? _MainImage;
-        public BitmapSource? MainImage {
-            get => _MainImage;
-            set {
-                if (SetProperty(ref _MainImage, value) && value is object) {
-                    if (FitToViewport) {
-                        View.ViewImageControl.MaxWidth = View.ViewViewport.ViewportWidth;
-                        View.ViewImageControl.MaxHeight = View.ViewViewport.ViewportHeight;
-                    } else {
-                        View.ViewImageControl.MaxWidth = value.PixelWidth;
-                        View.ViewImageControl.MaxHeight = value.PixelHeight;
-                    }
-                }
-            }
+        private bool _FitViewport;
+        public bool FitViewport {
+            get => _FitViewport;
+            set => SetProperty(ref _FitViewport, value);
+        }
+        private Uri? _MainImageUri;
+        public Uri? MainImageUri {
+            get => _MainImageUri;
+            set => SetProperty(ref _MainImageUri, value);
         }
         private string _CategoryNameToAdd;
         public string CategoryNameToAdd {
@@ -222,7 +180,7 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdSaveLabel { get; }
         private void SaveLabel() {
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
-                string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
+                string basePath = Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
                 ILookup<Records.ImageRecord, Records.LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
                 foreach (Records.ImageRecord i in Images) {
@@ -249,38 +207,30 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 경계 상자 수정
+        public ICommand CmdTryCommitBbox { get; }
+        private void TryCommitBbox() {
+            EventAggregator.GetEvent<Events.TryCommitBbox>().Publish();
+        }
         public ICommand CmdCommitBbox { get; }
-        private void CommitBbox() {
-            if (SelectedImage is null || SelectedCategory is null || MainImage is null) return;
+        private void CommitBbox(Events.CommitBboxEventArgs e) {
+            if (SelectedImage is null) return;
 
-            double invScale = 1 / CurrentScale;
-            int DeletedBboxesCount = 0;
-            foreach (ContentControl i in View.ViewImageCanvas.Children.OfType<ContentControl>().OrderBy(s => (int)s.Tag)) {
-                int tag = (int)i.Tag;
-                int idx = tag - DeletedBboxesCount;
-                double left = Math.Clamp(Canvas.GetLeft(i) * invScale, 0, MainImage.PixelWidth);
-                double top = Math.Clamp(Canvas.GetTop(i) * invScale, 0, MainImage.PixelHeight);
-                double right = Math.Clamp((Canvas.GetLeft(i) + i.Width) * invScale, 0, MainImage.PixelWidth);
-                double bottom = Math.Clamp((Canvas.GetTop(i) + i.Height) * invScale, 0, MainImage.PixelHeight);
-                if (i.Visibility == Visibility.Collapsed) {
-                    // 삭제
-                    Labels.RemoveAt(idx);
-                    DeletedBboxesCount++;
-                } else {
-                    if (tag == Tag_UncommittedBbox) {
-                        Labels.Add(new Records.LabelRecord(SelectedImage, left, top, right, bottom, SelectedCategory));
-                    } else if (tag >= 0) {
-                        Records.LabelRecord lbl = Labels[idx];
-                        double errorThreshold = Math.Max(invScale, 1);
-                        // 계산한 좌표와 현재 좌표의 오차가 클 때에만 반영. (스케일링 과정에서의 잠재적 오차 감안)
-                        if (Math.Abs(lbl.Left - left) > errorThreshold) lbl.Left = left;
-                        if (Math.Abs(lbl.Top - top) > errorThreshold) lbl.Top = top;
-                        if (Math.Abs(lbl.Right - right) > errorThreshold) lbl.Right = right;
-                        if (Math.Abs(lbl.Bottom - bottom) > errorThreshold) lbl.Bottom = bottom;
-                    }
-                }
+            foreach (Records.LabelRecordWithoutImage i in e.Added) {
+                Labels.Add(i.WithImage(SelectedImage));
             }
-            // 경계 상자 다시 그리기
+            foreach (Records.LabelRecordWithIndex i in e.Changed) {
+                Labels[i.Index].Left = i.Label.Left;
+                Labels[i.Index].Top = i.Label.Top;
+                Labels[i.Index].Right = i.Label.Right;
+                Labels[i.Index].Bottom = i.Label.Bottom;
+            }
+            List<Records.LabelRecord> delete = new List<Records.LabelRecord>();
+            foreach (Records.LabelRecordWithIndex i in e.Deleted) {
+                delete.Add(Labels[i.Index]);
+            }
+            foreach (Records.LabelRecord i in delete) {
+                Labels.Remove(i);
+            }
             UpdateBoundaryBoxes();
         }
         public ICommand CmdToggleBboxMode { get; }
@@ -288,115 +238,6 @@ namespace LabelAnnotator.ViewModels {
             BboxInsertMode = !BboxInsertMode;
         }
         #endregion
-
-        #region 경계 상자 실시간 수정
-        public ICommand CmdCanvasMouseLeftButtonDown { get; }
-        private void CanvasMouseLeftButtonDown(MouseButtonEventArgs e) {
-            if (!BboxInsertMode) return;
-            DragStartPoint = e.GetPosition(View.ViewImageControl);
-        }
-        public ICommand CmdCanvasMouseMove { get; }
-        private void CanvasMouseMove(MouseEventArgs e) {
-            if (!BboxInsertMode || SelectedCategory is null || SelectedCategory.All) {
-                // 크로스헤어 있으면 삭제
-                List<Line> line = View.ViewImageCanvas.Children.OfType<Line>().ToList();
-                foreach (Line i in line) {
-                    View.ViewImageCanvas.Children.Remove(i);
-                }
-            } else {
-                Point current = e.GetPosition(View.ViewImageControl);
-                // 크로스헤어
-                List<Line> line = View.ViewImageCanvas.Children.OfType<Line>().ToList();
-                if (line.Count == 0) {
-                    Line hline = new Line {
-                        X1 = 0,
-                        X2 = View.ViewImageCanvas.ActualWidth,
-                        Y1 = current.Y,
-                        Y2 = current.Y,
-                        Stroke = Brushes.Black,
-                        StrokeThickness = 2,
-                        Tag = Tag_HorizontalCrosshair,
-                    };
-                    Line vline = new Line {
-                        X1 = current.X,
-                        X2 = current.X,
-                        Y1 = 0,
-                        Y2 = View.ViewImageCanvas.ActualHeight,
-                        Stroke = Brushes.Black,
-                        StrokeThickness = 2,
-                        Tag = Tag_VerticalCrosshair,
-                    };
-                    Panel.SetZIndex(hline, ZIndex_Crosshair);
-                    Panel.SetZIndex(vline, ZIndex_Crosshair);
-                    View.ViewImageCanvas.Children.Add(hline);
-                    View.ViewImageCanvas.Children.Add(vline);
-                } else {
-                    foreach (Line i in line) {
-                        int tag = (int)i.Tag;
-                        if (tag == Tag_HorizontalCrosshair) {
-                            i.X2 = View.ViewImageCanvas.ActualWidth;
-                            i.Y1 = current.Y;
-                            i.Y2 = current.Y;
-                        } else if (tag == Tag_VerticalCrosshair) {
-                            i.X1 = current.X;
-                            i.X2 = current.X;
-                            i.Y2 = View.ViewImageCanvas.ActualHeight;
-                        }
-                    }
-                }
-                // 미리보기 상자
-                if (e.LeftButton == MouseButtonState.Pressed && DragStartPoint is object) {
-                    if (PreviewBbox is null) {
-                        double startX = DragStartPoint.Value.X;
-                        double startY = DragStartPoint.Value.Y;
-                        double endX = current.X;
-                        double endY = current.Y;
-                        Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-                        Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
-                        ContentControl bbox = AddBoundaryBox(Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, SelectedCategory, false);
-                        Panel.SetZIndex(bbox, ZIndex_PreviewBbox);
-                        PreviewBbox = bbox;
-                    } else {
-                        double startX = DragStartPoint.Value.X;
-                        double startY = DragStartPoint.Value.Y;
-                        double endX = current.X;
-                        double endY = current.Y;
-                        Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-                        Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
-                        PreviewBbox.Width = endX - startX;
-                        PreviewBbox.Height = endY - startY;
-                        Canvas.SetLeft(PreviewBbox, startX);
-                        Canvas.SetTop(PreviewBbox, startY);
-                    }
-                } else if (e.LeftButton == MouseButtonState.Released && DragStartPoint is object) {
-                    // 마우스를 이미지 밖에서 뗀 경우, 마지막 정보를 기준으로 경계 상자로 반영함.
-                    if (PreviewBbox is object) {
-                        int currentBboxesCount = View.ViewImageCanvas.Children.OfType<ContentControl>().Count();
-                        double startX = Canvas.GetLeft(PreviewBbox);
-                        double startY = Canvas.GetTop(PreviewBbox);
-                        double endX = startX + PreviewBbox.Width;
-                        double endY = startY + PreviewBbox.Height;
-                        AddBoundaryBox(currentBboxesCount, startX, startY, endX, endY, SelectedCategory, false);
-                        PreviewBbox = null;
-                    }
-                }
-            }
-        }
-        public ICommand CmdCanvasMouseLeftButtonUp { get; }
-        private void CanvasMouseLeftButtonUp(MouseButtonEventArgs e) {
-            if (!BboxInsertMode || SelectedCategory is null || SelectedCategory.All || PreviewBbox is null || DragStartPoint is null) return;
-            Point dragEnd = e.GetPosition(View.ViewImageControl);
-            View.ViewImageCanvas.Children.Remove(PreviewBbox);
-            double startX = DragStartPoint.Value.X;
-            double startY = DragStartPoint.Value.Y;
-            double endX = dragEnd.X;
-            double endY = dragEnd.Y;
-            Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-            Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
-            AddBoundaryBox(Tag_UncommittedBbox, startX, startY, endX, endY, SelectedCategory, false);
-            DragStartPoint = null;
-            PreviewBbox = null;
-        }
         #endregion
 
         #region 분류 수정
@@ -410,7 +251,7 @@ namespace LabelAnnotator.ViewModels {
             int current = Categories.IndexOf(SelectedCategory);
             int target = Math.Max(0, current - 1);
             SelectedCategory = Categories[target];
-            View.ViewCategoriesList.ScrollIntoView(Categories[target]);
+            EventAggregator.GetEvent<Events.ScrollViewCategoriesList>().Publish(Categories[target]);
         }
         public ICommand CmdCategoryDown { get; }
         private void CategoryDown() {
@@ -422,7 +263,7 @@ namespace LabelAnnotator.ViewModels {
             int current = Categories.IndexOf(SelectedCategory);
             int target = Math.Min(current + 1, total - 1);
             SelectedCategory = Categories[target];
-            View.ViewCategoriesList.ScrollIntoView(Categories[target]);
+            EventAggregator.GetEvent<Events.ScrollViewCategoriesList>().Publish(Categories[target]);
         }
         public ICommand CmdAddCategory { get; }
         private void AddCategory() {
@@ -489,7 +330,7 @@ namespace LabelAnnotator.ViewModels {
             int current = Images.IndexOf(SelectedImage);
             int target = Math.Max(0, current - 1);
             SelectedImage = Images[target];
-            View.ViewImagesList.ScrollIntoView(Images[target]);
+            EventAggregator.GetEvent<Events.ScrollViewImagesList>().Publish(Images[target]);
         }
         public ICommand CmdImageDown { get; }
         private void ImageDown() {
@@ -501,7 +342,7 @@ namespace LabelAnnotator.ViewModels {
             int current = Images.IndexOf(SelectedImage);
             int target = Math.Min(current + 1, total - 1);
             SelectedImage = Images[target];
-            View.ViewImagesList.ScrollIntoView(Images[target]);
+            EventAggregator.GetEvent<Events.ScrollViewImagesList>().Publish(Images[target]);
         }
         public ICommand CmdAddImage { get; }
         private void AddImage() {
@@ -516,18 +357,18 @@ namespace LabelAnnotator.ViewModels {
             }
         }
         public ICommand CmdDeleteImage { get; }
-        private void DeleteImage() {
+        private void DeleteImage(IList SelectedItems) {
             bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
                 case true: {
-                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(View.ViewImagesList.SelectedItems.OfType<Records.ImageRecord>());
+                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(SelectedItems.OfType<Records.ImageRecord>());
                         if (selected.Count == 0) return;
                         Labels.RemoveAll(s => selected.Contains(s.Image));
-                        ClearBoundaryBoxes();
+                        VisibleLabels.Clear();
                         break;
                     }
                 case false: {
-                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(View.ViewImagesList.SelectedItems.OfType<Records.ImageRecord>());
+                        SortedSet<Records.ImageRecord> selected = new SortedSet<Records.ImageRecord>(SelectedItems.OfType<Records.ImageRecord>());
                         if (selected.Count == 0) return;
                         Labels.RemoveAll(s => selected.Contains(s.Image));
                         SelectedImage = null;
@@ -535,7 +376,6 @@ namespace LabelAnnotator.ViewModels {
                             Images.Remove(i);
                         }
                         RefreshCommonPath();
-                        ClearBoundaryBoxes();
                         break;
                     }
                 case null:
@@ -547,49 +387,7 @@ namespace LabelAnnotator.ViewModels {
         #region 이미지 표출
         public ICommand CmdToggleFitToViewport { get; }
         private void ToggleFitToViewport() {
-            FitToViewport = !FitToViewport;
-        }
-        public ICommand CmdCanvasSizeChanged { get; }
-        private void CanvasSizeChanged() {
-            if (!FitToViewport) return;
-            // 이미지 크기 재조정
-            if (MainImage is null) return;
-            View.Dispatcher.Invoke(() => {
-                View.ViewImageControl.MaxWidth = Math.Max(View.ViewViewport.ViewportWidth, 0);
-                View.ViewImageControl.MaxHeight = Math.Max(View.ViewViewport.ViewportHeight, 0);
-            }, DispatcherPriority.Loaded);
-            View.Dispatcher.Invoke(() => {
-                // 이미지 크기 조정이 완료되면 경계상자 크기 조정 실행
-                double afterScale = View.ViewImageControl.ActualWidth / MainImage.PixelWidth;
-                IEnumerable<ContentControl> boundingBoxes = View.ViewImageCanvas.Children.OfType<ContentControl>();
-                foreach (ContentControl box in boundingBoxes) {
-                    double newLeft = Canvas.GetLeft(box) / CurrentScale * afterScale;
-                    double newTop = Canvas.GetTop(box) / CurrentScale * afterScale;
-                    double newWidth = box.Width / CurrentScale * afterScale;
-                    double newHeight = box.Height / CurrentScale * afterScale;
-                    if (Labels.Count > (int)box.Tag) {
-                        // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
-                        Records.LabelRecord realBox = Labels[(int)box.Tag];
-                        double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
-                        double newLeftFromOriginal = realBox.Left * afterScale;
-                        double newTopFromOriginal = realBox.Top * afterScale;
-                        double newWidthFromOriginal = (realBox.Right - realBox.Left) * afterScale;
-                        double newHeightFromOriginal = (realBox.Bottom - realBox.Top) * afterScale;
-                        newLeft = Math.Abs(newLeftFromOriginal - newLeft) > errorThreshold ? newLeft : newLeftFromOriginal;
-                        newTop = Math.Abs(newTopFromOriginal - newTop) > errorThreshold ? newTop : newTopFromOriginal;
-                        newWidth = Math.Abs(newWidthFromOriginal - newWidth) > errorThreshold ? newWidth : newWidthFromOriginal;
-                        newHeight = Math.Abs(newHeightFromOriginal - newHeight) > errorThreshold ? newHeight : newHeightFromOriginal;
-                    }
-                    // 원본이 없는 경우 (새로 추가될 경계상자이거나 기존 경계 상자의 위치를 조절한 경우가 해당)
-                    // 창 축소와 확대를 반복하다 보면 경계상자 위치가 약간씩 어긋나게 될 가능성이 있음.
-                    // 이는 부동소수점 연산 과정에서 발생하는 오차가 누적되어서 발생하는 문제이며 해결 불가능.
-                    Canvas.SetLeft(box, newLeft);
-                    Canvas.SetTop(box, newTop);
-                    box.Width = newWidth;
-                    box.Height = newHeight;
-                }
-                CurrentScale = afterScale;
-            }, DispatcherPriority.Loaded);
+            FitViewport = !FitViewport;
         }
         #endregion
 
@@ -613,78 +411,16 @@ namespace LabelAnnotator.ViewModels {
                 ShortcutToggleFitToViewport = Key.F;
             }
         }
-        #endregion
 
         #region 프라이빗 메서드
-        /// <summary>화면에 표출되어있는 모든 경계 상자를 삭제합니다.</summary>
-        private void ClearBoundaryBoxes() {
-            List<ContentControl> delete = View.ViewImageCanvas.Children.OfType<ContentControl>().ToList();
-            foreach (ContentControl i in delete) View.ViewImageCanvas.Children.Remove(i);
-        }
         /// <summary>화면에 표출된 모든 경계 상자를 삭제하고, 현재 선택된 파일과 카테고리에 해당하는 경계 상자를 화면에 표출합니다.</summary>
         private void UpdateBoundaryBoxes() {
-            if (SelectedCategory is null || SelectedImage is null || MainImage is null) return;
-            ClearBoundaryBoxes();
-            CurrentScale = View.ViewImageControl.ActualWidth / MainImage.PixelWidth;
-            if (SelectedCategory.All) {
-                // 전체 카테고리 보기 모드에서는 경계상자 추가 모드 사용 불가
-                BboxInsertMode = false;
-                foreach ((int idx, Records.LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage)) {
-                    AddBoundaryBox(idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
-                }
-            } else {
-                foreach ((int idx, Records.LabelRecord lbl) in Labels.Select((lbl, idx) => (idx, lbl)).Where(s => s.lbl.Image == SelectedImage && s.lbl.Class == SelectedCategory)) {
-                    AddBoundaryBox(idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
-                }
-            }
-        }
-        /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
-        /// <param name="tag">
-        /// 경계 상자가 내부 컬렉션에서 차지하는 인덱스 번호와 같습니다. 경계 상자 컨트롤의 Tag 값으로 사용됩니다.
-        /// 0 미만의 값이라면 임시 경계 상자로 간주하며, 삭제 컨텍스트 메뉴를 추가하지 않습니다.
-        /// </param>
-        /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
-        /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
-        private ContentControl AddBoundaryBox(int tag, double left, double top, double right, double bottom, Records.ClassRecord category, bool needScale) {
-            // 화면의 배율에 맞춰 스케일링
-            if (needScale && MainImage is object) {
-                CurrentScale = View.ViewImageControl.ActualWidth / MainImage.PixelWidth;
-                left *= CurrentScale;
-                top *= CurrentScale;
-                right *= CurrentScale;
-                bottom *= CurrentScale;
-            }
-            double width = Math.Max(0, right - left);
-            double height = Math.Max(0, bottom - top);
-            ContentControl cont = new ContentControl {
-                Width = width,
-                Height = height,
-                Template = (ControlTemplate)View.FindResource("DesignerItemTemplate"),
-                DataContext = category,
-                ToolTip = category.ToString()
-            };
-            Canvas.SetLeft(cont, left);
-            Canvas.SetTop(cont, top);
-            Panel.SetZIndex(cont, ZIndex_Bbox);
-            cont.Tag = tag;
-            if (tag >= 0) {
-                MenuItem delete = new MenuItem {
-                    Header = "삭제",
-                    Tag = tag,
-                };
-                delete.Click += DeleteLabel;
-                ContextMenu context = new ContextMenu();
-                context.Items.Add(delete);
-                cont.ContextMenu = context;
-            }
-            View.ViewImageCanvas.Children.Add(cont);
-            return cont;
-        }
-        private void DeleteLabel(object sender, RoutedEventArgs e) {
-            if (!(sender is MenuItem mn)) return;
-            // 대응되는 경계상자 숨김
-            List<ContentControl> bbox = View.ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
-            foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
+            if (SelectedCategory is null || SelectedImage is null) return;
+            VisibleLabels.Clear();
+            IEnumerable<Records.LabelRecordWithIndex> visibleLabels;
+            if (SelectedCategory.All) visibleLabels = Labels.Select((s, idx) => new Records.LabelRecordWithIndex(idx, s)).Where(s => s.Label.Image == SelectedImage);
+            else visibleLabels = Labels.Select((s, idx) => new Records.LabelRecordWithIndex(idx, s)).Where(s => s.Label.Image == SelectedImage && s.Label.Class == SelectedCategory);
+            foreach (Records.LabelRecordWithIndex i in visibleLabels) VisibleLabels.Add(i);
         }
         private void RefreshCommonPath() {
             string CommonPath = PathService.GetCommonParentPath(Images.Select(s => s.FullPath));
@@ -693,43 +429,14 @@ namespace LabelAnnotator.ViewModels {
                 i.DisplayFilename = PathService.GetRelativePath(CommonPath, i.FullPath);
             }
         }
-        /// <summary>현재 선택된 이미지를 화면에 표시하고 경계 상자를 새로 그립니다.</summary>
-        private void RefreshImage() {
-            ClearBoundaryBoxes();
-            MainImage = null;
-
-            if (SelectedImage is null) return;
-
-            try {
-                // 그림 업데이트
-                BitmapImage bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                bitmap.UriSource = PathService.FilePathToUri(SelectedImage.FullPath);
-                bitmap.EndInit();
-                bitmap.Freeze();
-                MainImage = bitmap;
-
-                // 이미지 화면 크기를 확정시킨 후에 실행해야 함.
-                View.Dispatcher.Invoke(() => { UpdateBoundaryBoxes(); }, DispatcherPriority.Loaded);
-            } catch (FileNotFoundException) {
-                CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({SelectedImage.FullPath})");
-            } catch (NotSupportedException) {
-                CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({SelectedImage.FullPath})");
-            }
-        }
         private void InternalLoadLabel(string filePath) {
-            ClearBoundaryBoxes();
             Labels.Clear();
             Images.Clear();
             Categories.Clear();
-            string basePath = System.IO.Path.GetDirectoryName(filePath) ?? "";
+            string basePath = Path.GetDirectoryName(filePath) ?? "";
             IEnumerable<string> lines = File.ReadLines(filePath);
             SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>();
-            SortedSet<Records.ClassRecord> categories = new SortedSet<Records.ClassRecord> {
-                    Records.ClassRecord.AllLabel()
-                };
+            SortedSet<Records.ClassRecord> categories = new SortedSet<Records.ClassRecord> { Records.ClassRecord.AllLabel() };
             foreach (string line in lines) {
                 (Records.ImageRecord? img, Records.LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
                 if (img is object) {
