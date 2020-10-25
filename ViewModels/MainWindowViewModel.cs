@@ -49,6 +49,7 @@ namespace LabelAnnotator.ViewModels {
             CmdImageDown = new DelegateCommand(ImageDown);
             CmdAddImage = new DelegateCommand(AddImage);
             CmdDeleteImage = new DelegateCommand<IList>(DeleteImage);
+            CmdImagesListDrop = new DelegateCommand<DragEventArgs>(ImagesListDrop);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
             CmdWindowGotFocus = new DelegateCommand<RoutedEventArgs>(WindowGotFocus);
         }
@@ -166,8 +167,7 @@ namespace LabelAnnotator.ViewModels {
         #region 레이블 불러오기, 내보내기, 설정
         public ICommand CmdViewportDrop { get; }
         private void ViewportDrop(DragEventArgs e) {
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            if (files?.Length >= 1) {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length >= 1) {
                 InternalLoadLabel(files[0]);
             }
         }
@@ -347,13 +347,7 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdAddImage { get; }
         private void AddImage() {
             if (CommonDialogService.OpenImagesDialog(PathService.ApprovedImageExtension, out string[] filePaths)) {
-                SortedSet<Records.ImageRecord> add = new SortedSet<Records.ImageRecord>(filePaths.Select(s => new Records.ImageRecord(s)));
-                add.ExceptWith(Images);
-                foreach (Records.ImageRecord img in add) {
-                    Images.Add(img);
-                }
-                if (filePaths.Length != add.Count) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
-                if (add.Count > 0) RefreshCommonPath();
+                InternelAddImage(filePaths);
             }
         }
         public ICommand CmdDeleteImage { get; }
@@ -380,6 +374,12 @@ namespace LabelAnnotator.ViewModels {
                     }
                 case null:
                     return;
+            }
+        }
+        public ICommand CmdImagesListDrop { get; }
+        private void ImagesListDrop(DragEventArgs e) {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length >= 1) {
+                InternelAddImage(files);
             }
         }
         #endregion
@@ -430,6 +430,7 @@ namespace LabelAnnotator.ViewModels {
             }
         }
         private void InternalLoadLabel(string filePath) {
+            if (!(Path.GetExtension(filePath)?.Equals(".csv", StringComparison.OrdinalIgnoreCase) ?? false)) return;
             Labels.Clear();
             Images.Clear();
             Categories.Clear();
@@ -458,6 +459,18 @@ namespace LabelAnnotator.ViewModels {
             if (Images.Count > 0) SelectedImage = Images[0];
             SelectedCategory = Categories[0];
             Title = $"CSV 데이터셋 편집기 - {filePath}";
+        }
+        private void InternelAddImage(string[] filePaths) {
+            SortedSet<Records.ImageRecord> add = new SortedSet<Records.ImageRecord>(filePaths.Where(s => PathService.ApprovedImageExtension.Contains(Path.GetExtension(s)))
+                                                                                             .Select(s => new Records.ImageRecord(s)));
+            int ImagesCountToAdd = add.Count;
+            add.ExceptWith(Images);
+            foreach (Records.ImageRecord img in add) {
+                Images.Add(img);
+            }
+            int ImagesCountAdded = add.Count;
+            if (ImagesCountToAdd != ImagesCountAdded) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
+            if (ImagesCountAdded > 0) RefreshCommonPath();
         }
         #endregion
     }

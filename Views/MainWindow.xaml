@@ -87,7 +87,12 @@
                 <CheckBox TabIndex="14" IsChecked="{Binding FitViewport}" />
                 <TextBlock Text="이미지 창에 맞추기 (F)" />
             </StackPanel>
-            <ListView x:Name="ViewImagesList" TabIndex="13" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
+            <ListView x:Name="ViewImagesList" TabIndex="13" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}" AllowDrop="True">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="Drop">
+                        <prism:InvokeCommandAction Command="{Binding CmdImagesListDrop}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayFilename}" />
