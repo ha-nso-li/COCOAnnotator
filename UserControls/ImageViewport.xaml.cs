@@ -14,6 +14,8 @@ namespace LabelAnnotator.UserControls {
     public partial class ImageViewport : UserControl {
         public ImageViewport() {
             InitializeComponent();
+
+            Panel.SetZIndex(ViewImageControl, ZIndex_Image);
         }
 
         private const int ZIndex_Image = 0;

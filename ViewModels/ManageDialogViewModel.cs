@@ -216,16 +216,18 @@ namespace LabelAnnotator.ViewModels {
                     }
                 }
                 AppendLogVerifyLabel(
+                    "",
                     "분석이 완료되었습니다.",
-                    $"유효한 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
-                    $"유효한 양성 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count)}",
-                    $"유효한 음성 레이블 개수: {NegativeImagesForVerify.Count}",
-                    $"유효한 양성 레이블에 사용된 이미지 개수: {PositiveImagesForVerify.Count}",
-                    $"유효한 레이블에 사용된 이미지 개수: {NegativeImagesForVerify.Count + PositiveImagesForVerify.Count}",
+                    $"총 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
+                    $"양성 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count)}",
+                    $"음성 레이블 개수: {NegativeImagesForVerify.Count}",
+                    $"양성 레이블이 있는 이미지 개수: {PositiveImagesForVerify.Count}",
+                    $"총 이미지 개수: {NegativeImagesForVerify.Count + PositiveImagesForVerify.Count}",
                     $"총 분류 개수: {PositiveLabelsByCategoryForVerify.Count}",
-                    "분류 목록:"
+                    ""
                 );
-                AppendLogVerifyLabel(PositiveLabelsByCategoryForVerify.Select(s => $"분류 이름: {s.Key}, 양성 레이블 개수: {s.Value.Count}").ToArray());
+                AppendLogVerifyLabel(PositiveLabelsByCategoryForVerify.Select(s =>
+                    $"분류 이름: {s.Key}, 레이블 개수: {s.Value.Count}, 레이블이 있는 이미지 개수: {s.Value.Select(s => s.Image).Distinct().Count()}").ToArray());
             });
         }
         public ICommand CmdExportVerifiedLabel { get; }
