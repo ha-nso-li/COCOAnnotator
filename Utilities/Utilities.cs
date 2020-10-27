@@ -27,7 +27,6 @@ namespace LabelAnnotator.Utilities {
             Random random = new Random();
             while (true) {
                 Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
-                // 흰색과 유사한 색도 제외 (카테고리 리스트 배경이 흰색이므로...)
                 if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) {
                     return newColor;
                 }

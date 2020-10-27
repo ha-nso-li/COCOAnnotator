@@ -269,7 +269,7 @@ namespace LabelAnnotator.ViewModels {
         private void AddCategory() {
             Records.ClassRecord add = Records.ClassRecord.FromName(CategoryNameToAdd);
             if (!Categories.Contains(add)) {
-                add.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color), 100));
+                add.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
                 Categories.Add(add);
             }
         }
@@ -279,7 +279,7 @@ namespace LabelAnnotator.ViewModels {
             bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
             Records.ClassRecord newCat = Records.ClassRecord.FromName(CategoryNameToAdd);
-            newCat.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color), 100));
+            newCat.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
             int idx = Categories.IndexOf(SelectedCategory);
             foreach (Records.LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
                 label.Class = newCat;
@@ -447,7 +447,7 @@ namespace LabelAnnotator.ViewModels {
                         if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
                             lbl.Class = found;
                         } else {
-                            lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color), 100));
+                            lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
                             categories.Add(lbl.Class);
                         }
                     }
