@@ -6,11 +6,6 @@ namespace LabelAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public string FullPath { get; }
-        private string _CommonPath;
-        public string CommonPath {
-            get => _CommonPath;
-            set => SetProperty(ref _CommonPath, value);
-        }
         #endregion
 
         #region 바인딩 전용 프로퍼티
@@ -23,7 +18,6 @@ namespace LabelAnnotator.Records {
 
         public ImageRecord(string FullPath) {
             this.FullPath = FullPath;
-            _CommonPath = "";
             _DisplayFilename = "";
         }
 
