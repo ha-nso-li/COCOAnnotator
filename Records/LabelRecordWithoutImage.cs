@@ -1,5 +1,3 @@
-using System;
-
 namespace LabelAnnotator.Records {
     public class LabelRecordWithoutImage {
         public double Left { get; set; }
@@ -7,8 +5,6 @@ namespace LabelAnnotator.Records {
         public double Right { get; set; }
         public double Bottom { get; set; }
         public ClassRecord Class { get; set; }
-
-        public double Size => Math.Abs(Right - Left) * Math.Abs(Bottom - Top);
 
         public LabelRecordWithoutImage(double Left, double Top, double Right, double Bottom, ClassRecord Classname) {
             this.Left = Left;

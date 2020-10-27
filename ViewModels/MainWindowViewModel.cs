@@ -268,24 +268,34 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdAddCategory { get; }
         private void AddCategory() {
             Records.ClassRecord add = Records.ClassRecord.FromName(CategoryNameToAdd);
-            if (!Categories.Contains(add)) {
-                add.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
-                Categories.Add(add);
+            if (Categories.Contains(add)) return;
+            for (int i = 0; i < Categories.Count; i++) {
+                if (Categories[i] >= add) {
+                    Categories.Insert(i, add);
+                    break;
+                }
             }
+            RefreshColorOfCategories();
         }
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
             bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
-            Records.ClassRecord newCat = Records.ClassRecord.FromName(CategoryNameToAdd);
-            newCat.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(Categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
-            int idx = Categories.IndexOf(SelectedCategory);
-            foreach (Records.LabelRecord label in Labels.Where(s => s.Class == SelectedCategory)) {
-                label.Class = newCat;
+            Records.ClassRecord OldCategory = SelectedCategory;
+            Categories.Remove(OldCategory);
+            Records.ClassRecord renamed = Records.ClassRecord.FromName(CategoryNameToAdd);
+            for (int i = 0; i < Categories.Count; i++) {
+                if (Categories[i] >= renamed) {
+                    Categories.Insert(i, renamed);
+                    break;
+                }
             }
-            Categories[idx] = newCat;
-            SelectedCategory = newCat;
+            foreach (Records.LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
+                label.Class = renamed;
+            }
+            SelectedCategory = renamed;
+            RefreshColorOfCategories();
             UpdateBoundaryBoxes();
         }
         public ICommand CmdDeleteCategory { get; }
@@ -295,24 +305,28 @@ namespace LabelAnnotator.ViewModels {
             if (!res1) return;
             bool? res2 = CommonDialogService.MessageBoxYesNoCancel("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res2) {
-                case true:
-                    Categories.Remove(SelectedCategory);
-                    SelectedCategory = Categories.First(s => s.All);
-                    List<Records.LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
-                    foreach (Records.LabelRecord i in delete) Labels.Remove(i);
-                    foreach (Records.ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
-                    if (SelectedImage is object) {
-                        if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
-                    } else {
-                        UpdateBoundaryBoxes();
+                case true: {
+                        Categories.Remove(SelectedCategory);
+                        SelectedCategory = Categories.First(s => s.All);
+                        List<Records.LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
+                        foreach (Records.LabelRecord i in delete) Labels.Remove(i);
+                        foreach (Records.ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                        RefreshColorOfCategories();
+                        if (SelectedImage is object) {
+                            if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
+                        } else {
+                            UpdateBoundaryBoxes();
+                        }
+                        break;
                     }
-                    break;
-                case false:
-                    Categories.Remove(SelectedCategory);
-                    SelectedCategory = Categories.First(s => s.All);
-                    Labels.RemoveAll(s => s.Class == SelectedCategory);
-                    UpdateBoundaryBoxes();
-                    break;
+                case false: {
+                        Categories.Remove(SelectedCategory);
+                        SelectedCategory = Categories.First(s => s.All);
+                        Labels.RemoveAll(s => s.Class == SelectedCategory);
+                        RefreshColorOfCategories();
+                        UpdateBoundaryBoxes();
+                        break;
+                    }
                 case null:
                     return;
             }
@@ -443,21 +457,23 @@ namespace LabelAnnotator.ViewModels {
                     images.Add(img);
                     if (lbl is object) {
                         Labels.Add(lbl);
-                        if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) {
-                            lbl.Class = found;
-                        } else {
-                            lbl.Class.ColorBrush = new SolidColorBrush(Utilities.Miscellaneous.GenerateColor(categories.Select(s => s.ColorBrush.Color).Append(Colors.White), 100));
-                            categories.Add(lbl.Class);
-                        }
+                        if (categories.TryGetValue(lbl.Class, out Records.ClassRecord? found)) lbl.Class = found;
+                        else categories.Add(lbl.Class);
                     }
                 }
             }
             foreach (Records.ImageRecord i in images) Images.Add(i);
             RefreshCommonPath();
             foreach (Records.ClassRecord classname in categories) Categories.Add(classname);
+            RefreshColorOfCategories();
             if (Images.Count > 0) SelectedImage = Images[0];
             SelectedCategory = Categories[0];
             Title = $"CSV 데이터셋 편집기 - {filePath}";
+        }
+        private void RefreshColorOfCategories() {
+            // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
+            List<Color> colors = Utilities.Miscellaneous.GenerateColor(Categories.Count - 1).ToList();
+            for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
         }
         private void InternelAddImage(string[] filePaths) {
             SortedSet<Records.ImageRecord> add = new SortedSet<Records.ImageRecord>(filePaths.Where(s => PathService.ApprovedImageExtension.Contains(Path.GetExtension(s)))
