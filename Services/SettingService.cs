@@ -1,11 +1,11 @@
-using System;
+using System.Diagnostics;
 using System.IO;
 using YamlDotNet.RepresentationModel;
 
 namespace LabelAnnotator.Services {
     public class SettingService {
         private YamlStream? _YamlStream;
-        private string SettingPath => AppDomain.CurrentDomain.BaseDirectory is null ? "setting.yaml" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "setting.yaml");
+        private string SettingPath => Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) ?? "", "setting.yml");
         private YamlStream YamlStream {
             get {
                 if (_YamlStream is null) {
