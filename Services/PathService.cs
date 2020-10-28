@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LabelAnnotator.Services {
@@ -10,28 +9,11 @@ namespace LabelAnnotator.Services {
         /// <paramref name="fromPath"/>에서 <paramref name="toPath"/>로 가는 유닉스 호환 상대 경로를 찾습니다.
         /// </summary>
         public string GetRelativePath(string fromPath, string toPath) {
-            // Windows 경로로 변경
-            fromPath = fromPath.Replace("/", "\\");
-            toPath = toPath.Replace("/", "\\");
-
-            int fromAttr = GetPathAttribute(fromPath);
-            int toAttr = GetPathAttribute(toPath);
-
-            StringBuilder path = new StringBuilder(260); // MAX_PATH
-            if (PathRelativePathTo(path, fromPath, fromAttr, toPath, toAttr) == 0) {
-                throw new ArgumentException("Paths must have a common prefix");
-            }
+            string result = Path.GetRelativePath(fromPath, toPath);
             // 유닉스 호환 상대 경로로 변경
-            if (path.ToString(0, 2) == ".\\") path.Remove(0, 2);
-            path.Replace("\\", "/");
-            return path.ToString();
+            result = result.Replace('\\', '/');
+            return result;
         }
-        private int GetPathAttribute(string path) {
-            if (Directory.Exists(path)) return 0x10;
-            else return 0x80;
-        }
-        [DllImport("shlwapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int PathRelativePathTo(StringBuilder pszPath, string pszFrom, int dwAttrFrom, string pszTo, int dwAttrTo);
 
         /// <summary>
         /// 컬렉션에 포함된 모든 경로의 공통 부모 폴더의 경로를 찾습니다.
