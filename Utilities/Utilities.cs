@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Policy;
 using System.Windows.Media;
 
 namespace LabelAnnotator.Utilities {
@@ -23,14 +24,18 @@ namespace LabelAnnotator.Utilities {
         /// 주어진 개수 만큼의 서로 다른 색깔을 생성합니다.
         /// </summary>
         public static IEnumerable<Color> GenerateColor(int ColorCount) {
-            int TotalSaturation = (int)Math.Ceiling(ColorCount / 60d);
-            int TotalHue = ColorCount / TotalSaturation;
+            int TotalSaturation = (int)Math.Ceiling(ColorCount / 40d);
+            int TotalHue = (int)Math.Ceiling((double)ColorCount / TotalSaturation / 2);
             double StepSaturation = 1d / TotalSaturation;
             double StepHue = 360d / TotalHue;
-
-            for (int s = 0; s < TotalSaturation; s++) {
-                for (int h = 0; h < TotalHue; h++) {
-                    yield return ColorFromHSV(StepHue * h, 1d - StepSaturation * s, 1.0);
+            int CurrentCount = 0;
+            for (int h = 0; h < TotalHue; h++) {
+                for (int s = 0; s < TotalSaturation; s++) {
+                    for (int v = 0; v < 2; v++) {
+                        yield return ColorFromHSV(StepHue * h, 1d - StepSaturation * s, 1d - 0.25 * v);
+                        CurrentCount++;
+                        if (CurrentCount >= ColorCount) yield break;
+                    }
                 }
             }
         }
