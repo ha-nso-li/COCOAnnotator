@@ -267,64 +267,75 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdAddCategory { get; }
         private void AddCategory() {
+            if (string.IsNullOrEmpty(CategoryNameToAdd)) return;
             Records.ClassRecord add = Records.ClassRecord.FromName(CategoryNameToAdd);
             if (Categories.Contains(add)) return;
+            if (Categories.Count == 0) Categories.Add(Records.ClassRecord.AllLabel());
+            bool addedflag = false;
             for (int i = 0; i < Categories.Count; i++) {
                 if (Categories[i] >= add) {
                     Categories.Insert(i, add);
+                    addedflag = true;
                     break;
                 }
             }
+            if (!addedflag) Categories.Add(add);
             RefreshColorOfCategories();
         }
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
-            if (SelectedCategory is null || SelectedCategory.All) return;
+            if (SelectedCategory is null || SelectedCategory.All || string.IsNullOrEmpty(CategoryNameToAdd) || CategoryNameToAdd == SelectedCategory.Name) return;
             bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
             if (!res) return;
             Records.ClassRecord OldCategory = SelectedCategory;
             Categories.Remove(OldCategory);
-            Records.ClassRecord renamed = Records.ClassRecord.FromName(CategoryNameToAdd);
+            Records.ClassRecord rename = Records.ClassRecord.FromName(CategoryNameToAdd);
+            bool addedflag = false;
             for (int i = 0; i < Categories.Count; i++) {
-                if (Categories[i] >= renamed) {
-                    Categories.Insert(i, renamed);
+                if (Categories[i] >= rename) {
+                    Categories.Insert(i, rename);
+                    addedflag = true;
                     break;
                 }
             }
+            if (!addedflag) Categories.Add(rename);
             foreach (Records.LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
-                label.Class = renamed;
+                label.Class = rename;
             }
-            SelectedCategory = renamed;
+            SelectedCategory = rename;
             RefreshColorOfCategories();
             UpdateBoundaryBoxes();
         }
         public ICommand CmdDeleteCategory { get; }
         private void DeleteCategory() {
             if (SelectedCategory is null || SelectedCategory.All) return;
-            bool res1 = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 삭제합니다.");
-            if (!res1) return;
-            bool? res2 = CommonDialogService.MessageBoxYesNoCancel("포함한 경계 상자가 이 분류 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
-            switch (res2) {
+            bool? res = CommonDialogService.MessageBoxYesNoCancel($"포함한 경계 상자의 분류가 {SelectedCategory} 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
+            switch (res) {
                 case true: {
-                        Categories.Remove(SelectedCategory);
-                        SelectedCategory = Categories.First(s => s.All);
                         List<Records.LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
                         foreach (Records.LabelRecord i in delete) Labels.Remove(i);
                         foreach (Records.ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
-                        RefreshColorOfCategories();
-                        if (SelectedImage is object) {
-                            if (Images.Count > 0 && !Images.Contains(SelectedImage)) SelectedImage = Images[0];
+                        if (Categories.Count <= 2) {
+                            Categories.Clear();
+                            SelectedCategory = null;
                         } else {
-                            UpdateBoundaryBoxes();
+                            Categories.Remove(SelectedCategory);
+                            SelectedCategory = Categories.First(s => s.All);
                         }
+                        RefreshColorOfCategories();
                         break;
                     }
                 case false: {
-                        Categories.Remove(SelectedCategory);
                         SelectedCategory = Categories.First(s => s.All);
                         Labels.RemoveAll(s => s.Class == SelectedCategory);
+                        if (Categories.Count <= 2) {
+                            Categories.Clear();
+                            SelectedCategory = null;
+                        } else {
+                            Categories.Remove(SelectedCategory);
+                            SelectedCategory = Categories.First(s => s.All);
+                        }
                         RefreshColorOfCategories();
-                        UpdateBoundaryBoxes();
                         break;
                     }
                 case null:
