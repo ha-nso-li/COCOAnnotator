@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Policy;
 using System.Windows.Media;
 
 namespace LabelAnnotator.Utilities {
@@ -25,14 +24,21 @@ namespace LabelAnnotator.Utilities {
         /// </summary>
         public static IEnumerable<Color> GenerateColor(int ColorCount) {
             int TotalSaturation = (int)Math.Ceiling(ColorCount / 40d);
-            int TotalHue = (int)Math.Ceiling((double)ColorCount / TotalSaturation / 2);
+            int TotalHue, TotalValue;
+            if ((double)ColorCount / TotalSaturation >= 10) {
+                TotalHue = (int)Math.Ceiling((double)ColorCount / TotalSaturation / 2);
+                TotalValue = 2;
+            } else {
+                TotalHue = (int)Math.Ceiling((double)ColorCount / TotalSaturation);
+                TotalValue = 1;
+            }
             double StepSaturation = 1d / TotalSaturation;
             double StepHue = 360d / TotalHue;
             int CurrentCount = 0;
             for (int h = 0; h < TotalHue; h++) {
                 for (int s = 0; s < TotalSaturation; s++) {
-                    for (int v = 0; v < 2; v++) {
-                        yield return ColorFromHSV(StepHue * h, 1d - StepSaturation * s, 1d - 0.25 * v);
+                    for (int v = 0; v < TotalValue; v++) {
+                        yield return ColorFromHSV(StepHue * h, 1d - StepSaturation * s, 1.0 - 0.3 * v);
                         CurrentCount++;
                         if (CurrentCount >= ColorCount) yield break;
                     }
