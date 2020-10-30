@@ -21,7 +21,7 @@ namespace LabelAnnotator.ViewModels {
             _TacticForSplitLabel = Records.TacticsForSplitLabel.DevideToNLabels;
             _NValueForSplitLabel = 2;
             _LogUndupeLabel = "";
-            IoUThreshold = 0.5;
+            _IoUThreshold = 0.5;
 
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
             CmdExportVerifiedLabel = new DelegateCommand(ExportVerifiedLabel);
@@ -126,22 +126,26 @@ namespace LabelAnnotator.ViewModels {
                         DetectedFlag = true;
                         continue;
                     }
-                    // 참조된 이미지가 실존하는지 검사.
-                    // 음성 샘플일 경우 레이블이 2개 이상 존재할 수 없으므로, 참조된 이미지가 실존하더라도 이미 음성 샘플로 검출된 적이 있는 이미지라면 안됨.
-                    if (NegativeImagesForVerify.Contains(img)) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 한번 음성 샘플로 사용된 이미지에 대한 레이블이 또 발견되었습니다.");
-                        DetectedFlag = true;
-                        continue;
-                    }
                     if (!File.Exists(img.FullPath)) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 해당 경로에 실존하지 않습니다.");
                         DetectedFlag = true;
                         continue;
                     }
-                    if (lbl is null) {
-                        // 음성 샘플
-                        NegativeImagesForVerify.Add(img);
+                    if (NegativeImagesForVerify.Contains(img)) {
+                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 음성 샘플로 사용된 적이 있는 이미지가 한번 더 사용되었습니다.");
+                        DetectedFlag = true;
                         continue;
+                    }
+                    if (lbl is null) {
+                        if (PositiveImagesForVerify.Contains(img)) {
+                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 양성 레이블에서 사용된 적이 있는 이미지가 음성 샘플로 사용되었습니다.");
+                            DetectedFlag = true;
+                            continue;
+                        } else {
+                            // 음성 샘플
+                            NegativeImagesForVerify.Add(img);
+                            continue;
+                        }
                     }
                     // 경계 상자 위치 좌표가 위아래 혹은 좌우가 뒤집혀있는지 검사.
                     if (lbl.Left >= lbl.Right || lbl.Top >= lbl.Bottom) {
@@ -257,8 +261,7 @@ namespace LabelAnnotator.ViewModels {
             string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
             using StreamWriter f = File.CreateText(filePath);
             // 양성 레이블
-            List<Records.LabelRecord> positiveLabels = PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).ToList();
-            foreach (IGrouping<Records.ImageRecord, Records.LabelRecord> i in positiveLabels.GroupBy(s => s.Image)) {
+            foreach (IGrouping<Records.ImageRecord, Records.LabelRecord> i in PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).GroupBy(s => s.Image)) {
                 foreach (Records.LabelRecord j in i) {
                     f.WriteLine(SerializationService.SerializePositive(PathService.GetRelativePath(saveBasePath, i.Key.FullPath), j, SettingService.Format));
                 }

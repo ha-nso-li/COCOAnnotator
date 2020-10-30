@@ -238,7 +238,6 @@ namespace LabelAnnotator.ViewModels {
             BboxInsertMode = !BboxInsertMode;
         }
         #endregion
-        #endregion
 
         #region 분류 수정
         public ICommand CmdCategoryUp { get; }
@@ -436,6 +435,7 @@ namespace LabelAnnotator.ViewModels {
                 ShortcutToggleFitToViewport = Key.F;
             }
         }
+        #endregion
 
         #region 프라이빗 메서드
         /// <summary>화면에 표출된 모든 경계 상자를 삭제하고, 현재 선택된 파일과 카테고리에 해당하는 경계 상자를 화면에 표출합니다.</summary>
