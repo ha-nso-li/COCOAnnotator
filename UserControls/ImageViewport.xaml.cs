@@ -359,6 +359,11 @@ namespace LabelAnnotator.UserControls {
             DragStartPoint = null;
             PreviewBbox = null;
         }
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e) {
+            if (Labels is INotifyCollectionChanged lbl) {
+                lbl.CollectionChanged -= LabelsCollectionChanged;
+            }
+        }
         #endregion
 
         public event Events.CommitBboxEventHandler? CommitBbox;
