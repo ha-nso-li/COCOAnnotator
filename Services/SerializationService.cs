@@ -8,7 +8,6 @@ namespace LabelAnnotator.Services {
         /// </summary>
         /// <param name="Path">레이블 파일이 위치한 경로에서 이미지 파일로 가는 상대 경로입니다.</param>
         public string SerializePositive(string Path, Records.LabelRecord Label, string Format) {
-            //string path = Extensions.GetRelativePath(BasePath, Image.FullPath);
             switch (Format) {
                 case "LTRB":
                     return $"{Path},{Math.Floor(Label.Left):0},{Math.Floor(Label.Top):0},{Math.Ceiling(Label.Right):0},{Math.Ceiling(Label.Bottom):0},{Label.Class}";
@@ -42,7 +41,7 @@ namespace LabelAnnotator.Services {
             string[] split = Text.Split(',');
             if (split.Length < 6) return (null, null);
             string path = Path.Combine(BasePath, split[0]);
-            path = path.Replace('/', '\\');
+            path = Path.GetFullPath(path).Replace('/', '\\');
             Records.ImageRecord img = new Records.ImageRecord(path);
             string classname = split[5];
             if (string.IsNullOrWhiteSpace(classname)) return (img, null);
