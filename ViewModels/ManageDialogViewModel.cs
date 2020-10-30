@@ -105,7 +105,7 @@ namespace LabelAnnotator.ViewModels {
             if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
             bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
             if (res is null) return;
-            bool imageSizeCheck = res.GetValueOrDefault();
+            bool imageSizeCheck = res.Value;
             LogVerifyLabel = "";
             ProgressVerifyLabelValue = 0;
             Task.Run(() => {
@@ -116,6 +116,7 @@ namespace LabelAnnotator.ViewModels {
                 SortedSet<Records.ImageRecord> images = new SortedSet<Records.ImageRecord>(
                     Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories).Where(s => PathService.ApprovedImageExtension.Contains(Path.GetExtension(s))).Select(s => new Records.ImageRecord(s))
                 );
+                var CacheForImageSize = new SortedDictionary<Records.ImageRecord, (int Width, int Height)?>();
                 string[] lines = File.ReadAllLines(filePath);
                 AppendLogVerifyLabel($"{filePath}의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
@@ -149,18 +150,23 @@ namespace LabelAnnotator.ViewModels {
                     }
                     // 경계 상자 위치 좌표가 이미지 크기 밖으로 나가는지 검사.
                     if (imageSizeCheck) {
+                        // 이미지의 크기 체크하기; 이미 이미지를 읽어온 적이 있으면 캐시에서 가져옴.
                         int width, height;
-                        FileStream? stream = null;
-                        try {
-                            stream = new FileStream(img.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                            BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                            width = bitmap.PixelWidth;
-                            height = bitmap.PixelHeight;
-                        } catch (NotSupportedException) {
-                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 손상되어 읽어올 수 없습니다.");
-                            continue;
-                        } finally {
-                            stream?.Dispose();
+                        if (CacheForImageSize.TryGetValue(img, out var size)) {
+                            if (size is null) continue;
+                            (width, height) = size.Value;
+                        } else {
+                            try {
+                                using FileStream stream = new FileStream(img.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                                BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                                width = bitmap.PixelWidth;
+                                height = bitmap.PixelHeight;
+                                CacheForImageSize.Add(img, (width, height));
+                            } catch (NotSupportedException) {
+                                AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 손상되어 읽어올 수 없습니다.");
+                                CacheForImageSize.Add(img, null);
+                                continue;
+                            }
                         }
                         if (lbl.Left < 0 || lbl.Top < 0 || lbl.Right > width || lbl.Bottom > height) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
