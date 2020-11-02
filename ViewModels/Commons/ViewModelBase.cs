@@ -1,4 +1,3 @@
-
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
