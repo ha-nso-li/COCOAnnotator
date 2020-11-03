@@ -338,6 +338,10 @@ namespace LabelAnnotator.ViewModels {
                             Categories.Remove(SelectedCategory);
                             SelectedCategory = Categories.First(s => s.All);
                         }
+                        if (SelectedImage is null && Images.Count >= 1) {
+                            SelectedImage = Images[0];
+                            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
+                        }
                         RefreshColorOfCategories();
                         break;
                     }
