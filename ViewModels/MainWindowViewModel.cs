@@ -316,9 +316,7 @@ namespace LabelAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel($"포함한 경계 상자의 분류가 {SelectedCategory} 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
                 case true: {
-                        List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
-                        foreach (LabelRecord i in delete) Labels.Remove(i);
-                        foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                        Labels.RemoveAll(s => s.Class == SelectedCategory);
                         if (Categories.Count <= 2) {
                             Categories.Clear();
                             SelectedCategory = null;
@@ -330,8 +328,9 @@ namespace LabelAnnotator.ViewModels {
                         break;
                     }
                 case false: {
-                        SelectedCategory = Categories.First(s => s.All);
-                        Labels.RemoveAll(s => s.Class == SelectedCategory);
+                        List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
+                        foreach (LabelRecord i in delete) Labels.Remove(i);
+                        foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
                         if (Categories.Count <= 2) {
                             Categories.Clear();
                             SelectedCategory = null;
