@@ -1,5 +1,5 @@
+using LabelAnnotator.Utilities;
 using Microsoft.Win32;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using WinForm = System.Windows.Forms;
@@ -36,9 +36,9 @@ namespace LabelAnnotator.Services {
             return result;
         }
 
-        public bool OpenImagesDialog(IEnumerable<string> ImageExtensions, out string[] FilePaths) {
+        public bool OpenImagesDialog(out string[] FilePaths) {
             OpenFileDialog dlg = new OpenFileDialog {
-                Filter = $"이미지 파일|{string.Join(";", ImageExtensions.Select(s => $"*{s}"))}",
+                Filter = $"이미지 파일|{string.Join(";", Utils.ApprovedImageExtensions.Select(s => $"*{s}"))}",
                 Multiselect = true,
             };
             bool result = dlg.ShowDialog().GetValueOrDefault();

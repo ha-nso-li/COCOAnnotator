@@ -1,3 +1,6 @@
+using LabelAnnotator.Events;
+using LabelAnnotator.Records;
+using LabelAnnotator.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -93,7 +96,7 @@ namespace LabelAnnotator.UserControls {
             set => SetValue(FitViewportProperty, value);
         }
 
-        public static readonly DependencyProperty LabelsProperty = DependencyProperty.Register(nameof(Labels), typeof(IEnumerable<Records.LabelRecordWithIndex>), typeof(ImageViewport), new PropertyMetadata(LabelsChanged));
+        public static readonly DependencyProperty LabelsProperty = DependencyProperty.Register(nameof(Labels), typeof(IEnumerable<LabelRecordWithIndex>), typeof(ImageViewport), new PropertyMetadata(LabelsChanged));
         private static void LabelsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.OldValue is INotifyCollectionChanged old) old.CollectionChanged -= uc.LabelsCollectionChanged;
@@ -107,7 +110,7 @@ namespace LabelAnnotator.UserControls {
                     ClearBoundaryBoxes();
                     break;
                 case NotifyCollectionChangedAction.Remove:
-                    foreach (Records.LabelRecordWithIndex? i in e.OldItems) {
+                    foreach (LabelRecordWithIndex? i in e.OldItems) {
                         if (i is null) continue;
                         (int idx, _) = i;
                         List<ContentControl> delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => (int)s.Tag == idx).ToList();
@@ -115,16 +118,16 @@ namespace LabelAnnotator.UserControls {
                     }
                     break;
                 case NotifyCollectionChangedAction.Add:
-                    foreach (Records.LabelRecordWithIndex? i in e.NewItems) {
+                    foreach (LabelRecordWithIndex? i in e.NewItems) {
                         if (i is null) continue;
-                        (int idx, Records.LabelRecord lbl) = i;
+                        (int idx, LabelRecord lbl) = i;
                         AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
                     }
                     break;
             }
         }
-        public IEnumerable<Records.LabelRecordWithIndex>? Labels {
-            get => (IEnumerable<Records.LabelRecordWithIndex>?)GetValue(LabelsProperty);
+        public IEnumerable<LabelRecordWithIndex>? Labels {
+            get => (IEnumerable<LabelRecordWithIndex>?)GetValue(LabelsProperty);
             set => SetValue(LabelsProperty, value);
         }
 
@@ -134,9 +137,9 @@ namespace LabelAnnotator.UserControls {
             set => SetValue(BboxInsertModeProperty, value);
         }
 
-        public static readonly DependencyProperty CurrentClassProperty = DependencyProperty.Register(nameof(CurrentClass), typeof(Records.ClassRecord), typeof(ImageViewport));
-        public Records.ClassRecord? CurrentClass {
-            get => (Records.ClassRecord?)GetValue(CurrentClassProperty);
+        public static readonly DependencyProperty CurrentClassProperty = DependencyProperty.Register(nameof(CurrentClass), typeof(ClassRecord), typeof(ImageViewport));
+        public ClassRecord? CurrentClass {
+            get => (ClassRecord?)GetValue(CurrentClassProperty);
             set => SetValue(CurrentClassProperty, value);
         }
         #endregion
@@ -152,7 +155,7 @@ namespace LabelAnnotator.UserControls {
                     CurrentScale = ViewImageControl.ActualWidth / bitmap.PixelWidth;
                 }, DispatcherPriority.Loaded);
             }
-            foreach ((int idx, Records.LabelRecord lbl) in Labels) {
+            foreach ((int idx, LabelRecord lbl) in Labels) {
                 AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
             }
         }
@@ -167,7 +170,7 @@ namespace LabelAnnotator.UserControls {
         /// </param>
         /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
-        private ContentControl AddBoundaryBox(int zindex, int tag, double left, double top, double right, double bottom, Records.ClassRecord category, bool needScale) {
+        private ContentControl AddBoundaryBox(int zindex, int tag, double left, double top, double right, double bottom, ClassRecord category, bool needScale) {
             // 화면의 배율에 맞춰 스케일링
             if (needScale) {
                 left *= CurrentScale;
@@ -218,7 +221,7 @@ namespace LabelAnnotator.UserControls {
                     double newTop = Canvas.GetTop(box) / CurrentScale * afterScale;
                     double newWidth = box.Width / CurrentScale * afterScale;
                     double newHeight = box.Height / CurrentScale * afterScale;
-                    Records.LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)box.Tag);
+                    LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)box.Tag);
                     if (realBox is object) {
                         // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
@@ -315,8 +318,8 @@ namespace LabelAnnotator.UserControls {
                             double startY = DragStartPoint.Value.Y;
                             double endX = current.X;
                             double endY = current.Y;
-                            Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-                            Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
+                            Utils.SortTwoValues(ref startX, ref endX);
+                            Utils.SortTwoValues(ref startY, ref endY);
                             ContentControl bbox = AddBoundaryBox(ZIndex_PreviewBbox, Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, CurrentClass, false);
                             PreviewBbox = bbox;
                         } else {
@@ -324,8 +327,8 @@ namespace LabelAnnotator.UserControls {
                             double startY = DragStartPoint.Value.Y;
                             double endX = current.X;
                             double endY = current.Y;
-                            Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-                            Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
+                            Utils.SortTwoValues(ref startX, ref endX);
+                            Utils.SortTwoValues(ref startY, ref endY);
                             PreviewBbox.Width = endX - startX;
                             PreviewBbox.Height = endY - startY;
                             Canvas.SetLeft(PreviewBbox, startX);
@@ -349,8 +352,8 @@ namespace LabelAnnotator.UserControls {
             double startY = DragStartPoint.Value.Y;
             double endX = dragEnd.X;
             double endY = dragEnd.Y;
-            Utilities.Miscellaneous.SortTwoValues(ref startX, ref endX);
-            Utilities.Miscellaneous.SortTwoValues(ref startY, ref endY);
+            Utils.SortTwoValues(ref startX, ref endX);
+            Utils.SortTwoValues(ref startY, ref endY);
             PreviewBbox.Width = endX - startX;
             PreviewBbox.Height = endY - startY;
             Canvas.SetLeft(PreviewBbox, startX);
@@ -366,20 +369,20 @@ namespace LabelAnnotator.UserControls {
         }
         #endregion
 
-        public event Events.CommitBboxEventHandler? CommitBbox;
+        public event CommitBboxEventHandler? CommitBbox;
 
         public void TryCommitBbox() {
             if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
 
-            List<Records.LabelRecordWithIndex> changed = new List<Records.LabelRecordWithIndex>();
-            List<Records.LabelRecordWithIndex> deleted = new List<Records.LabelRecordWithIndex>();
-            List<Records.LabelRecordWithoutImage> added = new List<Records.LabelRecordWithoutImage>();
+            List<LabelRecordWithIndex> changed = new List<LabelRecordWithIndex>();
+            List<LabelRecordWithIndex> deleted = new List<LabelRecordWithIndex>();
+            List<LabelRecordWithoutImage> added = new List<LabelRecordWithoutImage>();
             IEnumerable<ContentControl> bboxes = ViewImageCanvas.Children.OfType<ContentControl>();
             foreach (ContentControl bbox in bboxes) {
                 if (bbox.Visibility == Visibility.Collapsed) {
                     // 삭제
-                    Records.LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
-                    if (realBox is Records.LabelRecordWithIndex) deleted.Add(realBox);
+                    LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
+                    if (realBox is LabelRecordWithIndex) deleted.Add(realBox);
                 } else if ((int)bbox.Tag == Tag_UncommittedBbox) {
                     // 추가
                     if (CurrentClass is null) continue;
@@ -387,15 +390,15 @@ namespace LabelAnnotator.UserControls {
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double right = Math.Clamp((Canvas.GetLeft(bbox) + bbox.Width) / CurrentScale, 0, bitmap.PixelWidth);
                     double bottom = Math.Clamp((Canvas.GetTop(bbox) + bbox.Height) / CurrentScale, 0, bitmap.PixelHeight);
-                    added.Add(new Records.LabelRecordWithoutImage(left, top, right, bottom, CurrentClass));
+                    added.Add(new LabelRecordWithoutImage(left, top, right, bottom, CurrentClass));
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double right = Math.Clamp((Canvas.GetLeft(bbox) + bbox.Width) / CurrentScale, 0, bitmap.PixelWidth);
                     double bottom = Math.Clamp((Canvas.GetTop(bbox) + bbox.Height) / CurrentScale, 0, bitmap.PixelHeight);
-                    Records.LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
-                    if (realBox is Records.LabelRecordWithIndex realBox2) {
+                    LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
+                    if (realBox is LabelRecordWithIndex realBox2) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 기존 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
@@ -416,13 +419,13 @@ namespace LabelAnnotator.UserControls {
                             bottom = realBox2.Label.Bottom;
                         }
                         if (notChangedPositionsCount < 4) {
-                            changed.Add(new Records.LabelRecordWithIndex(realBox2.Index, new Records.LabelRecord(realBox2.Label.Image, left, top, right, bottom, realBox2.Label.Class)));
+                            changed.Add(new LabelRecordWithIndex(realBox2.Index, new LabelRecord(realBox2.Label.Image, left, top, right, bottom, realBox2.Label.Class)));
                         }
                     }
                 }
             }
 
-            if (added.Count > 0 || deleted.Count > 0 || changed.Count > 0) CommitBbox?.Invoke(this, new Events.CommitBboxEventArgs(added, changed, deleted));
+            if (added.Count > 0 || deleted.Count > 0 || changed.Count > 0) CommitBbox?.Invoke(this, new CommitBboxEventArgs(added, changed, deleted));
         }
     }
 }

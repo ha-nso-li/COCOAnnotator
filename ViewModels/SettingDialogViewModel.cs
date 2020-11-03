@@ -1,3 +1,4 @@
+using LabelAnnotator.Utilities;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System.Windows.Input;
@@ -6,7 +7,7 @@ namespace LabelAnnotator.ViewModels {
     public class SettingDialogViewModel : Commons.DialogViewModelBase {
         public SettingDialogViewModel() {
             Title = "설정";
-            _LTRB = SettingService.Format == Utilities.SettingNames.FormatLTRB;
+            _LTRB = SettingService.Format == SettingNames.FormatLTRB;
 
             CmdClose = new DelegateCommand(Close);
         }
@@ -33,8 +34,8 @@ namespace LabelAnnotator.ViewModels {
         public override void OnDialogClosed() {
             SettingService.Format = LTRB switch
             {
-                true => Utilities.SettingNames.FormatLTRB,
-                false => Utilities.SettingNames.FormatCXCYWH
+                true => SettingNames.FormatLTRB,
+                false => SettingNames.FormatCXCYWH
             };
         }
 

@@ -1,3 +1,5 @@
+using LabelAnnotator.Events;
+using LabelAnnotator.Records;
 using Prism.Events;
 using System.Windows;
 
@@ -6,16 +8,16 @@ namespace LabelAnnotator.Views {
         public MainWindow(IEventAggregator EventAggregator) {
             InitializeComponent();
 
-            EventAggregator.GetEvent<Events.ScrollViewCategoriesList>().Subscribe(ScrollViewCategoriesList);
-            EventAggregator.GetEvent<Events.ScrollViewImagesList>().Subscribe(ScrollViewImagesList);
-            EventAggregator.GetEvent<Events.TryCommitBbox>().Subscribe(TryCommitBbox);
+            EventAggregator.GetEvent<ScrollViewCategoriesList>().Subscribe(ScrollViewCategoriesList);
+            EventAggregator.GetEvent<ScrollViewImagesList>().Subscribe(ScrollViewImagesList);
+            EventAggregator.GetEvent<TryCommitBbox>().Subscribe(TryCommitBbox);
         }
 
-        private void ScrollViewCategoriesList(Records.ClassRecord e) {
+        private void ScrollViewCategoriesList(ClassRecord e) {
             ViewCategoriesList.ScrollIntoView(e);
         }
 
-        private void ScrollViewImagesList(Records.ImageRecord e) {
+        private void ScrollViewImagesList(ImageRecord e) {
             ViewImagesList.ScrollIntoView(e);
         }
 

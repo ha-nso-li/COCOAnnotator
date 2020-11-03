@@ -1,3 +1,4 @@
+using LabelAnnotator.Utilities;
 using System.Diagnostics;
 using System.IO;
 using YamlDotNet.RepresentationModel;
@@ -52,7 +53,7 @@ namespace LabelAnnotator.Services {
         }
 
         public string Format {
-            get => GetItem("Format", Utilities.SettingNames.FormatLTRB);
+            get => GetItem("Format", SettingNames.FormatLTRB);
             set => SetItem("Format", value);
         }
     }
