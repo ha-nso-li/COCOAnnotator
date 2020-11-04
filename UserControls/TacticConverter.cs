@@ -1,4 +1,5 @@
 using LabelAnnotator.Records;
+using LabelAnnotator.Views;
 using System;
 using System.Globalization;
 using System.Windows.Data;
@@ -10,7 +11,7 @@ namespace LabelAnnotator.UserControls {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             if (Enum.TryParse((string)parameter, out TacticsForSplitLabel tactic)) {
                 return value.Equals(tactic);
-            } else if ((string)parameter == nameof(Views.ManageDialog.TxtNValueForSplitLabel)) {
+            } else if ((string)parameter == nameof(ManageDialog.TxtNValueForSplitLabel)) {
                 return !value.Equals(TacticsForSplitLabel.SplitToSubFolders);
             } else {
                 return Binding.DoNothing;
