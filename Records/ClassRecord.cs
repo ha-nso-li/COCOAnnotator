@@ -3,7 +3,6 @@ using System;
 using System.Windows.Media;
 
 namespace LabelAnnotator.Records {
-
     public class ClassRecord : BindableBase, IEquatable<ClassRecord>, IComparable, IComparable<ClassRecord> {
         #region 필드와 프로퍼티
         public bool All { get; }
