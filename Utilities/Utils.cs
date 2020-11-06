@@ -120,7 +120,7 @@ namespace LabelAnnotator.Utilities {
                 } else if (v == Path.DirectorySeparatorChar || v == Path.AltDirectorySeparatorChar) {
                     uri.Append('/');
                 } else {
-                    uri.Append($"%{v:X2}");
+                    uri.Append($"%{Convert.ToByte(v):X2}");
                 }
             }
             if (uri.Length >= 2 && uri[0] == '/' && uri[1] == '/') // UNC path
