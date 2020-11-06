@@ -328,7 +328,7 @@ namespace LabelAnnotator.ViewModels {
                     IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
                         // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(saveBasePath, j, SettingService.Format);
+                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializeAsPositive(saveBasePath, j, SettingService.Format));
                     } else {
                         // 음성 레이블
                         f.WriteLine(SerializationService.SerializeAsNegative(saveBasePath, i));
