@@ -28,6 +28,7 @@ namespace LabelAnnotator.ViewModels {
             _IoUThreshold = 0.5;
 
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
+            CmdDeleteUnusedImages = new DelegateCommand(DeleteUnusedImages);
             CmdExportVerifiedLabel = new DelegateCommand(ExportVerifiedLabel);
             CmdAddFileForUnionLabel = new DelegateCommand(AddFileForUnionLabel);
             CmdAddFolderForUnionLabel = new DelegateCommand(AddFolderForUnionLabel);
@@ -45,6 +46,7 @@ namespace LabelAnnotator.ViewModels {
         private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
         private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
+        private readonly SortedSet<ImageRecord> UnusedImagesForVerify = new SortedSet<ImageRecord>();
         private readonly List<LabelRecord> LabelsForUndupe = new List<LabelRecord>();
         private readonly SortedSet<ImageRecord> ImagesForUndupe = new SortedSet<ImageRecord>();
         #endregion
@@ -115,6 +117,7 @@ namespace LabelAnnotator.ViewModels {
                 PositiveLabelsByCategoryForVerify.Clear();
                 PositiveImagesForVerify.Clear();
                 NegativeImagesForVerify.Clear();
+                UnusedImagesForVerify.Clear();
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 var CacheForImageSize = new SortedDictionary<ImageRecord, (int Width, int Height)?>();
                 string[] lines = File.ReadAllLines(filePath);
@@ -214,17 +217,16 @@ namespace LabelAnnotator.ViewModels {
                 // 사용되지 않은 이미지 검색
                 {
                     AppendLogVerifyLabel("");
-                    SortedSet<string> AllImagesInLabel = new SortedSet<string>(PositiveImagesForVerify.Concat(NegativeImagesForVerify).Select(s => s.FullPath));
+                    SortedSet<ImageRecord> AllImagesInLabel = new SortedSet<ImageRecord>(PositiveImagesForVerify.Concat(NegativeImagesForVerify));
                     string CommonParentPath = Utils.GetCommonParentPath(AllImagesInLabel);
                     AppendLogVerifyLabel($"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
-                    SortedSet<string> AllImagesInPath = new SortedSet<string>(
-                        Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories).Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s)))
-                    );
-                    AllImagesInPath.ExceptWith(AllImagesInLabel);
-                    if (AllImagesInPath.Count > 20) {
-                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {AllImagesInPath.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
-                        AppendLogVerifyLabel(AllImagesInPath.Take(20).ToArray());
-                        SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>(AllImagesInPath.Select(s => Path.GetDirectoryName(s.ToString()) ?? ""));
+                    UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
+                                                             .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
+                    UnusedImagesForVerify.ExceptWith(AllImagesInLabel);
+                    if (UnusedImagesForVerify.Count > 20) {
+                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
+                        AppendLogVerifyLabel(UnusedImagesForVerify.Select(s => s.FullPath).Take(20).ToArray());
+                        SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>(UnusedImagesForVerify.Select(s => Path.GetDirectoryName(s.FullPath) ?? ""));
                         if (FoldersOfUnusedImages.Count > 10) {
                             AppendLogVerifyLabel($"위 이미지들이 존재하는 폴더는 {FoldersOfUnusedImages.Count}종이 존재합니다. 일부를 출력합니다.");
                             AppendLogVerifyLabel(FoldersOfUnusedImages.Take(10).ToArray());
@@ -232,9 +234,9 @@ namespace LabelAnnotator.ViewModels {
                             AppendLogVerifyLabel($"위 이미지들이 존재하는 폴더는 {FoldersOfUnusedImages.Count}종이 존재합니다.");
                             AppendLogVerifyLabel(FoldersOfUnusedImages.ToArray());
                         }
-                    } else if (AllImagesInPath.Count >= 1) {
-                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {AllImagesInPath.Count}개의 이미지가 있습니다.");
-                        AppendLogVerifyLabel(AllImagesInPath.ToArray());
+                    } else if (UnusedImagesForVerify.Count >= 1) {
+                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다.");
+                        AppendLogVerifyLabel(UnusedImagesForVerify.Select(s => s.FullPath).ToArray());
                     }
                 }
                 AppendLogVerifyLabel(
@@ -251,6 +253,19 @@ namespace LabelAnnotator.ViewModels {
                 AppendLogVerifyLabel(PositiveLabelsByCategoryForVerify.Select(s =>
                     $"분류 이름: {s.Key}, 레이블 개수: {s.Value.Count}, 레이블이 있는 이미지 개수: {s.Value.Select(s => s.Image).Distinct().Count()}").ToArray());
             });
+        }
+        public ICommand CmdDeleteUnusedImages { get; }
+        private void DeleteUnusedImages() {
+            if (UnusedImagesForVerify.Count == 0) {
+                CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 이미지 폴더 내에 레이블에 사용중이지 않은 이미지가 없습니다.");
+                return;
+            }
+            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 레이블에 사용중이지 않은 이미지를 삭제합니다.");
+            if (!res) return;
+            foreach (ImageRecord i in UnusedImagesForVerify) {
+                File.Delete(i.FullPath);
+            }
+            UnusedImagesForVerify.Clear();
         }
         public ICommand CmdExportVerifiedLabel { get; }
         private void ExportVerifiedLabel() {

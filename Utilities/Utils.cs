@@ -1,3 +1,4 @@
+using LabelAnnotator.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -88,15 +89,15 @@ namespace LabelAnnotator.Utilities {
         }
 
         /// <summary>
-        /// 컬렉션에 포함된 모든 경로의 공통 부모 폴더의 경로를 찾습니다.
+        /// 컬렉션에 포함된 모든 이미지들이 위치한 경로의 공통 부모 폴더의 경로를 찾습니다.
         /// </summary>
-        public static string GetCommonParentPath(IEnumerable<string> source) {
-            using IEnumerator<string> etor = source.GetEnumerator();
+        public static string GetCommonParentPath(IEnumerable<ImageRecord> source) {
+            using IEnumerator<ImageRecord> etor = source.GetEnumerator();
             if (!etor.MoveNext()) return "";
-            string first = etor.Current;
+            string first = etor.Current.FullPath;
             int len = first.Length;
             while (etor.MoveNext()) {
-                string current = etor.Current;
+                string current = etor.Current.FullPath;
                 len = Math.Min(len, current.Length);
                 for (int i = 0; i < len; i++) {
                     if (current[i] != first[i]) {

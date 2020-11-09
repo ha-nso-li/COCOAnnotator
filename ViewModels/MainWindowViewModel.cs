@@ -456,7 +456,7 @@ namespace LabelAnnotator.ViewModels {
             foreach (LabelRecordWithIndex i in visibleLabels) VisibleLabels.Add(i);
         }
         private void RefreshCommonPath() {
-            string CommonPath = Utils.GetCommonParentPath(Images.Select(s => s.FullPath));
+            string CommonPath = Utils.GetCommonParentPath(Images);
             foreach (ImageRecord i in Images) {
                 i.DisplayFilename = Utils.GetRelativePath(CommonPath, i.FullPath);
             }
