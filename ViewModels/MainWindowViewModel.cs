@@ -40,6 +40,7 @@ namespace LabelAnnotator.ViewModels {
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadLabel = new DelegateCommand(LoadLabel);
             CmdSaveLabel = new DelegateCommand(SaveLabel);
+            CmdCloseLabel = new DelegateCommand(CloseLabel);
             CmdManageLabel = new DelegateCommand(ManageLabel);
             CmdSetting = new DelegateCommand(Setting);
             CmdTryCommitBbox = new DelegateCommand(TryCommitBbox);
@@ -205,6 +206,15 @@ namespace LabelAnnotator.ViewModels {
                 }
                 Title = $"CSV 데이터셋 편집기 - {filePath}";
             }
+        }
+        public ICommand CmdCloseLabel { get; }
+        private void CloseLabel() {
+            bool res = CommonDialogService.MessageBoxOKCancel("현재 열려있는 레이블을 모두 초기화합니다");
+            if (!res) return;
+            Labels.Clear();
+            Images.Clear();
+            Categories.Clear();
+            Title = $"CSV 데이터셋 편집기";
         }
         public ICommand CmdManageLabel { get; }
         private void ManageLabel() {
