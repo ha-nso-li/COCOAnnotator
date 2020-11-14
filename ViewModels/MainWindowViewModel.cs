@@ -95,7 +95,12 @@ namespace LabelAnnotator.ViewModels {
             get => _SelectedCategory;
             set {
                 if (SetProperty(ref _SelectedCategory, value)) {
-                    if (value is null || value.All) BboxInsertMode = false;
+                    if (value is null || value.All) {
+                        BboxInsertMode = false;
+                        CategoryNameToAdd = "";
+                    } else {
+                        CategoryNameToAdd = value.Name;
+                    }
                     UpdateBoundaryBoxes();
                 }
             }
@@ -289,24 +294,36 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
             if (SelectedCategory is null || SelectedCategory.All || string.IsNullOrEmpty(CategoryNameToAdd) || CategoryNameToAdd == SelectedCategory.Name) return;
-            bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자의 분류 이름을 {CategoryNameToAdd}으로 변경합니다.");
-            if (!res) return;
-            ClassRecord OldCategory = SelectedCategory;
-            Categories.Remove(OldCategory);
-            ClassRecord rename = ClassRecord.FromName(CategoryNameToAdd);
-            bool addedflag = false;
-            for (int i = 0; i < Categories.Count; i++) {
-                if (Categories[i] >= rename) {
-                    Categories.Insert(i, rename);
-                    addedflag = true;
-                    break;
+            ClassRecord? rename = Categories.FirstOrDefault(s => s.Name == CategoryNameToAdd);
+            if (rename is null) {
+                bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 {CategoryNameToAdd}으로 변경합니다.");
+                if (!res) return;
+                rename = ClassRecord.FromName(CategoryNameToAdd);
+                ClassRecord OldCategory = SelectedCategory;
+                Categories.Remove(OldCategory);
+                bool addedflag = false;
+                for (int i = 0; i < Categories.Count; i++) {
+                    if (Categories[i] >= rename) {
+                        Categories.Insert(i, rename);
+                        addedflag = true;
+                        break;
+                    }
                 }
+                if (!addedflag) Categories.Add(rename);
+                foreach (LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
+                    label.Class = rename;
+                }
+                SelectedCategory = rename;
+            } else {
+                bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 다른 분류 {CategoryNameToAdd}로 병합합니다.");
+                if (!res) return;
+                ClassRecord OldCategory = SelectedCategory;
+                Categories.Remove(OldCategory);
+                foreach (LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
+                    label.Class = rename;
+                }
+                SelectedCategory = rename;
             }
-            if (!addedflag) Categories.Add(rename);
-            foreach (LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
-                label.Class = rename;
-            }
-            SelectedCategory = rename;
             RefreshColorOfCategories();
             UpdateBoundaryBoxes();
         }
