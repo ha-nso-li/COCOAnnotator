@@ -14,31 +14,31 @@ namespace LabelAnnotator.UserControls {
                 double deltaVertical, deltaHorizontal;
 
                 switch (VerticalAlignment) {
-                    case VerticalAlignment.Bottom:
-                        deltaVertical = Math.Min(-e.VerticalChange, designerItem.Height - designerItem.MinHeight);
-                        designerItem.Height -= deltaVertical;
-                        break;
-                    case VerticalAlignment.Top:
-                        deltaVertical = Math.Min(e.VerticalChange, designerItem.Height - designerItem.MinHeight);
-                        Canvas.SetTop(designerItem, Canvas.GetTop(designerItem) + deltaVertical);
-                        designerItem.Height -= deltaVertical;
-                        break;
-                    default:
-                        break;
+                case VerticalAlignment.Bottom:
+                    deltaVertical = Math.Min(-e.VerticalChange, designerItem.Height - designerItem.MinHeight);
+                    designerItem.Height -= deltaVertical;
+                    break;
+                case VerticalAlignment.Top:
+                    deltaVertical = Math.Min(e.VerticalChange, designerItem.Height - designerItem.MinHeight);
+                    Canvas.SetTop(designerItem, Canvas.GetTop(designerItem) + deltaVertical);
+                    designerItem.Height -= deltaVertical;
+                    break;
+                default:
+                    break;
                 }
 
                 switch (HorizontalAlignment) {
-                    case HorizontalAlignment.Left:
-                        deltaHorizontal = Math.Min(e.HorizontalChange, designerItem.Width - designerItem.MinWidth);
-                        Canvas.SetLeft(designerItem, Canvas.GetLeft(designerItem) + deltaHorizontal);
-                        designerItem.Width -= deltaHorizontal;
-                        break;
-                    case HorizontalAlignment.Right:
-                        deltaHorizontal = Math.Min(-e.HorizontalChange, designerItem.Width - designerItem.MinWidth);
-                        designerItem.Width -= deltaHorizontal;
-                        break;
-                    default:
-                        break;
+                case HorizontalAlignment.Left:
+                    deltaHorizontal = Math.Min(e.HorizontalChange, designerItem.Width - designerItem.MinWidth);
+                    Canvas.SetLeft(designerItem, Canvas.GetLeft(designerItem) + deltaHorizontal);
+                    designerItem.Width -= deltaHorizontal;
+                    break;
+                case HorizontalAlignment.Right:
+                    deltaHorizontal = Math.Min(-e.HorizontalChange, designerItem.Width - designerItem.MinWidth);
+                    designerItem.Width -= deltaHorizontal;
+                    break;
+                default:
+                    break;
                 }
             }
             e.Handled = true;

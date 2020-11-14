@@ -106,24 +106,24 @@ namespace LabelAnnotator.UserControls {
         }
         private void LabelsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
             switch (e.Action) {
-                case NotifyCollectionChangedAction.Reset:
-                    ClearBoundaryBoxes();
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    foreach (LabelRecordWithIndex? i in e.OldItems) {
-                        if (i is null) continue;
-                        (int idx, _) = i;
-                        List<ContentControl> delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => (int)s.Tag == idx).ToList();
-                        foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
-                    }
-                    break;
-                case NotifyCollectionChangedAction.Add:
-                    foreach (LabelRecordWithIndex? i in e.NewItems) {
-                        if (i is null) continue;
-                        (int idx, LabelRecord lbl) = i;
-                        AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
-                    }
-                    break;
+            case NotifyCollectionChangedAction.Reset:
+                ClearBoundaryBoxes();
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (LabelRecordWithIndex? i in e.OldItems) {
+                    if (i is null) continue;
+                    (int idx, _) = i;
+                    List<ContentControl> delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => (int)s.Tag == idx).ToList();
+                    foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
+                }
+                break;
+            case NotifyCollectionChangedAction.Add:
+                foreach (LabelRecordWithIndex? i in e.NewItems) {
+                    if (i is null) continue;
+                    (int idx, LabelRecord lbl) = i;
+                    AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
+                }
+                break;
             }
         }
         public IEnumerable<LabelRecordWithIndex>? Labels {

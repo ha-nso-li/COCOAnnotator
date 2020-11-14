@@ -332,38 +332,38 @@ namespace LabelAnnotator.ViewModels {
             if (SelectedCategory is null || SelectedCategory.All) return;
             bool? res = CommonDialogService.MessageBoxYesNoCancel($"포함한 경계 상자의 분류가 {SelectedCategory} 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
-                case true: {
-                        Labels.RemoveAll(s => s.Class == SelectedCategory);
-                        if (Categories.Count <= 2) {
-                            Categories.Clear();
-                            SelectedCategory = null;
-                        } else {
-                            Categories.Remove(SelectedCategory);
-                            SelectedCategory = Categories.First(s => s.All);
-                        }
-                        RefreshColorOfCategories();
-                        break;
-                    }
-                case false: {
-                        List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
-                        foreach (LabelRecord i in delete) Labels.Remove(i);
-                        foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
-                        if (Categories.Count <= 2) {
-                            Categories.Clear();
-                            SelectedCategory = null;
-                        } else {
-                            Categories.Remove(SelectedCategory);
-                            SelectedCategory = Categories.First(s => s.All);
-                        }
-                        if (SelectedImage is null && Images.Count >= 1) {
-                            SelectedImage = Images[0];
-                            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
-                        }
-                        RefreshColorOfCategories();
-                        break;
-                    }
-                case null:
-                    return;
+            case true: {
+                Labels.RemoveAll(s => s.Class == SelectedCategory);
+                if (Categories.Count <= 2) {
+                    Categories.Clear();
+                    SelectedCategory = null;
+                } else {
+                    Categories.Remove(SelectedCategory);
+                    SelectedCategory = Categories.First(s => s.All);
+                }
+                RefreshColorOfCategories();
+                break;
+            }
+            case false: {
+                List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
+                foreach (LabelRecord i in delete) Labels.Remove(i);
+                foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                if (Categories.Count <= 2) {
+                    Categories.Clear();
+                    SelectedCategory = null;
+                } else {
+                    Categories.Remove(SelectedCategory);
+                    SelectedCategory = Categories.First(s => s.All);
+                }
+                if (SelectedImage is null && Images.Count >= 1) {
+                    SelectedImage = Images[0];
+                    EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
+                }
+                RefreshColorOfCategories();
+                break;
+            }
+            case null:
+                return;
             }
         }
         #endregion
@@ -403,26 +403,26 @@ namespace LabelAnnotator.ViewModels {
         private void DeleteImage(IList SelectedItems) {
             bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
-                case true: {
-                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                        if (selected.Count == 0) return;
-                        Labels.RemoveAll(s => selected.Contains(s.Image));
-                        VisibleLabels.Clear();
-                        break;
-                    }
-                case false: {
-                        SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                        if (selected.Count == 0) return;
-                        Labels.RemoveAll(s => selected.Contains(s.Image));
-                        SelectedImage = null;
-                        foreach (ImageRecord i in selected) {
-                            Images.Remove(i);
-                        }
-                        RefreshCommonPath();
-                        break;
-                    }
-                case null:
-                    return;
+            case true: {
+                SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
+                if (selected.Count == 0) return;
+                Labels.RemoveAll(s => selected.Contains(s.Image));
+                VisibleLabels.Clear();
+                break;
+            }
+            case false: {
+                SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
+                if (selected.Count == 0) return;
+                Labels.RemoveAll(s => selected.Contains(s.Image));
+                SelectedImage = null;
+                foreach (ImageRecord i in selected) {
+                    Images.Remove(i);
+                }
+                RefreshCommonPath();
+                break;
+            }
+            case null:
+                return;
             }
         }
         public ICommand CmdImagesListDrop { get; }

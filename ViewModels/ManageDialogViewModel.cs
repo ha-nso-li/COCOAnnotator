@@ -372,92 +372,91 @@ namespace LabelAnnotator.ViewModels {
             List<ImageRecord> shuffledImages = images.OrderBy(s => r.Next()).ToList();
             ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
             switch (TacticForSplitLabel) {
-                case TacticsForSplitLabel.DevideToNLabels:
-                    // 균등 분할
-                    if (NValueForSplitLabel < 2 || NValueForSplitLabel > images.Count) {
-                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
-                        return;
+            case TacticsForSplitLabel.DevideToNLabels:
+                // 균등 분할
+                if (NValueForSplitLabel < 2 || NValueForSplitLabel > images.Count) {
+                    CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
+                    return;
+                }
+                List<StreamWriter> files = new List<StreamWriter>();
+                var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
+                for (int i = 0; i < NValueForSplitLabel; i++) {
+                    // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
+                    StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.{i + 1}{Path.GetExtension(filePath)}"));
+                    files.Add(file);
+                    infoByPartition.Add((new HashSet<ClassRecord>(), 0));
+                }
+                foreach (ImageRecord image in shuffledImages) {
+                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                    int idx;
+                    if (labelsInImage.Any()) {
+                        // 양성 이미지인 경우.
+                        // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
+                        (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count())).OrderByDescending(s => s.Item3)
+                                                     .ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
+                        foreach (LabelRecord label in labelsInImage) files[idx].WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
+                    } else {
+                        // 음성 이미지인 경우.
+                        // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
+                        (idx, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount)).OrderBy(s => s.ImagesCount)
+                                                  .ThenBy(s => r.Next()).First();
+                        files[idx].WriteLine(SerializationService.SerializeAsNegative(basePath, image));
                     }
-                    List<StreamWriter> files = new List<StreamWriter>();
-                    var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
-                    for (int i = 0; i < NValueForSplitLabel; i++) {
-                        // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
-                        StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.{i + 1}{Path.GetExtension(filePath)}"));
-                        files.Add(file);
-                        infoByPartition.Add((new HashSet<ClassRecord>(), 0));
+                    // 파티션별 정보 갱신
+                    var (Classes, ImagesCount) = infoByPartition[idx];
+                    Classes.UnionWith(labelsInImage.Select(s => s.Class));
+                    ImagesCount++;
+                    infoByPartition[idx] = (Classes, ImagesCount);
+                }
+                foreach (StreamWriter file in files) {
+                    file.Dispose();
+                }
+                break;
+            case TacticsForSplitLabel.TakeNSamples: {
+                // 일부 추출
+                if (NValueForSplitLabel < 1 || NValueForSplitLabel >= images.Count) {
+                    CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
+                    return;
+                }
+                using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.1{Path.GetExtension(filePath)}"));
+                using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.2{Path.GetExtension(filePath)}"));
+                int ImageCountOfSplit = 0;
+                HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
+                HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
+                foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
+                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                    int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
+                    int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
+                    if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                        // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
+                        // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
+                        // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높거나 같은 경우
+                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
+                        else OutFileSplit.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
+                        ImageCountOfSplit++;
+                        ClassesSplit.UnionWith(labelsInImage.Select(s => s.Class));
+                    } else {
+                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
+                        else OutFileOriginal.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
+                        ClassesOriginal.UnionWith(labelsInImage.Select(s => s.Class));
                     }
-                    foreach (ImageRecord image in shuffledImages) {
+                }
+                break;
+            }
+            case TacticsForSplitLabel.SplitToSubFolders:
+                // 하위 폴더로 분할
+                IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
+                foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
+                    string TargetDir = Path.Combine(Path.GetDirectoryName(filePath) ?? "", imagesInDir.Key);
+                    // 파일 이름: (원래 파일 이름).(최종 폴더 이름).(원래 확장자)
+                    using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
+                    foreach (ImageRecord image in imagesInDir) {
                         IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                        int idx;
-                        if (labelsInImage.Any()) {
-                            // 양성 이미지인 경우.
-                            // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
-                            (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count())).OrderByDescending(s => s.Item3)
-                                                         .ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
-                            foreach (LabelRecord label in labelsInImage) files[idx].WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
-                        } else {
-                            // 음성 이미지인 경우.
-                            // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                            (idx, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount)).OrderBy(s => s.ImagesCount)
-                                                      .ThenBy(s => r.Next()).First();
-                            files[idx].WriteLine(SerializationService.SerializeAsNegative(basePath, image));
-                        }
-                        // 파티션별 정보 갱신
-                        var (Classes, ImagesCount) = infoByPartition[idx];
-                        Classes.UnionWith(labelsInImage.Select(s => s.Class));
-                        ImagesCount++;
-                        infoByPartition[idx] = (Classes, ImagesCount);
+                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
+                        else OutputFile.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
                     }
-                    foreach (StreamWriter file in files) {
-                        file.Dispose();
-                    }
-                    break;
-                case TacticsForSplitLabel.TakeNSamples:
-                    // 일부 추출
-                    if (NValueForSplitLabel < 1 || NValueForSplitLabel >= images.Count) {
-                        CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
-                        return;
-                    }
-                    {
-                        using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.1{Path.GetExtension(filePath)}"));
-                        using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.2{Path.GetExtension(filePath)}"));
-                        int ImageCountOfSplit = 0;
-                        HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
-                        HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
-                        foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
-                            IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                            int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
-                            int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
-                            if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
-                                // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
-                                // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                                // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높거나 같은 경우
-                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
-                                else OutFileSplit.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
-                                ImageCountOfSplit++;
-                                ClassesSplit.UnionWith(labelsInImage.Select(s => s.Class));
-                            } else {
-                                if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
-                                else OutFileOriginal.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
-                                ClassesOriginal.UnionWith(labelsInImage.Select(s => s.Class));
-                            }
-                        }
-                    }
-                    break;
-                case TacticsForSplitLabel.SplitToSubFolders:
-                    // 하위 폴더로 분할
-                    IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
-                    foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
-                        string TargetDir = Path.Combine(Path.GetDirectoryName(filePath) ?? "", imagesInDir.Key);
-                        // 파일 이름: (원래 파일 이름).(최종 폴더 이름).(원래 확장자)
-                        using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
-                        foreach (ImageRecord image in imagesInDir) {
-                            IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                            if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
-                            else OutputFile.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
-                        }
-                    }
-                    break;
+                }
+                break;
             }
         }
         #endregion

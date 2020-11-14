@@ -32,8 +32,7 @@ namespace LabelAnnotator.ViewModels {
         }
 
         public override void OnDialogClosed() {
-            SettingService.Format = LTRB switch
-            {
+            SettingService.Format = LTRB switch {
                 true => SettingNames.FormatLTRB,
                 false => SettingNames.FormatCXCYWH
             };

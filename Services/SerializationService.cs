@@ -12,16 +12,16 @@ namespace LabelAnnotator.Services {
         public string SerializeAsPositive(string BasePath, LabelRecord Label, string Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
             switch (Format) {
-                case "LTRB":
-                    return $"{path},{Math.Floor(Label.Left):0},{Math.Floor(Label.Top):0},{Math.Ceiling(Label.Right):0},{Math.Ceiling(Label.Bottom):0},{Label.Class}";
-                case "CXCYWH":
-                    double x = (Label.Left + Label.Right) / 2;
-                    double y = (Label.Top + Label.Bottom) / 2;
-                    double w = Label.Right - Label.Left;
-                    double h = Label.Bottom - Label.Top;
-                    return $"{path},{x:0.#},{y:0.#},{w:0.#},{h:0.#},{Label.Class}";
-                default:
-                    return "";
+            case "LTRB":
+                return $"{path},{Math.Floor(Label.Left):0},{Math.Floor(Label.Top):0},{Math.Ceiling(Label.Right):0},{Math.Ceiling(Label.Bottom):0},{Label.Class}";
+            case "CXCYWH":
+                double x = (Label.Left + Label.Right) / 2;
+                double y = (Label.Top + Label.Bottom) / 2;
+                double w = Label.Right - Label.Left;
+                double h = Label.Bottom - Label.Top;
+                return $"{path},{x:0.#},{y:0.#},{w:0.#},{h:0.#},{Label.Class}";
+            default:
+                return "";
             }
         }
 
@@ -54,17 +54,17 @@ namespace LabelAnnotator.Services {
             success &= double.TryParse(split[4], out double num4);
             if (!success) return (null, null);
             switch (Format) {
-                case SettingNames.FormatLTRB:
-                    return (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname)));
-                case SettingNames.FormatCXCYWH:
-                    // num1 = x, num2 = y, num3 = w, num4 = h
-                    double left = num1 - num3 / 2;
-                    double right = num1 + num3 / 2;
-                    double top = num2 - num4 / 2;
-                    double bottom = num2 + num4 / 2;
-                    return (img, new LabelRecord(img, left, top, right, bottom, ClassRecord.FromName(classname)));
-                default:
-                    return (null, null);
+            case SettingNames.FormatLTRB:
+                return (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname)));
+            case SettingNames.FormatCXCYWH:
+                // num1 = x, num2 = y, num3 = w, num4 = h
+                double left = num1 - num3 / 2;
+                double right = num1 + num3 / 2;
+                double top = num2 - num4 / 2;
+                double bottom = num2 + num4 / 2;
+                return (img, new LabelRecord(img, left, top, right, bottom, ClassRecord.FromName(classname)));
+            default:
+                return (null, null);
             }
         }
     }

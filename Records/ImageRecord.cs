@@ -22,15 +22,13 @@ namespace LabelAnnotator.Records {
 
         #region 동일성
         public override bool Equals(object? obj) {
-            return obj switch
-            {
+            return obj switch {
                 ImageRecord obj_r => Equals(obj_r),
                 _ => false
             };
         }
         public bool Equals(ImageRecord? other) {
-            return other switch
-            {
+            return other switch {
                 ImageRecord _ => FullPath.Equals(other.FullPath),
                 _ => false
             };
@@ -42,16 +40,14 @@ namespace LabelAnnotator.Records {
 
         #region 비교
         public int CompareTo(object? obj) {
-            return obj switch
-            {
+            return obj switch {
                 ImageRecord obj_r => CompareTo(obj_r),
                 null => 1,
                 _ => throw new ArgumentException()
             };
         }
         public int CompareTo(ImageRecord? other) {
-            return other switch
-            {
+            return other switch {
                 ImageRecord _ => FullPath.CompareTo(other.FullPath),
                 null => 1
             };

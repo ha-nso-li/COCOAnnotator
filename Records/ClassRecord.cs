@@ -16,23 +16,20 @@ namespace LabelAnnotator.Records {
 
         #region 동일성
         public override bool Equals(object? obj) {
-            return obj switch
-            {
+            return obj switch {
                 ClassRecord obj_r => Equals(obj_r),
                 _ => false
             };
         }
         public bool Equals(ClassRecord? other) {
-            return other switch
-            {
+            return other switch {
                 ClassRecord _ when All => other.All,
                 ClassRecord _ => Name.Equals(other.Name),
                 _ => false
             };
         }
         public override int GetHashCode() {
-            return All switch
-            {
+            return All switch {
                 true => true.GetHashCode(),
                 false => Name.GetHashCode()
             };
@@ -43,16 +40,14 @@ namespace LabelAnnotator.Records {
 
         #region 비교
         public int CompareTo(object? obj) {
-            return obj switch
-            {
+            return obj switch {
                 ImageRecord obj_r => CompareTo(obj_r),
                 null => 1,
                 _ => throw new ArgumentException()
             };
         }
         public int CompareTo(ClassRecord? other) {
-            return other switch
-            {
+            return other switch {
                 ClassRecord _ when All && other.All => 0,
                 ClassRecord _ when All && !other.All => -1,
                 ClassRecord _ when !All && other.All => 1,
