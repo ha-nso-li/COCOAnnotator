@@ -26,6 +26,7 @@ namespace LabelAnnotator.ViewModels {
             _NValueForSplitLabel = 2;
             _LogUndupeLabel = "";
             _IoUThreshold = 0.5;
+            _UndupeWithoutClass = true;
 
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
             CmdDeleteUnusedImages = new DelegateCommand(DeleteUnusedImages);
@@ -43,7 +44,7 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByCategoryForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
+        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByClassForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
         private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
         private readonly SortedSet<ImageRecord> UnusedImagesForVerify = new SortedSet<ImageRecord>();
@@ -87,6 +88,11 @@ namespace LabelAnnotator.ViewModels {
             get => _IoUThreshold;
             set => SetProperty(ref _IoUThreshold, value);
         }
+        private bool _UndupeWithoutClass;
+        public bool UndupeWithoutClass {
+            get => _UndupeWithoutClass;
+            set => SetProperty(ref _UndupeWithoutClass, value);
+        }
         private string _LogUndupeLabel;
         public string LogUndupeLabel {
             get => _LogUndupeLabel;
@@ -95,11 +101,6 @@ namespace LabelAnnotator.ViewModels {
                     EventAggregator.GetEvent<ScrollTxtLogUndupeLabel>().Publish();
                 }
             }
-        }
-        private int _ProgressUndupeLabelValue;
-        public int ProgressUndupeLabelValue {
-            get => _ProgressUndupeLabelValue;
-            set => SetProperty(ref _ProgressUndupeLabelValue, value);
         }
         #endregion
 
@@ -114,7 +115,7 @@ namespace LabelAnnotator.ViewModels {
             LogVerifyLabel = "";
             ProgressVerifyLabelValue = 0;
             Task.Run(() => {
-                PositiveLabelsByCategoryForVerify.Clear();
+                PositiveLabelsByClassForVerify.Clear();
                 PositiveImagesForVerify.Clear();
                 NegativeImagesForVerify.Clear();
                 UnusedImagesForVerify.Clear();
@@ -192,22 +193,22 @@ namespace LabelAnnotator.ViewModels {
                             continue;
                         }
                     }
-                    if (PositiveLabelsByCategoryForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInCategory)) {
+                    if (PositiveLabelsByClassForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInClass)) {
                         // 완전히 동일한 레이블이 이미 존재하는지 검사
-                        if (positiveLabelsInCategory.Contains(lbl)) {
+                        if (positiveLabelsInClass.Contains(lbl)) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 동일한 레이블이 이미 존재합니다.");
                             DetectedFlag = true;
                             continue;
                         } else {
                             // 유효한 양성 레이블. (같은 분류가 이미 있음)
                             PositiveImagesForVerify.Add(img);
-                            positiveLabelsInCategory.Add(lbl);
+                            positiveLabelsInClass.Add(lbl);
                         }
                     } else {
                         // 유효한 양성 레이블. (같은 분류가 없음)
                         PositiveImagesForVerify.Add(img);
                         List<LabelRecord> labels = new List<LabelRecord> { lbl };
-                        PositiveLabelsByCategoryForVerify.Add(lbl.Class, labels);
+                        PositiveLabelsByClassForVerify.Add(lbl.Class, labels);
                     }
                 }
                 ProgressVerifyLabelValue = 100;
@@ -242,15 +243,15 @@ namespace LabelAnnotator.ViewModels {
                 AppendLogVerifyLabel(
                     "",
                     "분석이 완료되었습니다.",
-                    $"총 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
-                    $"양성 레이블 개수: {PositiveLabelsByCategoryForVerify.Sum(s => s.Value.Count)}",
+                    $"총 레이블 개수: {PositiveLabelsByClassForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
+                    $"양성 레이블 개수: {PositiveLabelsByClassForVerify.Sum(s => s.Value.Count)}",
                     $"음성 레이블 개수: {NegativeImagesForVerify.Count}",
                     $"양성 레이블이 있는 이미지 개수: {PositiveImagesForVerify.Count}",
                     $"총 이미지 개수: {NegativeImagesForVerify.Count + PositiveImagesForVerify.Count}",
-                    $"총 분류 개수: {PositiveLabelsByCategoryForVerify.Count}",
+                    $"총 분류 개수: {PositiveLabelsByClassForVerify.Count}",
                     ""
                 );
-                AppendLogVerifyLabel(PositiveLabelsByCategoryForVerify.Select(s =>
+                AppendLogVerifyLabel(PositiveLabelsByClassForVerify.Select(s =>
                     $"분류 이름: {s.Key}, 레이블 개수: {s.Value.Count}, 레이블이 있는 이미지 개수: {s.Value.Select(s => s.Image).Distinct().Count()}").ToArray());
             });
         }
@@ -269,7 +270,7 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdExportVerifiedLabel { get; }
         private void ExportVerifiedLabel() {
-            if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByCategoryForVerify.Count == 0) {
+            if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByClassForVerify.Count == 0) {
                 CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
                 return;
             }
@@ -279,7 +280,7 @@ namespace LabelAnnotator.ViewModels {
             string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
             using StreamWriter f = File.CreateText(filePath);
             // 양성 레이블
-            foreach (IGrouping<ImageRecord, LabelRecord> i in PositiveLabelsByCategoryForVerify.SelectMany(s => s.Value).GroupBy(s => s.Image)) {
+            foreach (IGrouping<ImageRecord, LabelRecord> i in PositiveLabelsByClassForVerify.SelectMany(s => s.Value).GroupBy(s => s.Image)) {
                 foreach (LabelRecord j in i) {
                     f.WriteLine(SerializationService.SerializeAsPositive(saveBasePath, j, SettingService.Format));
                 }
@@ -466,7 +467,6 @@ namespace LabelAnnotator.ViewModels {
         private void UndupeLabel() {
             if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
                 LogUndupeLabel = "";
-                ProgressUndupeLabelValue = 0;
                 Task.Run(() => {
                     AppendLogUndupeLabel($"{filePath}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                     // 로드
@@ -475,20 +475,19 @@ namespace LabelAnnotator.ViewModels {
                     string basePath = Path.GetDirectoryName(filePath) ?? "";
                     string[] lines = File.ReadAllLines(filePath);
                     for (int i = 0; i < lines.Length; i++) {
-                        ProgressUndupeLabelValue = (int)((double)i / lines.Length * 20); // 0 to 20
                         (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
                         if (img is object) {
                             if (lbl is object) LabelsForUndupe.Add(lbl);
                             ImagesForUndupe.Add(img);
                         }
                     }
-                    ProgressUndupeLabelValue = 20;
                     // 중복 제거
                     int TotalSuppressedBoxesCount = 0;
-                    var labelsByImageAndCategory = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
-                    int TotalUniqueImageAndCategoryCount = labelsByImageAndCategory.Count;
-                    foreach (var (idx, labelsInImage) in labelsByImageAndCategory.Select((s, idx) => (idx, s))) {
-                        ProgressUndupeLabelValue = (int)((double)idx / TotalUniqueImageAndCategoryCount * 80 + 20); // 20 to 100
+                    IEnumerable<IEnumerable<LabelRecord>> LabelsByShard;
+                    if (UndupeWithoutClass) LabelsByShard = LabelsForUndupe.ToLookup(s => s.Image);
+                    else LabelsByShard = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
+                    int CountOfShard = LabelsByShard.Count();
+                    foreach (var (idx, labelsInImage) in LabelsByShard.Select((s, idx) => (idx, s))) {
                         List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
                         int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count >= 2) {
@@ -517,13 +516,12 @@ namespace LabelAnnotator.ViewModels {
                             SuppressedBoxesCount += labelsToSuppress.Count;
                             TotalSuppressedBoxesCount += labelsToSuppress.Count;
                         }
-                        if (SuppressedBoxesCount > 0) AppendLogUndupeLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.Key.Image.FullPath}");
+                        if (SuppressedBoxesCount > 0) {
+                            AppendLogUndupeLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.First().Image.FullPath}");
+                        }
                     }
-                    ProgressUndupeLabelValue = 100;
                     if (TotalSuppressedBoxesCount == 0) AppendLogUndupeLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
-                    else {
-                        AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                    }
+                    else AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
                 });
             }
         }
