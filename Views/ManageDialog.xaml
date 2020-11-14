@@ -1,6 +1,6 @@
 <UserControl x:Class="LabelAnnotator.Views.ManageDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uc="clr-namespace:LabelAnnotator.UserControls"
-        mc:Ignorable="d" xmlns:prism="http://prismlibrary.com/">
+        mc:Ignorable="d" xmlns:prism="http://prismlibrary.com/" xmlns:vm="clr-namespace:LabelAnnotator.ViewModels" d:DataContext="{d:DesignInstance Type=vm:ManageDialogViewModel}">
     <prism:Dialog.WindowStyle>
         <Style TargetType="Window">
             <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
@@ -29,7 +29,7 @@
                             <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyLabelValue}" Margin="5" Height="20" />
                         </DockPanel>
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyLabel" Text="{Binding LogVerifyLabel}"
-                                 IsReadOnly="True" IsTabStop="False" />
+                                IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="레이블 병합">
@@ -63,8 +63,8 @@
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
                         <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="13" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
-                                 IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
-                                 Margin="2" />
+                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
+                                Margin="2" />
                         <Button DockPanel.Dock="Bottom" TabIndex="14" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                 Command="{Binding CmdSplitLabel}" />
                     </DockPanel>
