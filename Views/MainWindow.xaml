@@ -80,8 +80,9 @@
                     <Setter Property="Margin" Value="0,0,2,2" />
                 </Style>
             </DockPanel.Resources>
-            <Button DockPanel.Dock="Bottom" TabIndex="19" Content="아래로 (D)" Command="{Binding CmdImageDown}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="18" Content="위로 (E)" Command="{Binding CmdImageUp}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="20" Content="아래로 (D)" Command="{Binding CmdImageDown}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="19" Content="위로 (E)" Command="{Binding CmdImageUp}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="18" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
             <Button DockPanel.Dock="Bottom" TabIndex="17" Content="선택 이미지 삭제" Command="{Binding CmdDeleteImage}" CommandParameter="{Binding SelectedItems, ElementName=ViewImagesList}" />
             <Button DockPanel.Dock="Bottom" TabIndex="16" Content="새 이미지 추가" Command="{Binding CmdAddImage}" />
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,3">

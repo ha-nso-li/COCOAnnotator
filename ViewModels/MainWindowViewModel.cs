@@ -55,6 +55,7 @@ namespace LabelAnnotator.ViewModels {
             CmdImageDown = new DelegateCommand(ImageDown);
             CmdAddImage = new DelegateCommand(AddImage);
             CmdDeleteImage = new DelegateCommand<IList>(DeleteImage);
+            CmdDeleteNegativeImage = new DelegateCommand(DeleteNegativeImage);
             CmdImagesListDrop = new DelegateCommand<DragEventArgs>(ImagesListDrop);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
             CmdWindowGotFocus = new DelegateCommand<RoutedEventArgs>(WindowGotFocus);
@@ -434,6 +435,18 @@ namespace LabelAnnotator.ViewModels {
             case null:
                 return;
             }
+        }
+        public ICommand CmdDeleteNegativeImage { get; }
+        private void DeleteNegativeImage() {
+            bool res = CommonDialogService.MessageBoxOKCancel("현재 레이블 파일에 포함된 모든 음성 샘플 이미지를 지웁니다.");
+            if (!res) return;
+            SortedSet<ImageRecord> images = new SortedSet<ImageRecord>(Images);
+            images.ExceptWith(Labels.Select(s => s.Image));
+            if (images.Count == 0) return;
+            foreach (ImageRecord i in images) {
+                Images.Remove(i);
+            }
+            RefreshCommonPath();
         }
         public ICommand CmdImagesListDrop { get; }
         private void ImagesListDrop(DragEventArgs e) {

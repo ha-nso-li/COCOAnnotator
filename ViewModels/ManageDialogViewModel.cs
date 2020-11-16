@@ -261,7 +261,7 @@ namespace LabelAnnotator.ViewModels {
                 CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 이미지 폴더 내에 레이블에 사용중이지 않은 이미지가 없습니다.");
                 return;
             }
-            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 레이블에 사용중이지 않은 이미지를 삭제합니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 레이블에 사용중이지 않은 이미지를 디스크에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
             foreach (ImageRecord i in UnusedImagesForVerify) {
                 File.Delete(i.FullPath);
