@@ -453,8 +453,8 @@ namespace LabelAnnotator.ViewModels {
                     using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
                     foreach (ImageRecord image in imagesInDir) {
                         IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializeAsPositive(basePath, label, SettingService.Format));
-                        else OutputFile.WriteLine(SerializationService.SerializeAsNegative(basePath, image));
+                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.SerializeAsPositive(TargetDir, label, SettingService.Format));
+                        else OutputFile.WriteLine(SerializationService.SerializeAsNegative(TargetDir, image));
                     }
                 }
                 break;
