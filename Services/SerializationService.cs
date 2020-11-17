@@ -5,16 +5,14 @@ using System.IO;
 
 namespace LabelAnnotator.Services {
     public class SerializationService {
-        /// <summary>
-        /// 주어진 레이블을 직렬화합니다.
-        /// </summary>
-        /// <param name="Path">레이블 파일이 위치한 경로에서 이미지 파일로 가는 상대 경로입니다.</param>
+        /// <summary>주어진 레이블을 직렬화합니다.</summary>
+        /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
         public string SerializeAsPositive(string BasePath, LabelRecord Label, string Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
             switch (Format) {
-            case "LTRB":
+            case SettingNames.FormatLTRB:
                 return $"{path},{Math.Floor(Label.Left):0},{Math.Floor(Label.Top):0},{Math.Ceiling(Label.Right):0},{Math.Ceiling(Label.Bottom):0},{Label.Class}";
-            case "CXCYWH":
+            case SettingNames.FormatCXCYWH:
                 double x = (Label.Left + Label.Right) / 2;
                 double y = (Label.Top + Label.Bottom) / 2;
                 double w = Label.Right - Label.Left;
@@ -25,10 +23,8 @@ namespace LabelAnnotator.Services {
             }
         }
 
-        /// <summary>
-        /// 주어진 이미지를 음성 샘플로 간주하여 직렬화합니다.
-        /// </summary>
-        /// <param name="Path">레이블 파일이 위치한 경로에서 이미지 파일로 가는 상대 경로입니다.</param>
+        /// <summary>주어진 이미지를 음성 샘플로 간주하여 직렬화합니다.</summary>
+        /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
         public string SerializeAsNegative(string BasePath, ImageRecord Image) => $"{Utils.GetRelativePath(BasePath, Image.FullPath)},,,,,";
 
         /// <summary>
