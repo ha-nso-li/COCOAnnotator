@@ -358,7 +358,11 @@ namespace LabelAnnotator.ViewModels {
             case false: {
                 List<LabelRecord> delete = Labels.Where(s => s.Class == SelectedCategory).ToList();
                 foreach (LabelRecord i in delete) Labels.Remove(i);
-                foreach (ImageRecord i in delete.Select(s => s.Image).Distinct()) Images.Remove(i);
+                SortedSet<ImageRecord> labelImage = new SortedSet<ImageRecord>(Labels.Select(s => s.Image));
+                SortedSet<ImageRecord> deleteImage = new SortedSet<ImageRecord>(delete.Select(s => s.Image));
+                foreach (ImageRecord i in deleteImage) {
+                    if (!labelImage.Contains(i)) Images.Remove(i);
+                }
                 if (Categories.Count <= 2) {
                     Categories.Clear();
                     SelectedCategory = null;
