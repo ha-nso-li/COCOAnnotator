@@ -398,28 +398,28 @@ namespace LabelAnnotator.UserControls {
                     double right = Math.Clamp((Canvas.GetLeft(bbox) + bbox.Width) / CurrentScale, 0, bitmap.PixelWidth);
                     double bottom = Math.Clamp((Canvas.GetTop(bbox) + bbox.Height) / CurrentScale, 0, bitmap.PixelHeight);
                     LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
-                    if (realBox is LabelRecordWithIndex realBox2) {
+                    if (realBox is LabelRecordWithIndex) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 기존 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
-                        if (Math.Abs(realBox2.Label.Left - left) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Left - left) < errorThreshold) {
                             notChangedPositionsCount++;
-                            left = realBox2.Label.Left;
+                            left = realBox.Label.Left;
                         }
-                        if (Math.Abs(realBox2.Label.Top - top) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Top - top) < errorThreshold) {
                             notChangedPositionsCount++;
-                            top = realBox2.Label.Top;
+                            top = realBox.Label.Top;
                         }
-                        if (Math.Abs(realBox2.Label.Right - right) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Right - right) < errorThreshold) {
                             notChangedPositionsCount++;
-                            right = realBox2.Label.Right;
+                            right = realBox.Label.Right;
                         }
-                        if (Math.Abs(realBox2.Label.Bottom - bottom) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Bottom - bottom) < errorThreshold) {
                             notChangedPositionsCount++;
-                            bottom = realBox2.Label.Bottom;
+                            bottom = realBox.Label.Bottom;
                         }
                         if (notChangedPositionsCount < 4) {
-                            changed.Add(new LabelRecordWithIndex(realBox2.Index, new LabelRecord(realBox2.Label.Image, left, top, right, bottom, realBox2.Label.Class)));
+                            changed.Add(new LabelRecordWithIndex(realBox.Index, new LabelRecord(realBox.Label.Image, left, top, right, bottom, realBox.Label.Class)));
                         }
                     }
                 }

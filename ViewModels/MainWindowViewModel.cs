@@ -429,10 +429,13 @@ namespace LabelAnnotator.ViewModels {
                 SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
                 if (selected.Count == 0) return;
                 Labels.RemoveAll(s => selected.Contains(s.Image));
-                SelectedImage = null;
+                int deletedMinIndex = int.MaxValue;
                 foreach (ImageRecord i in selected) {
-                    Images.Remove(i);
+                    int index = Images.IndexOf(i);
+                    if (deletedMinIndex >= index) deletedMinIndex = index;
+                    Images.RemoveAt(index);
                 }
+                SelectedImage = Images[Math.Clamp(deletedMinIndex, 0, Images.Count - 1)];
                 RefreshCommonPath();
                 break;
             }

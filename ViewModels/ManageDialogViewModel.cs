@@ -399,8 +399,7 @@ namespace LabelAnnotator.ViewModels {
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                        (idx, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount)).OrderBy(s => s.ImagesCount)
-                                                  .ThenBy(s => r.Next()).First();
+                        (idx, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount)).OrderBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
                         files[idx].WriteLine(SerializationService.SerializeAsNegative(basePath, image));
                     }
                     // 파티션별 정보 갱신
