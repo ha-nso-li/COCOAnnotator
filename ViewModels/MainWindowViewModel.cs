@@ -432,10 +432,10 @@ namespace LabelAnnotator.ViewModels {
                 int deletedMinIndex = int.MaxValue;
                 foreach (ImageRecord i in selected) {
                     int index = Images.IndexOf(i);
-                    if (deletedMinIndex >= index) deletedMinIndex = index;
+                    if (deletedMinIndex > index) deletedMinIndex = index;
                     Images.RemoveAt(index);
                 }
-                SelectedImage = Images[Math.Clamp(deletedMinIndex, 0, Images.Count - 1)];
+                SelectedImage = Images[Math.Min(deletedMinIndex, Images.Count - 1)];
                 RefreshCommonPath();
                 break;
             }

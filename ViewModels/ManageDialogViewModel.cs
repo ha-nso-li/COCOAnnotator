@@ -122,7 +122,7 @@ namespace LabelAnnotator.ViewModels {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 var CacheForImageSize = new SortedDictionary<ImageRecord, (int Width, int Height)?>();
                 string[] lines = File.ReadAllLines(filePath);
-                bool DetectedFlag = false;
+                bool InvalidLabelFlag = false;
                 AppendLogVerifyLabel($"\"{filePath}\"의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
                     ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
@@ -130,23 +130,23 @@ namespace LabelAnnotator.ViewModels {
                     (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
                     if (img is null) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. CSV 값 개수가 6개 미만이거나 좌표값이 숫자 값이 아닙니다.");
-                        DetectedFlag = true;
+                        InvalidLabelFlag = true;
                         continue;
                     }
                     if (!File.Exists(img.FullPath)) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 해당 경로에 실존하지 않습니다.");
-                        DetectedFlag = true;
+                        InvalidLabelFlag = true;
                         continue;
                     }
                     if (NegativeImagesForVerify.Contains(img)) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 음성 샘플로 사용된 적이 있는 이미지가 한번 더 사용되었습니다.");
-                        DetectedFlag = true;
+                        InvalidLabelFlag = true;
                         continue;
                     }
                     if (lbl is null) {
                         if (PositiveImagesForVerify.Contains(img)) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 양성 레이블에서 사용된 적이 있는 이미지가 음성 샘플로 사용되었습니다.");
-                            DetectedFlag = true;
+                            InvalidLabelFlag = true;
                             continue;
                         } else {
                             // 음성 샘플
@@ -157,7 +157,7 @@ namespace LabelAnnotator.ViewModels {
                     // 경계 상자 위치 좌표가 위아래 혹은 좌우가 뒤집혀있는지 검사.
                     if (lbl.Left >= lbl.Right || lbl.Top >= lbl.Bottom) {
                         AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자의 좌표 값이 부적절합니다. 상하좌우가 뒤집혀 있는지 확인하세요.");
-                        DetectedFlag = true;
+                        InvalidLabelFlag = true;
                         continue;
                     }
                     // 경계 상자 위치 좌표가 이미지 크기 밖으로 나가는지 검사.
@@ -176,20 +176,20 @@ namespace LabelAnnotator.ViewModels {
                                 CacheForImageSize.Add(img, (width, height));
                             } catch (NotSupportedException) {
                                 AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 손상되어 읽어올 수 없습니다.");
-                                DetectedFlag = true;
+                                InvalidLabelFlag = true;
                                 CacheForImageSize.Add(img, null);
                                 continue;
                             }
                         }
                         if (lbl.Left < 0 || lbl.Top < 0 || lbl.Right > width || lbl.Bottom > height) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
-                            DetectedFlag = true;
+                            InvalidLabelFlag = true;
                             continue;
                         }
                     } else {
                         if (lbl.Left < 0 || lbl.Top < 0) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
-                            DetectedFlag = true;
+                            InvalidLabelFlag = true;
                             continue;
                         }
                     }
@@ -197,7 +197,7 @@ namespace LabelAnnotator.ViewModels {
                         // 완전히 동일한 레이블이 이미 존재하는지 검사
                         if (positiveLabelsInClass.Contains(lbl)) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 동일한 레이블이 이미 존재합니다.");
-                            DetectedFlag = true;
+                            InvalidLabelFlag = true;
                             continue;
                         } else {
                             // 유효한 양성 레이블. (같은 분류가 이미 있음)
@@ -212,17 +212,18 @@ namespace LabelAnnotator.ViewModels {
                     }
                 }
                 ProgressVerifyLabelValue = 100;
-                if (!DetectedFlag) {
+                if (!InvalidLabelFlag) {
                     AppendLogVerifyLabel("유효하지 않은 레이블이 발견되지 않았습니다.");
                 }
                 // 사용되지 않은 이미지 검색
-                {
-                    AppendLogVerifyLabel("");
-                    SortedSet<ImageRecord> AllImagesInLabel = new SortedSet<ImageRecord>(PositiveImagesForVerify.Concat(NegativeImagesForVerify));
+                AppendLogVerifyLabel("");
+                SortedSet<ImageRecord> AllImagesInLabel = new SortedSet<ImageRecord>(PositiveImagesForVerify);
+                AllImagesInLabel.UnionWith(NegativeImagesForVerify);
+                if (AllImagesInLabel.Count > 0) {
                     string CommonParentPath = Utils.GetCommonParentPath(AllImagesInLabel);
                     AppendLogVerifyLabel($"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
                     UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
-                                                             .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
+                                                                .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
                     UnusedImagesForVerify.ExceptWith(AllImagesInLabel);
                     if (UnusedImagesForVerify.Count > 20) {
                         AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
@@ -247,7 +248,7 @@ namespace LabelAnnotator.ViewModels {
                     $"양성 레이블 개수: {PositiveLabelsByClassForVerify.Sum(s => s.Value.Count)}",
                     $"음성 레이블 개수: {NegativeImagesForVerify.Count}",
                     $"양성 레이블이 있는 이미지 개수: {PositiveImagesForVerify.Count}",
-                    $"총 이미지 개수: {NegativeImagesForVerify.Count + PositiveImagesForVerify.Count}",
+                    $"총 이미지 개수: {AllImagesInLabel.Count}",
                     $"총 분류 개수: {PositiveLabelsByClassForVerify.Count}",
                     ""
                 );
