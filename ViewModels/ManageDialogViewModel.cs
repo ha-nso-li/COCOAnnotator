@@ -125,6 +125,7 @@ namespace LabelAnnotator.ViewModels {
                 bool InvalidLabelFlag = false;
                 AppendLogVerifyLabel($"\"{filePath}\"의 분석을 시작합니다.");
                 for (int i = 0; i < lines.Length; i++) {
+                    if (IsClosed) return;
                     ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
                     if (string.IsNullOrWhiteSpace(lines[i])) continue;
                     (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, lines[i], SettingService.Format);
@@ -216,12 +217,11 @@ namespace LabelAnnotator.ViewModels {
                     AppendLogVerifyLabel("유효하지 않은 레이블이 발견되지 않았습니다.");
                 }
                 // 사용되지 않은 이미지 검색
-                AppendLogVerifyLabel("");
                 SortedSet<ImageRecord> AllImagesInLabel = new SortedSet<ImageRecord>(PositiveImagesForVerify);
                 AllImagesInLabel.UnionWith(NegativeImagesForVerify);
                 if (AllImagesInLabel.Count > 0) {
                     string CommonParentPath = Utils.GetCommonParentPath(AllImagesInLabel);
-                    AppendLogVerifyLabel($"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
+                    AppendLogVerifyLabel("", $"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
                     UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
                                                                 .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
                     UnusedImagesForVerify.ExceptWith(AllImagesInLabel);
