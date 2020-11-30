@@ -27,29 +27,29 @@ namespace LabelAnnotator.Services {
         }
         private string GetItem(string Key, string DefaultValue) {
             YamlMappingNode root = (YamlMappingNode)YamlStream.Documents[0].RootNode;
-            YamlScalarNode keyNode = new YamlScalarNode(Key);
-            if (!root.Children.ContainsKey(keyNode)) {
-                root.Add(Key, DefaultValue);
-                return DefaultValue;
+            if (root.Children.TryGetValue(Key, out YamlNode? value1) && value1 is YamlScalarNode value2) {
+                return (string?)value2 ?? string.Empty;
             } else {
-                return ((YamlScalarNode)root.Children[keyNode]).Value ?? string.Empty;
+                root.Children[Key] = DefaultValue;
+                return DefaultValue;
             }
         }
         private void SetItem(string Key, string Value) {
             YamlMappingNode root = (YamlMappingNode)YamlStream.Documents[0].RootNode;
-            YamlScalarNode keyNode = new YamlScalarNode(Key);
             bool NeedSave = false;
-            if (!root.Children.ContainsKey(keyNode)) {
-                root.Add(Key, Value);
-                NeedSave = true;
-            } else {
-                YamlScalarNode node = (YamlScalarNode)root.Children[keyNode];
-                if (node.Value != Value) {
-                    node.Value = Value;
+            if (root.Children.TryGetValue(Key, out YamlNode? currentValue)) {
+                if (!currentValue.Equals((YamlNode)Value)) {
+                    root.Children[Key] = Value;
                     NeedSave = true;
                 }
+            } else {
+                root.Children[Key] = Value;
+                NeedSave = true;
             }
-            if (NeedSave) using (StreamWriter file = new StreamWriter(SettingPath)) YamlStream.Save(file);
+            if (NeedSave) {
+                using StreamWriter file = new StreamWriter(SettingPath);
+                YamlStream.Save(file);
+            }
         }
 
         public string Format {
