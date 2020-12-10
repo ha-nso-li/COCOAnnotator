@@ -28,7 +28,7 @@ namespace LabelAnnotator.Services {
         private string GetItem(string Key, string DefaultValue) {
             YamlMappingNode root = (YamlMappingNode)YamlStream.Documents[0].RootNode;
             if (root.Children.TryGetValue(Key, out YamlNode? value1) && value1 is YamlScalarNode value2) {
-                return (string?)value2 ?? string.Empty;
+                return (string?)value2 ?? "";
             } else {
                 root.Children[Key] = DefaultValue;
                 return DefaultValue;

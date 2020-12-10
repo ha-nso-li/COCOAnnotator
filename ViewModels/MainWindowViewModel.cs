@@ -509,7 +509,7 @@ namespace LabelAnnotator.ViewModels {
             }
         }
         private void InternalLoadLabel(string filePath) {
-            if (!(Path.GetExtension(filePath)?.Equals(".csv", StringComparison.OrdinalIgnoreCase) ?? false)) return;
+            if (!Path.GetExtension(filePath).Equals(".csv", StringComparison.OrdinalIgnoreCase)) return;
             Labels.Clear();
             Images.Clear();
             Categories.Clear();
