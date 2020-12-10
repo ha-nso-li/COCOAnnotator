@@ -7,7 +7,7 @@ namespace LabelAnnotator.ViewModels.Commons {
         public event Action<IDialogResult>? RequestClose;
 
         protected void RaiseRequestClose(IDialogResult result) {
-            if (CanCloseDialog()) RequestClose?.Invoke(result);
+            RequestClose?.Invoke(result);
         }
 
         public virtual bool CanCloseDialog() {

@@ -215,7 +215,7 @@ namespace LabelAnnotator.ViewModels {
             Labels.Clear();
             Images.Clear();
             Categories.Clear();
-            Title = $"CSV 데이터셋 편집기";
+            Title = "CSV 데이터셋 편집기";
         }
         public ICommand CmdManageLabel { get; }
         private void ManageLabel() {
@@ -386,13 +386,13 @@ namespace LabelAnnotator.ViewModels {
         #region 이미지 수정
         public ICommand CmdImageUp { get; }
         private void ImageUp() {
-            if (SelectedImage is null) {
-                int total = Images.Count;
-                if (total > 0) SelectedImage = Images[total - 1];
-                return;
+            if (Images.Count == 0) return;
+            int target = SelectedImage is null ? Images.Count - 1 : Math.Max(0, Images.IndexOf(SelectedImage) - 1);
+            if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift && SelectedCategory is object && !SelectedCategory.All) {
+                while (!Labels.Select(s => s.Image == Images[target] && s.Class == SelectedCategory).Any() && target > 0) {
+                    target--;
+                }
             }
-            int current = Images.IndexOf(SelectedImage);
-            int target = Math.Max(0, current - 1);
             SelectedImage = Images[target];
             EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
         }
