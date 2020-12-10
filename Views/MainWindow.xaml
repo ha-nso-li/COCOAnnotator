@@ -58,10 +58,7 @@
             <Button DockPanel.Dock="Bottom" TabIndex="9" Content="분류 이름 변경" Command="{Binding CmdRenameCategory}" />
             <Button DockPanel.Dock="Bottom" TabIndex="8" Content="새 분류 추가" Command="{Binding CmdAddCategory}" />
             <TextBox Height="22" DockPanel.Dock="Bottom" TabIndex="7" Text="{Binding CategoryNameToAdd}" />
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,3">
-                <CheckBox TabIndex="6" IsChecked="{Binding BboxInsertMode}" />
-                <TextBlock Text="경계 상자 추가 모드 (W)" />
-            </StackPanel>
+            <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="6" IsChecked="{Binding BboxInsertMode}" Content="경계 상자 추가 모드 (W)" />
             <ListView DockPanel.Dock="Bottom" TabIndex="5" x:Name="ViewCategoriesList" SelectionMode="Single" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
@@ -85,10 +82,7 @@
             <Button DockPanel.Dock="Bottom" TabIndex="18" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
             <Button DockPanel.Dock="Bottom" TabIndex="17" Content="선택 이미지 삭제" Command="{Binding CmdDeleteImage}" CommandParameter="{Binding SelectedItems, ElementName=ViewImagesList}" />
             <Button DockPanel.Dock="Bottom" TabIndex="16" Content="새 이미지 추가" Command="{Binding CmdAddImage}" />
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,3">
-                <CheckBox TabIndex="15" IsChecked="{Binding FitViewport}" />
-                <TextBlock Text="이미지 창에 맞추기 (F)" />
-            </StackPanel>
+            <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="15" IsChecked="{Binding FitViewport}" Content="이미지 창에 맞추기 (F)" />
             <ListView x:Name="ViewImagesList" TabIndex="14" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}" AllowDrop="True">
                 <b:Interaction.Triggers>
                     <b:EventTrigger EventName="Drop">
