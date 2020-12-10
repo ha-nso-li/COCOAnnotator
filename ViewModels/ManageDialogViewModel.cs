@@ -194,23 +194,14 @@ namespace LabelAnnotator.ViewModels {
                             continue;
                         }
                     }
+                    // 유효한 양성 레이블.
                     if (PositiveLabelsByClassForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInClass)) {
-                        // 완전히 동일한 레이블이 이미 존재하는지 검사
-                        if (positiveLabelsInClass.Contains(lbl)) {
-                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 동일한 레이블이 이미 존재합니다.");
-                            InvalidLabelFlag = true;
-                            continue;
-                        } else {
-                            // 유효한 양성 레이블. (같은 분류가 이미 있음)
-                            PositiveImagesForVerify.Add(img);
-                            positiveLabelsInClass.Add(lbl);
-                        }
+                        positiveLabelsInClass.Add(lbl);
                     } else {
-                        // 유효한 양성 레이블. (같은 분류가 없음)
-                        PositiveImagesForVerify.Add(img);
                         List<LabelRecord> labels = new List<LabelRecord> { lbl };
                         PositiveLabelsByClassForVerify.Add(lbl.Class, labels);
                     }
+                    PositiveImagesForVerify.Add(img);
                 }
                 ProgressVerifyLabelValue = 100;
                 if (!InvalidLabelFlag) {
