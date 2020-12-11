@@ -102,6 +102,11 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
         }
+        private int _ProgressUndupeLabelValue;
+        public int ProgressUndupeLabelValue {
+            get => _ProgressUndupeLabelValue;
+            set => SetProperty(ref _ProgressUndupeLabelValue, value);
+        }
         #endregion
 
         #region 커맨드
@@ -458,6 +463,7 @@ namespace LabelAnnotator.ViewModels {
         private void UndupeLabel() {
             if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
                 LogUndupeLabel = "";
+                ProgressUndupeLabelValue = 0;
                 Task.Run(() => {
                     AppendLogUndupeLabel($"{filePath}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                     // 로드
@@ -479,6 +485,8 @@ namespace LabelAnnotator.ViewModels {
                     else LabelsByShard = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
                     int CountOfShard = LabelsByShard.Count();
                     foreach (var (idx, labelsInImage) in LabelsByShard.Select((s, idx) => (idx, s))) {
+                        if (IsClosed) return;
+                        ProgressUndupeLabelValue = (int)((double)(idx + 1) / CountOfShard * 100);
                         List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
                         int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count >= 2) {
@@ -511,6 +519,7 @@ namespace LabelAnnotator.ViewModels {
                             AppendLogUndupeLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.First().Image.FullPath}");
                         }
                     }
+                    ProgressUndupeLabelValue = 100;
                     if (TotalSuppressedBoxesCount == 0) AppendLogUndupeLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                     else AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
                 });

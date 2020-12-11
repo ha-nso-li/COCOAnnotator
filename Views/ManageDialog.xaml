@@ -71,10 +71,11 @@
                 </TabItem>
                 <TabItem Header="레이블 중복 제거">
                     <DockPanel>
-                        <StackPanel DockPanel.Dock="Bottom" HorizontalAlignment="Right" Orientation="Horizontal">
-                            <Button TabIndex="17" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
-                            <Button TabIndex="18" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
-                        </StackPanel>
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="18" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="17" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeLabelValue}" Margin="5" Height="20" />
+                        </DockPanel>
                         <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
                         <TextBox DockPanel.Dock="Top" TabIndex="15" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
                         <CheckBox DockPanel.Dock="Top" TabIndex="16" IsChecked="{Binding UndupeWithoutClass}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
