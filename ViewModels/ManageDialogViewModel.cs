@@ -523,10 +523,10 @@ namespace LabelAnnotator.ViewModels {
                         AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 {UndupedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
                         if (UndupedImages.Count > 20) {
                             AppendLogUndupeLabel("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
-                            AppendLogVerifyLabel(UndupedImages.Select(s => s.FullPath).Take(20).ToArray());
+                            AppendLogUndupeLabel(UndupedImages.Select(s => s.FullPath).Take(20).ToArray());
                         } else {
                             AppendLogUndupeLabel("중복된 경계 상자가 있었던 이미지는 다음과 같습니다.");
-                            AppendLogVerifyLabel(UndupedImages.Select(s => s.FullPath).ToArray());
+                            AppendLogUndupeLabel(UndupedImages.Select(s => s.FullPath).ToArray());
                         }
                     }
                 });
