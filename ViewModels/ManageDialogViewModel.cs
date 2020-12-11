@@ -484,11 +484,11 @@ namespace LabelAnnotator.ViewModels {
                     if (UndupeWithoutClass) LabelsByShard = LabelsForUndupe.ToLookup(s => s.Image);
                     else LabelsByShard = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
                     int CountOfShard = LabelsByShard.Count();
+                    SortedSet<ImageRecord> UndupedImages = new SortedSet<ImageRecord>();
                     foreach (var (idx, labelsInImage) in LabelsByShard.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressUndupeLabelValue = (int)((double)(idx + 1) / CountOfShard * 100);
                         List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
-                        int SuppressedBoxesCount = 0;
                         while (sortedBySize.Count >= 2) {
                             // pick
                             LabelRecord pick = sortedBySize[0];
@@ -511,17 +511,24 @@ namespace LabelAnnotator.ViewModels {
                             foreach (LabelRecord i in labelsToSuppress) {
                                 sortedBySize.Remove(i);
                                 LabelsForUndupe.Remove(i);
+                                UndupedImages.Add(i.Image);
                             }
-                            SuppressedBoxesCount += labelsToSuppress.Count;
                             TotalSuppressedBoxesCount += labelsToSuppress.Count;
-                        }
-                        if (SuppressedBoxesCount > 0) {
-                            AppendLogUndupeLabel($"다음 이미지에서 중복된 경계 상자가 {SuppressedBoxesCount}개 검출되었습니다: {labelsInImage.First().Image.FullPath}");
                         }
                     }
                     ProgressUndupeLabelValue = 100;
-                    if (TotalSuppressedBoxesCount == 0) AppendLogUndupeLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
-                    else AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 총 {TotalSuppressedBoxesCount}개 검출되었습니다.");
+                    if (TotalSuppressedBoxesCount == 0) {
+                        AppendLogUndupeLabel("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
+                    } else {
+                        AppendLogUndupeLabel($"분석이 완료되었습니다. 중복된 경계 상자가 {UndupedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
+                        if (UndupedImages.Count > 20) {
+                            AppendLogUndupeLabel("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
+                            AppendLogVerifyLabel(UndupedImages.Select(s => s.FullPath).Take(20).ToArray());
+                        } else {
+                            AppendLogUndupeLabel("중복된 경계 상자가 있었던 이미지는 다음과 같습니다.");
+                            AppendLogVerifyLabel(UndupedImages.Select(s => s.FullPath).ToArray());
+                        }
+                    }
                 });
             }
         }
