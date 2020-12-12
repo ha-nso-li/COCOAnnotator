@@ -421,23 +421,33 @@ namespace LabelAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
             case true: {
-                SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                if (selected.Count == 0) return;
-                Labels.RemoveAll(s => selected.Contains(s.Image));
+                SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
+                if (SelectedImages.Count == 0) return;
+                Labels.RemoveAll(s => SelectedImages.Contains(s.Image));
                 VisibleLabels.Clear();
                 break;
             }
             case false: {
-                SortedSet<ImageRecord> selected = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                if (selected.Count == 0) return;
-                Labels.RemoveAll(s => selected.Contains(s.Image));
-                int deletedMinIndex = int.MaxValue;
-                foreach (ImageRecord i in selected) {
-                    int index = Images.IndexOf(i);
-                    if (deletedMinIndex > index) deletedMinIndex = index;
-                    Images.RemoveAt(index);
+                SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
+                if (SelectedImages.Count == 0) return;
+                if (SelectedImages.Count == Images.Count) {
+                    Labels.Clear();
+                    Images.Clear();
+                    return;
                 }
-                SelectedImage = Images[Math.Min(deletedMinIndex, Images.Count - 1)];
+                Labels.RemoveAll(s => SelectedImages.Contains(s.Image));
+                int DeletedMinIndex = -1;
+                for (int i = 0; i < Images.Count; i++) {
+                    if (SelectedImages.Contains(Images[i])) {
+                        if (DeletedMinIndex < 0) DeletedMinIndex = i;
+                        Images.RemoveAt(i);
+                        i--;
+                    }
+                }
+                if (Images.Count > 0) {
+                    SelectedImage = Images[Math.Min(DeletedMinIndex, Images.Count - 1)];
+                    EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
+                }
                 RefreshCommonPath();
                 break;
             }
@@ -449,11 +459,20 @@ namespace LabelAnnotator.ViewModels {
         private void DeleteNegativeImage() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 레이블 파일에 포함된 모든 음성 샘플 이미지를 지웁니다.");
             if (!res) return;
-            SortedSet<ImageRecord> images = new SortedSet<ImageRecord>(Images);
-            images.ExceptWith(Labels.Select(s => s.Image));
-            if (images.Count == 0) return;
-            foreach (ImageRecord i in images) {
-                Images.Remove(i);
+            SortedSet<ImageRecord> NegativeImages = new SortedSet<ImageRecord>(Images);
+            NegativeImages.ExceptWith(Labels.Select(s => s.Image));
+            if (NegativeImages.Count == 0) return;
+            int DeletedSelectedImageIndex = -1;
+            for (int i = 0; i < Images.Count; i++) {
+                if (NegativeImages.Contains(Images[i])) {
+                    if (SelectedImage is object && Images[i] == SelectedImage) DeletedSelectedImageIndex = i;
+                    Images.RemoveAt(i);
+                    i--;
+                }
+            }
+            if (DeletedSelectedImageIndex >= 0 && Images.Count > 0) {
+                SelectedImage = Images[Math.Min(DeletedSelectedImageIndex, Images.Count - 1)];
+                EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
             }
             RefreshCommonPath();
         }
