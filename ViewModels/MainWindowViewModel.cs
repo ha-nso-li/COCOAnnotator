@@ -1,5 +1,6 @@
 using LabelAnnotator.Events;
 using LabelAnnotator.Records;
+using LabelAnnotator.Records.Enums;
 using LabelAnnotator.Utilities;
 using LabelAnnotator.ViewModels.Commons;
 using LabelAnnotator.Views;
@@ -558,9 +559,19 @@ namespace LabelAnnotator.ViewModels {
             Title = $"CSV 데이터셋 편집기 - {filePath}";
         }
         private void RefreshColorOfCategories() {
-            // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
-            List<Color> colors = Utils.GenerateColor(Categories.Count - 1).ToList();
-            for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
+            switch (SettingService.Color) {
+            case SettingColors.Fixed:
+                List<Color> colors = Utils.GenerateFixedColor(Categories.Count - 1).ToList();
+                // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
+                for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
+                break;
+            case SettingColors.Random:
+                IEnumerable<Color> ExistingColors = Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
+                for (int i = 1; i < Categories.Count; i++) {
+                    if (Categories[i].ColorBrush.Color == Colors.Transparent) Categories[i].ColorBrush = new SolidColorBrush(Utils.GenerateRandomColor(ExistingColors, 100));
+                }
+                break;
+            }
         }
         private void InternelAddImage(string[] filePaths) {
             SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));

@@ -57,13 +57,19 @@ namespace LabelAnnotator.Services {
 
         public SettingFormats Format {
             get {
-                string formatStr = GetItem("Format", SettingFormats.LTRB.ToString());
+                string formatStr = GetItem(nameof(Format), SettingFormats.LTRB.ToString());
                 Enum.TryParse(formatStr, out SettingFormats format);
                 return format;
             }
-            set {
-                SetItem("Format", value.ToString());
+            set => SetItem(nameof(Format), value.ToString());
+        }
+        public SettingColors Color {
+            get {
+                string colorStr = GetItem(nameof(Color), SettingColors.Fixed.ToString());
+                Enum.TryParse(colorStr, out SettingColors color);
+                return color;
             }
+            set => SetItem(nameof(Color), value.ToString());
         }
     }
 }

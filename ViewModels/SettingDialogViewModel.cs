@@ -8,6 +8,7 @@ namespace LabelAnnotator.ViewModels {
         public SettingDialogViewModel() {
             Title = "설정";
             Format = SettingService.Format;
+            Color = SettingService.Color;
 
             CmdClose = new DelegateCommand(Close);
         }
@@ -17,9 +18,15 @@ namespace LabelAnnotator.ViewModels {
             get => _Format;
             set => SetProperty(ref _Format, value);
         }
+        private SettingColors _Color;
+        public SettingColors Color {
+            get => _Color;
+            set => SetProperty(ref _Color, value);
+        }
 
         public override void OnDialogClosed() {
             SettingService.Format = Format;
+            SettingService.Color = Color;
         }
 
         public ICommand CmdClose { get; }

@@ -68,7 +68,7 @@ namespace LabelAnnotator.Records {
         }
         public override string ToString() => Name;
 
-        public static ClassRecord FromName(string Name) => new ClassRecord(Name, Brushes.Black, false);
+        public static ClassRecord FromName(string Name) => new ClassRecord(Name, Brushes.Transparent, false);
         public static ClassRecord AllLabel() => new ClassRecord("(전체)", Brushes.Black, true);
     }
 }

@@ -1,3 +1,4 @@
+using LabelAnnotator.Services;
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -13,18 +14,18 @@ namespace LabelAnnotator.ViewModels.Commons {
 
         protected IEventAggregator EventAggregator;
         protected IDialogService UserDialogSerivce;
-        protected Services.CommonDialogService CommonDialogService;
-        protected Services.SerializationService SerializationService;
-        protected Services.SettingService SettingService;
+        protected CommonDialogService CommonDialogService;
+        protected SerializationService SerializationService;
+        protected SettingService SettingService;
 
         protected ViewModelBase() {
             _Title = "";
 
             EventAggregator = ContainerLocator.Current.Resolve<IEventAggregator>();
             UserDialogSerivce = ContainerLocator.Current.Resolve<IDialogService>();
-            CommonDialogService = ContainerLocator.Current.Resolve<Services.CommonDialogService>();
-            SerializationService = ContainerLocator.Current.Resolve<Services.SerializationService>();
-            SettingService = ContainerLocator.Current.Resolve<Services.SettingService>();
+            CommonDialogService = ContainerLocator.Current.Resolve<CommonDialogService>();
+            SerializationService = ContainerLocator.Current.Resolve<SerializationService>();
+            SettingService = ContainerLocator.Current.Resolve<SettingService>();
         }
     }
 }

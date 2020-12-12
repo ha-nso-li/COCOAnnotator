@@ -2,6 +2,7 @@ using LabelAnnotator.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Media;
 
@@ -23,9 +24,9 @@ namespace LabelAnnotator.Utilities {
         }
 
         /// <summary>
-        /// 주어진 개수 만큼의 서로 다른 색깔을 생성합니다.
+        /// 미리 정의된 HSV 기반의 색깔 생성 방법에 따라 주어진 개수 만큼의 색을 생성합니다.
         /// </summary>
-        public static IEnumerable<Color> GenerateColor(int ColorCount) {
+        public static IEnumerable<Color> GenerateFixedColor(int ColorCount) {
             int TotalSaturation = (int)Math.Ceiling(ColorCount / 40d);
             int TotalHue, TotalValue;
             if ((double)ColorCount / TotalSaturation >= 10) {
@@ -77,6 +78,29 @@ namespace LabelAnnotator.Utilities {
                 return Color.FromArgb(255, v, p, q);
         }
 
+        /// <summary>
+        /// 주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 생성합니다.
+        /// </summary>
+        public static Color GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold) {
+            Random random = new Random();
+            while (true) {
+                Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
+                if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) {
+                    return newColor;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 주어진 두 색의 색차를 구합니다.
+        /// </summary>
+        private static double GetColorDifference(Color color1, Color color2) {
+            double rmean = (color1.R + color2.R) / 2.0;
+            double rdelta = Math.Pow(color1.R - color2.R, 2);
+            double gdelta = Math.Pow(color1.G - color2.G, 2);
+            double bdelta = Math.Pow(color1.B - color2.B, 2);
+            return Math.Sqrt((512 + rmean) * rdelta / 256 + 4 * gdelta + (767 - rmean) * bdelta / 256);
+        }
 
         /// <summary>
         /// <paramref name="fromPath"/>에서 <paramref name="toPath"/>로 가는 유닉스 호환 상대 경로를 찾습니다.
