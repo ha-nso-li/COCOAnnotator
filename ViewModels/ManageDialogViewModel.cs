@@ -1,5 +1,6 @@
 using LabelAnnotator.Events;
 using LabelAnnotator.Records;
+using LabelAnnotator.Records.Enums;
 using LabelAnnotator.Utilities;
 using LabelAnnotator.ViewModels.Commons;
 using Prism.Commands;

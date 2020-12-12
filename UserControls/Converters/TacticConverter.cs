@@ -1,10 +1,10 @@
-using LabelAnnotator.Records;
+using LabelAnnotator.Records.Enums;
 using LabelAnnotator.Views;
 using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace LabelAnnotator.UserControls {
+namespace LabelAnnotator.UserControls.Converters {
     [ValueConversion(typeof(TacticsForSplitLabel), typeof(bool))]
     public class TacticConverter : IValueConverter {
         // enum to bool
@@ -12,6 +12,7 @@ namespace LabelAnnotator.UserControls {
             if (Enum.TryParse((string)parameter, out TacticsForSplitLabel tactic)) {
                 return value.Equals(tactic);
             } else if ((string)parameter == nameof(ManageDialog.TxtNValueForSplitLabel)) {
+                // TxtNValueForSplitLabel.IsEnabled
                 return !value.Equals(TacticsForSplitLabel.SplitToSubFolders);
             } else {
                 return Binding.DoNothing;

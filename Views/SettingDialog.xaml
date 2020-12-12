@@ -1,24 +1,26 @@
 <UserControl x:Class="LabelAnnotator.Views.SettingDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" xmlns:prism="http://prismlibrary.com/"
-        xmlns:vm="clr-namespace:LabelAnnotator.ViewModels" d:DataContext="{d:DesignInstance Type=vm:SettingDialogViewModel}">
+        xmlns:vm="clr-namespace:LabelAnnotator.ViewModels" xmlns:cvt="clr-namespace:LabelAnnotator.UserControls.Converters" d:DataContext="{d:DesignInstance Type=vm:SettingDialogViewModel}">
     <prism:Dialog.WindowStyle>
         <Style TargetType="Window">
             <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
             <Setter Property="ResizeMode" Value="NoResize" />
             <Setter Property="ShowInTaskbar" Value="False" />
             <Setter Property="Width" Value="300" />
-            <Setter Property="Height" Value="195" />
+            <Setter Property="Height" Value="210" />
         </Style>
     </prism:Dialog.WindowStyle>
+    <UserControl.Resources>
+        <cvt:SettingFormatConverter x:Key="SettingFormatConverter" />
+    </UserControl.Resources>
     <Grid>
         <StackPanel>
             <GroupBox Header="좌표 형식 설정" Margin="3">
                 <StackPanel Orientation="Vertical">
-                    <RadioButton Margin="2" IsChecked="{Binding LTRB}">좌-상-우-하 (LTRB)</RadioButton>
-                    <RadioButton Margin="2" IsChecked="{Binding CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
-                    <TextBlock TextWrapping="Wrap" Margin="2,3,2,2">
-                        레이블 파일을 불러오기, 내보내기 할 때의 좌표 형식을 지정합니다. LTRB는 정수, CXCYWH는 실수 형태로 저장합니다.
-                    </TextBlock>
+                    <RadioButton Margin="2" IsChecked="{Binding Format, Converter={StaticResource SettingFormatConverter}, ConverterParameter=LTRB}">좌-상-우-하 (LTRB)</RadioButton>
+                    <RadioButton Margin="2" IsChecked="{Binding Format, Converter={StaticResource SettingFormatConverter}, ConverterParameter=LTWH}">좌-상-가로-세로 (LTWH)</RadioButton>
+                    <RadioButton Margin="2" IsChecked="{Binding Format, Converter={StaticResource SettingFormatConverter}, ConverterParameter=CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
+                    <TextBlock TextWrapping="Wrap" Margin="2,3,2,2">레이블 파일을 불러오기, 내보내기 할 때의 좌표 형식을 지정합니다. LTRB, LTWH는 정수, CXCYWH는 실수 형태로 저장합니다.</TextBlock>
                 </StackPanel>
             </GroupBox>
             <StackPanel HorizontalAlignment="Right">

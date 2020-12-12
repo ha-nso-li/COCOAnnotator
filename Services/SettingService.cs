@@ -1,10 +1,12 @@
-using LabelAnnotator.Utilities;
+using LabelAnnotator.Records.Enums;
+using System;
 using System.Diagnostics;
 using System.IO;
 using YamlDotNet.RepresentationModel;
 
 namespace LabelAnnotator.Services {
     public class SettingService {
+        #region 설정 관리 내부 메서드
         private YamlStream? _YamlStream;
         private string SettingPath => Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName) ?? "", "setting.yml");
         private YamlStream YamlStream {
@@ -51,10 +53,17 @@ namespace LabelAnnotator.Services {
                 YamlStream.Save(file);
             }
         }
+        #endregion
 
-        public string Format {
-            get => GetItem("Format", SettingNames.FormatLTRB);
-            set => SetItem("Format", value);
+        public SettingFormats Format {
+            get {
+                string formatStr = GetItem("Format", SettingFormats.LTRB.ToString());
+                Enum.TryParse(formatStr, out SettingFormats format);
+                return format;
+            }
+            set {
+                SetItem("Format", value.ToString());
+            }
         }
     }
 }
