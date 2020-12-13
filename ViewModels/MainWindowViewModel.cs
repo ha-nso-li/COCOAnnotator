@@ -34,7 +34,7 @@ namespace LabelAnnotator.ViewModels {
             _BboxInsertMode = false;
             _FitViewport = true;
             _CategoryNameToAdd = "";
-            Images = new ObservableCollection<ImageRecord>();
+            Images = new FastObservableCollection<ImageRecord>();
             Categories = new ObservableCollection<ClassRecord>();
             VisibleLabels = new ObservableCollection<LabelRecordWithIndex>();
 
@@ -68,7 +68,7 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 바인딩되는 프로퍼티
-        public ObservableCollection<ImageRecord> Images { get; }
+        public FastObservableCollection<ImageRecord> Images { get; }
         private ImageRecord? _SelectedImage;
         public ImageRecord? SelectedImage {
             get => _SelectedImage;
@@ -360,22 +360,13 @@ namespace LabelAnnotator.ViewModels {
                 SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>(Labels.Where(s => s.Class == SelectedCategory).Select(s => s.Image));
                 Labels.RemoveAll(s => s.Class == SelectedCategory);
                 SortedSet<ImageRecord> ImagesAfterDelete = new SortedSet<ImageRecord>(Labels.Select(s => s.Image));
-                for (int i = 0; i < Images.Count; i++) {
-                    if (ImagesFromDeletedClass.Contains(Images[i]) && !ImagesAfterDelete.Contains(Images[i])) {
-                        Images.RemoveAt(i);
-                        i--;
-                    }
-                }
+                Images.RemoveAll(s => ImagesFromDeletedClass.Contains(s) && !ImagesAfterDelete.Contains(s));
                 if (Categories.Count <= 2) {
                     Categories.Clear();
                     SelectedCategory = null;
                 } else {
                     Categories.Remove(SelectedCategory);
                     SelectedCategory = Categories.First(s => s.All);
-                }
-                if (SelectedImage is null && Images.Count >= 1) {
-                    SelectedImage = Images[0];
-                    EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
                 }
                 RefreshColorOfCategories();
                 break;
@@ -431,24 +422,8 @@ namespace LabelAnnotator.ViewModels {
             case false: {
                 SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
                 if (SelectedImages.Count == 0) return;
-                if (SelectedImages.Count == Images.Count) {
-                    Labels.Clear();
-                    Images.Clear();
-                    return;
-                }
                 Labels.RemoveAll(s => SelectedImages.Contains(s.Image));
-                int DeletedMinIndex = -1;
-                for (int i = 0; i < Images.Count; i++) {
-                    if (SelectedImages.Contains(Images[i])) {
-                        if (DeletedMinIndex < 0) DeletedMinIndex = i;
-                        Images.RemoveAt(i);
-                        i--;
-                    }
-                }
-                if (Images.Count > 0) {
-                    SelectedImage = Images[Math.Min(DeletedMinIndex, Images.Count - 1)];
-                    EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
-                }
+                Images.RemoveAll(s => SelectedImages.Contains(s));
                 RefreshCommonPath();
                 break;
             }
@@ -463,18 +438,7 @@ namespace LabelAnnotator.ViewModels {
             SortedSet<ImageRecord> NegativeImages = new SortedSet<ImageRecord>(Images);
             NegativeImages.ExceptWith(Labels.Select(s => s.Image));
             if (NegativeImages.Count == 0) return;
-            int DeletedSelectedImageIndex = -1;
-            for (int i = 0; i < Images.Count; i++) {
-                if (NegativeImages.Contains(Images[i])) {
-                    if (SelectedImage is object && Images[i] == SelectedImage) DeletedSelectedImageIndex = i;
-                    Images.RemoveAt(i);
-                    i--;
-                }
-            }
-            if (DeletedSelectedImageIndex >= 0 && Images.Count > 0) {
-                SelectedImage = Images[Math.Min(DeletedSelectedImageIndex, Images.Count - 1)];
-                EventAggregator.GetEvent<ScrollViewImagesList>().Publish(SelectedImage);
-            }
+            Images.RemoveAll(s => NegativeImages.Contains(s));
             RefreshCommonPath();
         }
         public ICommand CmdImagesListDrop { get; }
@@ -551,8 +515,8 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
             foreach (ImageRecord i in images) Images.Add(i);
-            RefreshCommonPath();
             foreach (ClassRecord classname in categories) Categories.Add(classname);
+            RefreshCommonPath();
             RefreshColorOfCategories();
             if (Images.Count > 0) SelectedImage = Images[0];
             SelectedCategory = Categories[0];
@@ -577,9 +541,7 @@ namespace LabelAnnotator.ViewModels {
             SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
             int ImagesCountToAdd = add.Count;
             add.ExceptWith(Images);
-            foreach (ImageRecord img in add) {
-                Images.Add(img);
-            }
+            foreach (ImageRecord img in add) Images.Add(img);
             int ImagesCountAdded = add.Count;
             if (ImagesCountToAdd != ImagesCountAdded) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
             if (ImagesCountAdded > 0) RefreshCommonPath();
