@@ -121,7 +121,7 @@ namespace LabelAnnotator.UserControls {
                 foreach (LabelRecordWithIndex? i in e.NewItems) {
                     if (i is null) continue;
                     (int idx, LabelRecord lbl) = i;
-                    AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
+                    AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Width, lbl.Height, lbl.Class, true);
                 }
                 break;
             }
@@ -156,7 +156,7 @@ namespace LabelAnnotator.UserControls {
                 }, DispatcherPriority.Loaded);
             }
             foreach ((int idx, LabelRecord lbl) in Labels) {
-                AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Right, lbl.Bottom, lbl.Class, true);
+                AddBoundaryBox(ZIndex_Bbox, idx, lbl.Left, lbl.Top, lbl.Width, lbl.Height, lbl.Class, true);
             }
         }
         private void ClearBoundaryBoxes() {
@@ -170,16 +170,14 @@ namespace LabelAnnotator.UserControls {
         /// </param>
         /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
-        private ContentControl AddBoundaryBox(int zindex, int tag, double left, double top, double right, double bottom, ClassRecord category, bool needScale) {
+        private ContentControl AddBoundaryBox(int zindex, int tag, double left, double top, double width, double height, ClassRecord category, bool needScale) {
             // 화면의 배율에 맞춰 스케일링
             if (needScale) {
                 left *= CurrentScale;
                 top *= CurrentScale;
-                right *= CurrentScale;
-                bottom *= CurrentScale;
+                width *= CurrentScale;
+                height *= CurrentScale;
             }
-            double width = Math.Max(0, right - left);
-            double height = Math.Max(0, bottom - top);
             ContentControl cont = new ContentControl {
                 Width = width,
                 Height = height,
@@ -227,8 +225,8 @@ namespace LabelAnnotator.UserControls {
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
                         double newLeftFromOriginal = realBox.Label.Left * afterScale;
                         double newTopFromOriginal = realBox.Label.Top * afterScale;
-                        double newWidthFromOriginal = (realBox.Label.Right - realBox.Label.Left) * afterScale;
-                        double newHeightFromOriginal = (realBox.Label.Bottom - realBox.Label.Top) * afterScale;
+                        double newWidthFromOriginal = realBox.Label.Width * afterScale;
+                        double newHeightFromOriginal = realBox.Label.Height * afterScale;
                         newLeft = Math.Abs(newLeftFromOriginal - newLeft) > errorThreshold ? newLeft : newLeftFromOriginal;
                         newTop = Math.Abs(newTopFromOriginal - newTop) > errorThreshold ? newTop : newTopFromOriginal;
                         newWidth = Math.Abs(newWidthFromOriginal - newWidth) > errorThreshold ? newWidth : newWidthFromOriginal;
@@ -388,20 +386,20 @@ namespace LabelAnnotator.UserControls {
                     if (CurrentClass is null) continue;
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                    double right = Math.Clamp((Canvas.GetLeft(bbox) + bbox.Width) / CurrentScale, 0, bitmap.PixelWidth);
-                    double bottom = Math.Clamp((Canvas.GetTop(bbox) + bbox.Height) / CurrentScale, 0, bitmap.PixelHeight);
-                    added.Add(new LabelRecordWithoutImage(left, top, right, bottom, CurrentClass));
+                    double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                    double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                    added.Add(new LabelRecordWithoutImage(left, top, width, height, CurrentClass));
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                    double right = Math.Clamp((Canvas.GetLeft(bbox) + bbox.Width) / CurrentScale, 0, bitmap.PixelWidth);
-                    double bottom = Math.Clamp((Canvas.GetTop(bbox) + bbox.Height) / CurrentScale, 0, bitmap.PixelHeight);
+                    double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                    double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
                     LabelRecordWithIndex? realBox = Labels.FirstOrDefault(s => s.Index == (int)bbox.Tag);
                     if (realBox is LabelRecordWithIndex) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
-                        // 새 좌표와 현재 좌표의 오차가 작으면 기존 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
+                        // 새 좌표와 현재 좌표의 오차가 작으면 새 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
                         if (Math.Abs(realBox.Label.Left - left) < errorThreshold) {
                             notChangedPositionsCount++;
                             left = realBox.Label.Left;
@@ -410,16 +408,16 @@ namespace LabelAnnotator.UserControls {
                             notChangedPositionsCount++;
                             top = realBox.Label.Top;
                         }
-                        if (Math.Abs(realBox.Label.Right - right) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Width - width) < errorThreshold) {
                             notChangedPositionsCount++;
-                            right = realBox.Label.Right;
+                            width = realBox.Label.Width;
                         }
-                        if (Math.Abs(realBox.Label.Bottom - bottom) < errorThreshold) {
+                        if (Math.Abs(realBox.Label.Height - height) < errorThreshold) {
                             notChangedPositionsCount++;
-                            bottom = realBox.Label.Bottom;
+                            height = realBox.Label.Height;
                         }
                         if (notChangedPositionsCount < 4) {
-                            changed.Add(new LabelRecordWithIndex(realBox.Index, new LabelRecord(realBox.Label.Image, left, top, right, bottom, realBox.Label.Class)));
+                            changed.Add(new LabelRecordWithIndex(realBox.Index, new LabelRecord(realBox.Label.Image, left, top, width, height, realBox.Label.Class)));
                         }
                     }
                 }

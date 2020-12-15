@@ -10,33 +10,12 @@ namespace LabelAnnotator.Services {
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
         public string SerializeAsPositive(string BasePath, LabelRecord Label, SettingFormats Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
-            switch (Format) {
-            case SettingFormats.LTRB: {
-                int l = (int)Math.Floor(Label.Left);
-                int t = (int)Math.Floor(Label.Top);
-                int r = (int)Math.Ceiling(Label.Right);
-                int b = (int)Math.Ceiling(Label.Bottom);
-                return $"{path},{l},{t},{r},{b},{Label.Class}";
-            }
-            case SettingFormats.CXCYWH: {
-                double x = (Label.Left + Label.Right) / 2;
-                double y = (Label.Top + Label.Bottom) / 2;
-                double w = Label.Right - Label.Left;
-                double h = Label.Bottom - Label.Top;
-                return $"{path},{x:0.#},{y:0.#},{w:0.#},{h:0.#},{Label.Class}";
-            }
-            case SettingFormats.LTWH: {
-                int l = (int)Math.Floor(Label.Left);
-                int t = (int)Math.Floor(Label.Top);
-                int r = (int)Math.Ceiling(Label.Right);
-                int b = (int)Math.Ceiling(Label.Bottom);
-                int w = r - l;
-                int h = b - t;
-                return $"{path},{l},{t},{w},{h},{Label.Class}";
-            }
-            default:
-                return "";
-            }
+            return Format switch {
+                SettingFormats.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Class:0.#}",
+                SettingFormats.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Class:0.#}",
+                SettingFormats.LTWH => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Class:0.#}",
+                _ => ""
+            };
         }
 
         /// <summary>주어진 이미지를 음성 샘플로 간주하여 직렬화합니다.</summary>
@@ -65,24 +44,12 @@ namespace LabelAnnotator.Services {
             success &= double.TryParse(split[3], out double num3);
             success &= double.TryParse(split[4], out double num4);
             if (!success) return (null, null);
-            switch (Format) {
-            case SettingFormats.LTRB:
-                return (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname)));
-            case SettingFormats.CXCYWH: {
-                double l = num1 - num3 / 2;
-                double r = num1 + num3 / 2;
-                double t = num2 - num4 / 2;
-                double b = num2 + num4 / 2;
-                return (img, new LabelRecord(img, l, t, r, b, ClassRecord.FromName(classname)));
-            }
-            case SettingFormats.LTWH: {
-                double r = num1 + num3;
-                double b = num2 + num4;
-                return (img, new LabelRecord(img, num1, num2, r, b, ClassRecord.FromName(classname)));
-            }
-            default:
-                return (null, null);
-            }
+            return Format switch {
+                SettingFormats.LTRB => (img, new LabelRecord(img, num1, num2, num3 - num1, num4 - num2, ClassRecord.FromName(classname))),
+                SettingFormats.CXCYWH => (img, new LabelRecord(img, num1 - num3 / 2, num2 - num4 / 2, num3, num4, ClassRecord.FromName(classname))),
+                SettingFormats.LTWH => (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname))),
+                _ => (null, null)
+            };
         }
     }
 }

@@ -162,8 +162,8 @@ namespace LabelAnnotator.ViewModels {
                         }
                     }
                     // 경계 상자 위치 좌표가 위아래 혹은 좌우가 뒤집혀있는지 검사.
-                    if (lbl.Left >= lbl.Right || lbl.Top >= lbl.Bottom) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자의 좌표 값이 부적절합니다. 상하좌우가 뒤집혀 있는지 확인하세요.");
+                    if (lbl.Width <= 0 || lbl.Height <= 0) {
+                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자의 너비 혹은 높이가 0 이하입니다.");
                         InvalidLabelFlag = true;
                         continue;
                     }
@@ -188,7 +188,7 @@ namespace LabelAnnotator.ViewModels {
                                 continue;
                             }
                         }
-                        if (lbl.Left < 0 || lbl.Top < 0 || lbl.Right > width || lbl.Bottom > height) {
+                        if (lbl.Left < 0 || lbl.Top < 0 || lbl.Left + lbl.Width > width || lbl.Top + lbl.Height > height) {
                             AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
                             InvalidLabelFlag = true;
                             continue;
@@ -499,8 +499,8 @@ namespace LabelAnnotator.ViewModels {
                             foreach (LabelRecord i in sortedBySize) {
                                 double left = Math.Max(pick.Left, i.Left);
                                 double top = Math.Max(pick.Top, i.Top);
-                                double right = Math.Min(pick.Right, i.Right);
-                                double bottom = Math.Min(pick.Bottom, i.Bottom);
+                                double right = Math.Min(pick.Left + pick.Width, i.Left + i.Width);
+                                double bottom = Math.Min(pick.Top + pick.Height, i.Top + i.Height);
                                 if (left >= right || top >= bottom) continue;
                                 double sizeIntersection = (right - left) * (bottom - top);
                                 double sizeUnion = pick.Size + i.Size - sizeIntersection;

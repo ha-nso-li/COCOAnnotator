@@ -243,8 +243,8 @@ namespace LabelAnnotator.ViewModels {
             foreach (LabelRecordWithIndex i in e.Changed) {
                 Labels[i.Index].Left = i.Label.Left;
                 Labels[i.Index].Top = i.Label.Top;
-                Labels[i.Index].Right = i.Label.Right;
-                Labels[i.Index].Bottom = i.Label.Bottom;
+                Labels[i.Index].Width = i.Label.Width;
+                Labels[i.Index].Height = i.Label.Height;
             }
             List<LabelRecord> delete = new List<LabelRecord>();
             foreach (LabelRecordWithIndex i in e.Deleted) {

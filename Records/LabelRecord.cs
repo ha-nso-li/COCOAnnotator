@@ -6,21 +6,21 @@ namespace LabelAnnotator.Records {
 
         public double Left { get; set; }
         public double Top { get; set; }
-        public double Right { get; set; }
-        public double Bottom { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
         public ClassRecord Class { get; set; }
 
-        public double Size => Math.Abs(Right - Left) * Math.Abs(Bottom - Top);
+        public double Size => Width * Height;
 
-        public LabelRecord(ImageRecord Image, double Left, double Top, double Right, double Bottom, ClassRecord Classname) {
+        public LabelRecord(ImageRecord Image, double Left, double Top, double Width, double Height, ClassRecord Classname) {
             this.Image = Image;
             this.Left = Left;
             this.Top = Top;
-            this.Right = Right;
-            this.Bottom = Bottom;
+            this.Width = Width;
+            this.Height = Height;
             Class = Classname;
         }
 
-        public override string ToString() => $"{Class} ({Left},{Top},{Right},{Bottom})";
+        public override string ToString() => $"{Class} ({Left},{Top},{Width},{Height})";
     }
 }
