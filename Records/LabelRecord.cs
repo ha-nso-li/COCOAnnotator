@@ -1,5 +1,3 @@
-using System;
-
 namespace LabelAnnotator.Records {
     public class LabelRecord {
         public ImageRecord Image { get; set; }
@@ -10,7 +8,7 @@ namespace LabelAnnotator.Records {
         public double Height { get; set; }
         public ClassRecord Class { get; set; }
 
-        public double Size => Width * Height;
+        public double Area => Width * Height;
 
         public LabelRecord(ImageRecord Image, double Left, double Top, double Width, double Height, ClassRecord Classname) {
             this.Image = Image;

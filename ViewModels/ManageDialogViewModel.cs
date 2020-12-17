@@ -489,7 +489,7 @@ namespace LabelAnnotator.ViewModels {
                     foreach (var (idx, labelsInImage) in LabelsByShard.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressUndupeLabelValue = (int)((double)(idx + 1) / CountOfShard * 100);
-                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Size).ToList(); // 넓이가 작은 경계 상자를 우선
+                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Area).ToList(); // 넓이가 작은 경계 상자를 우선
                         while (sortedBySize.Count >= 2) {
                             // pick
                             LabelRecord pick = sortedBySize[0];
@@ -503,7 +503,7 @@ namespace LabelAnnotator.ViewModels {
                                 double bottom = Math.Min(pick.Top + pick.Height, i.Top + i.Height);
                                 if (left >= right || top >= bottom) continue;
                                 double sizeIntersection = (right - left) * (bottom - top);
-                                double sizeUnion = pick.Size + i.Size - sizeIntersection;
+                                double sizeUnion = pick.Area + i.Area - sizeIntersection;
                                 double iou = sizeIntersection / sizeUnion;
                                 if (iou < IoUThreshold) continue;
                                 labelsToSuppress.Add(i);
