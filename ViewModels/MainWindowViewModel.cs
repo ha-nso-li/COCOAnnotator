@@ -36,7 +36,7 @@ namespace LabelAnnotator.ViewModels {
             _CategoryNameToAdd = "";
             Images = new FastObservableCollection<ImageRecord>();
             Categories = new ObservableCollection<ClassRecord>();
-            VisibleLabels = new ObservableCollection<LabelRecordWithIndex>();
+            VisibleLabels = new ObservableCollection<LabelRecord>();
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadLabel = new DelegateCommand(LoadLabel);
@@ -61,10 +61,6 @@ namespace LabelAnnotator.ViewModels {
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
             CmdWindowGotFocus = new DelegateCommand<RoutedEventArgs>(WindowGotFocus);
         }
-        #endregion
-
-        #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly List<LabelRecord> Labels = new List<LabelRecord>();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -108,7 +104,7 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
         }
-        public ObservableCollection<LabelRecordWithIndex> VisibleLabels { get; }
+        public ObservableCollection<LabelRecord> VisibleLabels { get; }
 
         #region 단축키
         private Key _ShortcutSaveBbox;
@@ -195,12 +191,10 @@ namespace LabelAnnotator.ViewModels {
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = Labels.ToLookup(s => s.Image);
                 foreach (ImageRecord i in Images) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
-                    if (labelsInImage.Any()) {
+                    if (i.Annotations.Count > 0) {
                         // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.SerializeAsPositive(basePath, j, SettingService.Format));
+                        foreach (LabelRecord j in i.Annotations) f.WriteLine(SerializationService.SerializeAsPositive(basePath, j, SettingService.Format));
                     } else {
                         // 음성 레이블
                         f.WriteLine(SerializationService.SerializeAsNegative(basePath, i));
@@ -213,7 +207,6 @@ namespace LabelAnnotator.ViewModels {
         private void CloseLabel() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 열려있는 레이블을 모두 초기화합니다");
             if (!res) return;
-            Labels.Clear();
             Images.Clear();
             Categories.Clear();
             Title = "CSV 데이터셋 편집기";
@@ -238,20 +231,17 @@ namespace LabelAnnotator.ViewModels {
             if (SelectedImage is null) return;
 
             foreach (LabelRecordWithoutImage i in e.Added) {
-                Labels.Add(i.WithImage(SelectedImage));
+                SelectedImage.Annotations.Add(i.WithImage(SelectedImage));
             }
-            foreach (LabelRecordWithIndex i in e.Changed) {
-                Labels[i.Index].Left = i.Label.Left;
-                Labels[i.Index].Top = i.Label.Top;
-                Labels[i.Index].Width = i.Label.Width;
-                Labels[i.Index].Height = i.Label.Height;
+            foreach ((LabelRecord old, LabelRecord @new) in e.ChangedOldItems.Zip(e.ChangedNewItems)) {
+                int idx = SelectedImage.Annotations.IndexOf(old);
+                SelectedImage.Annotations[idx].Left = @new.Left;
+                SelectedImage.Annotations[idx].Top = @new.Top;
+                SelectedImage.Annotations[idx].Width = @new.Width;
+                SelectedImage.Annotations[idx].Height = @new.Height;
             }
-            List<LabelRecord> delete = new List<LabelRecord>();
-            foreach (LabelRecordWithIndex i in e.Deleted) {
-                delete.Add(Labels[i.Index]);
-            }
-            foreach (LabelRecord i in delete) {
-                Labels.Remove(i);
+            foreach (LabelRecord i in e.Deleted) {
+                SelectedImage.Annotations.Remove(i);
             }
             UpdateBoundaryBoxes();
         }
@@ -264,25 +254,15 @@ namespace LabelAnnotator.ViewModels {
         #region 분류 수정
         public ICommand CmdCategoryUp { get; }
         private void CategoryUp() {
-            if (SelectedCategory is null) {
-                int total = Categories.Count;
-                if (total > 0) SelectedCategory = Categories[total - 1];
-                return;
-            }
-            int current = Categories.IndexOf(SelectedCategory);
-            int target = Math.Max(0, current - 1);
+            if (Categories.Count == 0) return;
+            int target = SelectedCategory is null ? Categories.Count - 1 : Math.Max(0, Categories.IndexOf(SelectedCategory) - 1);
             SelectedCategory = Categories[target];
             EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Categories[target]);
         }
         public ICommand CmdCategoryDown { get; }
         private void CategoryDown() {
-            int total = Categories.Count;
-            if (SelectedCategory is null) {
-                if (total > 0) SelectedCategory = Categories[0];
-                return;
-            }
-            int current = Categories.IndexOf(SelectedCategory);
-            int target = Math.Min(current + 1, total - 1);
+            if (Categories.Count == 0) return;
+            int target = SelectedCategory is null ? 0 : Math.Min(Categories.Count - 1, Categories.IndexOf(SelectedCategory) + 1);
             SelectedCategory = Categories[target];
             EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Categories[target]);
         }
@@ -322,7 +302,7 @@ namespace LabelAnnotator.ViewModels {
                     }
                 }
                 if (!addedflag) Categories.Add(rename);
-                foreach (LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
+                foreach (LabelRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Class == OldCategory)) {
                     label.Class = rename;
                 }
                 SelectedCategory = rename;
@@ -331,7 +311,7 @@ namespace LabelAnnotator.ViewModels {
                 if (!res) return;
                 ClassRecord OldCategory = SelectedCategory;
                 Categories.Remove(OldCategory);
-                foreach (LabelRecord label in Labels.Where(s => s.Class == OldCategory)) {
+                foreach (LabelRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Class == OldCategory)) {
                     label.Class = rename;
                 }
                 SelectedCategory = rename;
@@ -345,7 +325,9 @@ namespace LabelAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel($"포함한 경계 상자의 분류가 {SelectedCategory} 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
             case true: {
-                Labels.RemoveAll(s => s.Class == SelectedCategory);
+                foreach (ImageRecord i in Images) {
+                    i.Annotations.RemoveAll(s => s.Class == SelectedCategory);
+                }
                 if (Categories.Count <= 2) {
                     Categories.Clear();
                     SelectedCategory = null;
@@ -357,10 +339,12 @@ namespace LabelAnnotator.ViewModels {
                 break;
             }
             case false: {
-                SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>(Labels.Where(s => s.Class == SelectedCategory).Select(s => s.Image));
-                Labels.RemoveAll(s => s.Class == SelectedCategory);
-                SortedSet<ImageRecord> ImagesAfterDelete = new SortedSet<ImageRecord>(Labels.Select(s => s.Image));
-                Images.RemoveAll(s => ImagesFromDeletedClass.Contains(s) && !ImagesAfterDelete.Contains(s));
+                SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>();
+                foreach (ImageRecord i in Images) {
+                    int deletedCount = i.Annotations.RemoveAll(s => s.Class == SelectedCategory);
+                    if (deletedCount > 0) ImagesFromDeletedClass.Add(i);
+                }
+                Images.RemoveAll(s => s.Annotations.Count == 0 && ImagesFromDeletedClass.Contains(s));
                 if (Categories.Count <= 2) {
                     Categories.Clear();
                     SelectedCategory = null;
@@ -382,23 +366,13 @@ namespace LabelAnnotator.ViewModels {
         private void ImageUp() {
             if (Images.Count == 0) return;
             int target = SelectedImage is null ? Images.Count - 1 : Math.Max(0, Images.IndexOf(SelectedImage) - 1);
-            if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift && SelectedCategory is object && !SelectedCategory.All) {
-                while (!Labels.Select(s => s.Image == Images[target] && s.Class == SelectedCategory).Any() && target > 0) {
-                    target--;
-                }
-            }
             SelectedImage = Images[target];
             EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
         }
         public ICommand CmdImageDown { get; }
         private void ImageDown() {
-            int total = Images.Count;
-            if (SelectedImage is null) {
-                if (total > 0) SelectedImage = Images[0];
-                return;
-            }
-            int current = Images.IndexOf(SelectedImage);
-            int target = Math.Min(current + 1, total - 1);
+            if (Images.Count == 0) return;
+            int target = SelectedImage is null ? 0 : Math.Min(Images.Count - 1, Images.IndexOf(SelectedImage) + 1);
             SelectedImage = Images[target];
             EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
         }
@@ -415,14 +389,15 @@ namespace LabelAnnotator.ViewModels {
             case true: {
                 SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
                 if (SelectedImages.Count == 0) return;
-                Labels.RemoveAll(s => SelectedImages.Contains(s.Image));
+                foreach (ImageRecord i in Images) {
+                    if (SelectedImages.Contains(i)) i.Annotations.Clear();
+                }
                 VisibleLabels.Clear();
                 break;
             }
             case false: {
                 SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
                 if (SelectedImages.Count == 0) return;
-                Labels.RemoveAll(s => SelectedImages.Contains(s.Image));
                 Images.RemoveAll(s => SelectedImages.Contains(s));
                 RefreshCommonPath();
                 break;
@@ -435,10 +410,7 @@ namespace LabelAnnotator.ViewModels {
         private void DeleteNegativeImage() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 레이블 파일에 포함된 모든 음성 샘플 이미지를 지웁니다.");
             if (!res) return;
-            SortedSet<ImageRecord> NegativeImages = new SortedSet<ImageRecord>(Images);
-            NegativeImages.ExceptWith(Labels.Select(s => s.Image));
-            if (NegativeImages.Count == 0) return;
-            Images.RemoveAll(s => NegativeImages.Contains(s));
+            Images.RemoveAll(s => s.Annotations.Count == 0);
             RefreshCommonPath();
         }
         public ICommand CmdImagesListDrop { get; }
@@ -483,10 +455,10 @@ namespace LabelAnnotator.ViewModels {
         private void UpdateBoundaryBoxes() {
             if (SelectedCategory is null || SelectedImage is null) return;
             VisibleLabels.Clear();
-            IEnumerable<LabelRecordWithIndex> visibleLabels;
-            if (SelectedCategory.All) visibleLabels = Labels.Select((s, idx) => new LabelRecordWithIndex(idx, s)).Where(s => s.Label.Image == SelectedImage);
-            else visibleLabels = Labels.Select((s, idx) => new LabelRecordWithIndex(idx, s)).Where(s => s.Label.Image == SelectedImage && s.Label.Class == SelectedCategory);
-            foreach (LabelRecordWithIndex i in visibleLabels) VisibleLabels.Add(i);
+            IEnumerable<LabelRecord> visibleLabels;
+            if (SelectedCategory.All) visibleLabels = SelectedImage.Annotations;
+            else visibleLabels = SelectedImage.Annotations.Where(s => s.Class == SelectedCategory);
+            foreach (LabelRecord i in visibleLabels) VisibleLabels.Add(i);
         }
         private void RefreshCommonPath() {
             string CommonPath = Utils.GetCommonParentPath(Images);
@@ -496,7 +468,6 @@ namespace LabelAnnotator.ViewModels {
         }
         private void InternalLoadLabel(string filePath) {
             if (!Path.GetExtension(filePath).Equals(".csv", StringComparison.OrdinalIgnoreCase)) return;
-            Labels.Clear();
             Images.Clear();
             Categories.Clear();
             string basePath = Path.GetDirectoryName(filePath) ?? "";
@@ -506,9 +477,10 @@ namespace LabelAnnotator.ViewModels {
             foreach (string line in lines) {
                 (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
                 if (img is object) {
-                    images.Add(img);
+                    if (images.TryGetValue(img, out var realImage)) img = realImage;
+                    else images.Add(img);
                     if (lbl is object) {
-                        Labels.Add(lbl);
+                        img.Annotations.Add(lbl);
                         if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) lbl.Class = found;
                         else categories.Add(lbl.Class);
                     }

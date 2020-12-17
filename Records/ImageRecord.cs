@@ -1,10 +1,12 @@
 using Prism.Mvvm;
 using System;
+using System.Collections.Generic;
 
 namespace LabelAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public string FullPath { get; }
+        public List<LabelRecord> Annotations { get; }
         #endregion
 
         #region 바인딩 전용 프로퍼티
@@ -18,6 +20,7 @@ namespace LabelAnnotator.Records {
         public ImageRecord(string FullPath) {
             this.FullPath = FullPath;
             _DisplayFilename = "";
+            Annotations = new List<LabelRecord>();
         }
 
         #region 동일성
