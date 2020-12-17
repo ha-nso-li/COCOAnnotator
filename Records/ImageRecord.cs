@@ -62,5 +62,7 @@ namespace LabelAnnotator.Records {
         #endregion
 
         public override string ToString() => FullPath;
+
+        public static ImageRecord Empty => new ImageRecord("");
     }
 }

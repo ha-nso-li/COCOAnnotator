@@ -230,8 +230,8 @@ namespace LabelAnnotator.ViewModels {
         private void CommitBbox(CommitBboxEventArgs e) {
             if (SelectedImage is null) return;
 
-            foreach (LabelRecordWithoutImage i in e.Added) {
-                SelectedImage.Annotations.Add(i.WithImage(SelectedImage));
+            foreach (LabelRecord i in e.Added) {
+                SelectedImage.Annotations.Add(new LabelRecord(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Class));
             }
             foreach ((LabelRecord old, LabelRecord @new) in e.ChangedOldItems.Zip(e.ChangedNewItems)) {
                 int idx = SelectedImage.Annotations.IndexOf(old);

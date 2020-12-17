@@ -366,7 +366,7 @@ namespace LabelAnnotator.UserControls {
             if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
 
             List<LabelRecord> deleted = new List<LabelRecord>();
-            List<LabelRecordWithoutImage> added = new List<LabelRecordWithoutImage>();
+            List<LabelRecord> added = new List<LabelRecord>();
             List<LabelRecord> changed_old = new List<LabelRecord>();
             List<LabelRecord> changed_new = new List<LabelRecord>();
             IEnumerable<ContentControl> bboxes = ViewImageCanvas.Children.OfType<ContentControl>();
@@ -382,7 +382,7 @@ namespace LabelAnnotator.UserControls {
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                     double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    added.Add(new LabelRecordWithoutImage(left, top, width, height, CurrentClass));
+                    added.Add(new LabelRecord(ImageRecord.Empty, left, top, width, height, CurrentClass));
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
