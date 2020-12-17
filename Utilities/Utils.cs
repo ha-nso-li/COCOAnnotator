@@ -54,7 +54,6 @@ namespace LabelAnnotator.Utilities {
         /// <param name="hue">색상입니다. 0에서 360까지의 범위를 갖습니다.</param>
         /// <param name="saturation">채도입니다. 0에서 1까지의 범위를 갖습니다.</param>
         /// <param name="value">명도입니다. 0에서 1까지의 범위를 갖습니다.</param>
-        /// <returns></returns>
         private static Color ColorFromHSV(double hue, double saturation, double value) {
             int hi = (int)Math.Floor(hue / 60) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
@@ -64,18 +63,14 @@ namespace LabelAnnotator.Utilities {
             byte q = (byte)(v * (1 - f * saturation));
             byte t = (byte)(v * (1 - (1 - f) * saturation));
 
-            if (hi == 0)
-                return Color.FromArgb(255, v, t, p);
-            else if (hi == 1)
-                return Color.FromArgb(255, q, v, p);
-            else if (hi == 2)
-                return Color.FromArgb(255, p, v, t);
-            else if (hi == 3)
-                return Color.FromArgb(255, p, q, v);
-            else if (hi == 4)
-                return Color.FromArgb(255, t, p, v);
-            else
-                return Color.FromArgb(255, v, p, q);
+            return hi switch {
+                0 => Color.FromArgb(255, v, t, p),
+                1 => Color.FromArgb(255, q, v, p),
+                2 => Color.FromArgb(255, p, v, t),
+                3 => Color.FromArgb(255, p, q, v),
+                4 => Color.FromArgb(255, t, p, v),
+                _ => Color.FromArgb(255, v, p, q)
+            };
         }
 
         /// <summary>
@@ -85,9 +80,7 @@ namespace LabelAnnotator.Utilities {
             Random random = new Random();
             while (true) {
                 Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
-                if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) {
-                    return newColor;
-                }
+                if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) return newColor;
             }
         }
 
@@ -148,10 +141,8 @@ namespace LabelAnnotator.Utilities {
                     uri.Append($"%{Convert.ToByte(v):X2}");
                 }
             }
-            if (uri.Length >= 2 && uri[0] == '/' && uri[1] == '/') // UNC path
-                uri.Insert(0, "file:");
-            else
-                uri.Insert(0, "file:///");
+            if (uri.Length >= 2 && uri[0] == '/' && uri[1] == '/') uri.Insert(0, "file:");
+            else uri.Insert(0, "file:///");
             return new Uri(uri.ToString());
         }
 

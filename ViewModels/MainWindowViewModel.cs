@@ -487,11 +487,13 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
             foreach (ImageRecord i in images) Images.Add(i);
-            foreach (ClassRecord classname in categories) Categories.Add(classname);
-            RefreshCommonPath();
-            RefreshColorOfCategories();
             if (Images.Count > 0) SelectedImage = Images[0];
-            SelectedCategory = Categories[0];
+            RefreshCommonPath();
+            if (categories.Count >= 2) {
+                foreach (ClassRecord classname in categories) Categories.Add(classname);
+                SelectedCategory = Categories[0];
+            }
+            RefreshColorOfCategories();
             Title = $"CSV 데이터셋 편집기 - {filePath}";
         }
         private void RefreshColorOfCategories() {
