@@ -6,7 +6,7 @@ namespace LabelAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public string FullPath { get; }
-        public List<LabelRecord> Annotations { get; }
+        public List<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
         public int Height { get; set; }
         #endregion
@@ -24,7 +24,7 @@ namespace LabelAnnotator.Records {
         public ImageRecord(string FullPath, int Width, int Height) {
             this.FullPath = FullPath;
             _DisplayFilename = "";
-            Annotations = new List<LabelRecord>();
+            Annotations = new List<AnnotationRecord>();
             this.Width = Width;
             this.Height = Height;
         }

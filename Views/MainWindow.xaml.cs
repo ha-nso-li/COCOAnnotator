@@ -13,7 +13,7 @@ namespace LabelAnnotator.Views {
             EventAggregator.GetEvent<TryCommitBbox>().Subscribe(TryCommitBbox);
         }
 
-        private void ScrollViewCategoriesList(ClassRecord e) {
+        private void ScrollViewCategoriesList(CategoryRecord e) {
             ViewCategoriesList.ScrollIntoView(e);
         }
 

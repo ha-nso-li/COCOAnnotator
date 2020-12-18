@@ -5,16 +5,16 @@ using System.Collections.Generic;
 namespace LabelAnnotator.Events {
     public delegate void CommitBboxEventHandler(object sender, CommitBboxEventArgs e);
     public class CommitBboxEventArgs : EventArgs {
-        public CommitBboxEventArgs(IEnumerable<LabelRecord> added, IEnumerable<LabelRecord> changed_old, IEnumerable<LabelRecord> changed_new, IEnumerable<LabelRecord> deleted) {
+        public CommitBboxEventArgs(IEnumerable<AnnotationRecord> added, IEnumerable<AnnotationRecord> changed_old, IEnumerable<AnnotationRecord> changed_new, IEnumerable<AnnotationRecord> deleted) {
             Added = added;
             ChangedOldItems = changed_old;
             ChangedNewItems = changed_new;
             Deleted = deleted;
         }
 
-        public IEnumerable<LabelRecord> Added { get; }
-        public IEnumerable<LabelRecord> ChangedOldItems { get; }
-        public IEnumerable<LabelRecord> ChangedNewItems { get; }
-        public IEnumerable<LabelRecord> Deleted { get; }
+        public IEnumerable<AnnotationRecord> Added { get; }
+        public IEnumerable<AnnotationRecord> ChangedOldItems { get; }
+        public IEnumerable<AnnotationRecord> ChangedNewItems { get; }
+        public IEnumerable<AnnotationRecord> Deleted { get; }
     }
 }

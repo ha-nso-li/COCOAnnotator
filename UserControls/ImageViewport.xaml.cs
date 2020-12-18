@@ -96,7 +96,7 @@ namespace LabelAnnotator.UserControls {
             set => SetValue(FitViewportProperty, value);
         }
 
-        public static readonly DependencyProperty LabelsProperty = DependencyProperty.Register(nameof(Labels), typeof(IEnumerable<LabelRecord>), typeof(ImageViewport), new PropertyMetadata(LabelsChanged));
+        public static readonly DependencyProperty LabelsProperty = DependencyProperty.Register(nameof(Labels), typeof(IEnumerable<AnnotationRecord>), typeof(ImageViewport), new PropertyMetadata(LabelsChanged));
         private static void LabelsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.OldValue is INotifyCollectionChanged old) old.CollectionChanged -= uc.LabelsCollectionChanged;
@@ -114,15 +114,15 @@ namespace LabelAnnotator.UserControls {
                 foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
                 break;
             case NotifyCollectionChangedAction.Add:
-                foreach (LabelRecord? i in e.NewItems) {
+                foreach (AnnotationRecord? i in e.NewItems) {
                     if (i is null) continue;
                     AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Class, true);
                 }
                 break;
             }
         }
-        public IEnumerable<LabelRecord>? Labels {
-            get => (IEnumerable<LabelRecord>?)GetValue(LabelsProperty);
+        public IEnumerable<AnnotationRecord>? Labels {
+            get => (IEnumerable<AnnotationRecord>?)GetValue(LabelsProperty);
             set => SetValue(LabelsProperty, value);
         }
 
@@ -132,9 +132,9 @@ namespace LabelAnnotator.UserControls {
             set => SetValue(BboxInsertModeProperty, value);
         }
 
-        public static readonly DependencyProperty CurrentClassProperty = DependencyProperty.Register(nameof(CurrentClass), typeof(ClassRecord), typeof(ImageViewport));
-        public ClassRecord? CurrentClass {
-            get => (ClassRecord?)GetValue(CurrentClassProperty);
+        public static readonly DependencyProperty CurrentClassProperty = DependencyProperty.Register(nameof(CurrentClass), typeof(CategoryRecord), typeof(ImageViewport));
+        public CategoryRecord? CurrentClass {
+            get => (CategoryRecord?)GetValue(CurrentClassProperty);
             set => SetValue(CurrentClassProperty, value);
         }
         #endregion
@@ -150,7 +150,7 @@ namespace LabelAnnotator.UserControls {
                     CurrentScale = ViewImageControl.ActualWidth / bitmap.PixelWidth;
                 }, DispatcherPriority.Loaded);
             }
-            foreach (LabelRecord i in Labels) {
+            foreach (AnnotationRecord i in Labels) {
                 AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Class, true);
             }
         }
@@ -159,10 +159,10 @@ namespace LabelAnnotator.UserControls {
             foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
         }
         /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
-        /// <param name="tag">해당 경계 상자에 해당하는 <seealso cref="LabelRecord"/> 객체입니다. 특수 객체일 경우 정수 값을 가집니다.</param>
+        /// <param name="tag">해당 경계 상자에 해당하는 <seealso cref="AnnotationRecord"/> 객체입니다. 특수 객체일 경우 정수 값을 가집니다.</param>
         /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
-        private ContentControl AddBoundaryBox(int zindex, object tag, double left, double top, double width, double height, ClassRecord category, bool needScale) {
+        private ContentControl AddBoundaryBox(int zindex, object tag, double left, double top, double width, double height, CategoryRecord category, bool needScale) {
             // 화면의 배율에 맞춰 스케일링
             if (needScale) {
                 left *= CurrentScale;
@@ -181,7 +181,7 @@ namespace LabelAnnotator.UserControls {
             Canvas.SetTop(cont, top);
             Panel.SetZIndex(cont, zindex);
             cont.Tag = tag;
-            if (tag is LabelRecord) {
+            if (tag is AnnotationRecord) {
                 MenuItem delete = new MenuItem {
                     Header = "삭제",
                     Tag = tag,
@@ -211,8 +211,8 @@ namespace LabelAnnotator.UserControls {
                     double newTop = Canvas.GetTop(box) / CurrentScale * afterScale;
                     double newWidth = box.Width / CurrentScale * afterScale;
                     double newHeight = box.Height / CurrentScale * afterScale;
-                    LabelRecord? realBox = Labels.FirstOrDefault(s => s == box.Tag);
-                    if (realBox is LabelRecord) {
+                    AnnotationRecord? realBox = Labels.FirstOrDefault(s => s == box.Tag);
+                    if (realBox is AnnotationRecord) {
                         // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
                         double newLeftFromOriginal = realBox.Left * afterScale;
@@ -365,16 +365,16 @@ namespace LabelAnnotator.UserControls {
         public void TryCommitBbox() {
             if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
 
-            List<LabelRecord> deleted = new List<LabelRecord>();
-            List<LabelRecord> added = new List<LabelRecord>();
-            List<LabelRecord> changed_old = new List<LabelRecord>();
-            List<LabelRecord> changed_new = new List<LabelRecord>();
+            List<AnnotationRecord> deleted = new List<AnnotationRecord>();
+            List<AnnotationRecord> added = new List<AnnotationRecord>();
+            List<AnnotationRecord> changed_old = new List<AnnotationRecord>();
+            List<AnnotationRecord> changed_new = new List<AnnotationRecord>();
             IEnumerable<ContentControl> bboxes = ViewImageCanvas.Children.OfType<ContentControl>();
             foreach (ContentControl bbox in bboxes) {
                 if (bbox.Visibility == Visibility.Collapsed) {
                     // 삭제
-                    LabelRecord? realBox = Labels.FirstOrDefault(s => s == bbox.Tag);
-                    if (realBox is LabelRecord) deleted.Add(realBox);
+                    AnnotationRecord? realBox = Labels.FirstOrDefault(s => s == bbox.Tag);
+                    if (realBox is AnnotationRecord) deleted.Add(realBox);
                 } else if (bbox.Tag is int tag && tag == Tag_UncommittedBbox) {
                     // 추가
                     if (CurrentClass is null) continue;
@@ -382,15 +382,15 @@ namespace LabelAnnotator.UserControls {
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                     double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    added.Add(new LabelRecord(ImageRecord.Empty, left, top, width, height, CurrentClass));
+                    added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentClass));
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                     double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    LabelRecord? realBox = Labels.FirstOrDefault(s => s == bbox.Tag);
-                    if (realBox is LabelRecord) {
+                    AnnotationRecord? realBox = Labels.FirstOrDefault(s => s == bbox.Tag);
+                    if (realBox is AnnotationRecord) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 새 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
@@ -412,7 +412,7 @@ namespace LabelAnnotator.UserControls {
                         }
                         if (notChangedPositionsCount < 4) {
                             changed_old.Add(realBox);
-                            changed_new.Add(new LabelRecord(realBox.Image, left, top, width, height, realBox.Class));
+                            changed_new.Add(new AnnotationRecord(realBox.Image, left, top, width, height, realBox.Class));
                         }
                     }
                 }

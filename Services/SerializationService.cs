@@ -13,9 +13,9 @@ namespace LabelAnnotator.Services {
 
         /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<ClassRecord> Categories) {
+        public byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             COCODataset cocodataset = new COCODataset();
-            foreach (ClassRecord i in Categories) {
+            foreach (CategoryRecord i in Categories) {
                 int id = cocodataset.Categories.Count;
                 cocodataset.Categories.Add(new CategoryCOCO {
                     ID = id,
@@ -31,7 +31,7 @@ namespace LabelAnnotator.Services {
                     Width = i.Width,
                     Height = i.Height,
                 });
-                foreach (LabelRecord j in i.Annotations) {
+                foreach (AnnotationRecord j in i.Annotations) {
                     int category_id = cocodataset.Categories.FindIndex(s => s.Name == j.Class.Name);
                     int annotation_id = cocodataset.Annotations.Count;
                     cocodataset.Annotations.Add(new AnnotationCOCO {
@@ -48,29 +48,33 @@ namespace LabelAnnotator.Services {
         }
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public (ICollection<ImageRecord> Images, ICollection<ClassRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
-            ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
-            COCODataset cocodataset = JsonSerializer.Deserialize<COCODataset>(JsonSpan, jsonSerializerOptions);
+        public (ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
+            COCODataset cocodataset = DeserializeAsRaw(JsonContents);
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
-            SortedDictionary<int, ClassRecord> categories = new SortedDictionary<int, ClassRecord>();
+            SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
             foreach (ImageCOCO i in cocodataset.Images) {
-                images.Add(i.ID, new ImageRecord(Path.Combine(BasePath, i.FileName), i.Width, i.Height));
+                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(Path.Combine(BasePath, i.FileName), i.Width, i.Height));
             }
             foreach (CategoryCOCO i in cocodataset.Categories) {
-                categories.Add(i.ID, ClassRecord.FromName(i.Name));
+                if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
             }
             foreach (AnnotationCOCO i in cocodataset.Annotations) {
-                if (categories.TryGetValue(i.CategoryID, out ClassRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBox.Count >= 4) {
-                    image.Annotations.Add(new LabelRecord(image, i.BoundaryBox[0], i.BoundaryBox[1], i.BoundaryBox[2], i.BoundaryBox[3], category));
+                if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBox.Count >= 4) {
+                    image.Annotations.Add(new AnnotationRecord(image, i.BoundaryBox[0], i.BoundaryBox[1], i.BoundaryBox[2], i.BoundaryBox[3], category));
                 }
             }
             return (images.Values, categories.Values);
         }
 
+        public COCODataset DeserializeAsRaw(byte[] JsonContents) {
+            ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
+            return JsonSerializer.Deserialize<COCODataset>(JsonSpan, jsonSerializerOptions);
+        }
+
         #region CSV 변환
         /// <summary>주어진 레이블을 CSV로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
-        public string CSVSerializeAsPositive(string BasePath, LabelRecord Label, SettingFormats Format) {
+        public string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, SettingFormats Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
             return Format switch {
                 SettingFormats.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Class:0.#}",
@@ -88,10 +92,10 @@ namespace LabelAnnotator.Services {
         /// <returns>
         /// <list type="bullet">
         /// <item><description>둘다 <see langword="null"/>이면 역직렬화 실패를 의미합니다.</description></item>
-        /// <item><description><seealso cref="LabelRecord"/>만 <see langword="null"/>이면 음성 샘플임을 의미합니다.</description></item>
+        /// <item><description><seealso cref="AnnotationRecord"/>만 <see langword="null"/>이면 음성 샘플임을 의미합니다.</description></item>
         /// </list>
         /// </returns>
-        public (ImageRecord?, LabelRecord?) CSVDeserialize(string BasePath, string Text, SettingFormats Format) {
+        public (ImageRecord?, AnnotationRecord?) CSVDeserialize(string BasePath, string Text, SettingFormats Format) {
             string[] split = Text.Split(',');
             if (split.Length < 6) return (null, null);
             string path = Path.Combine(BasePath, split[0]);
@@ -105,9 +109,9 @@ namespace LabelAnnotator.Services {
             success &= double.TryParse(split[4], out double num4);
             if (!success) return (null, null);
             return Format switch {
-                SettingFormats.LTRB => (img, new LabelRecord(img, num1, num2, num3 - num1, num4 - num2, ClassRecord.FromName(classname))),
-                SettingFormats.CXCYWH => (img, new LabelRecord(img, num1 - num3 / 2, num2 - num4 / 2, num3, num4, ClassRecord.FromName(classname))),
-                SettingFormats.LTWH => (img, new LabelRecord(img, num1, num2, num3, num4, ClassRecord.FromName(classname))),
+                SettingFormats.LTRB => (img, new AnnotationRecord(img, num1, num2, num3 - num1, num4 - num2, CategoryRecord.FromName(classname))),
+                SettingFormats.CXCYWH => (img, new AnnotationRecord(img, num1 - num3 / 2, num2 - num4 / 2, num3, num4, CategoryRecord.FromName(classname))),
+                SettingFormats.LTWH => (img, new AnnotationRecord(img, num1, num2, num3, num4, CategoryRecord.FromName(classname))),
                 _ => (null, null)
             };
         }

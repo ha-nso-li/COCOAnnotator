@@ -1,5 +1,6 @@
 using LabelAnnotator.Events;
 using LabelAnnotator.Records;
+using LabelAnnotator.Records.COCO;
 using LabelAnnotator.Records.Enums;
 using LabelAnnotator.Utilities;
 using LabelAnnotator.ViewModels.Commons;
@@ -13,13 +14,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 
 namespace LabelAnnotator.ViewModels {
     public class ManageDialogViewModel : DialogViewModelBase {
         #region 생성자
         public ManageDialogViewModel() {
-            Title = "레이블 관리";
+            Title = "데이터셋 관리";
 
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
@@ -47,11 +47,11 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly SortedDictionary<ClassRecord, List<LabelRecord>> PositiveLabelsByClassForVerify = new SortedDictionary<ClassRecord, List<LabelRecord>>();
-        private readonly SortedSet<ImageRecord> PositiveImagesForVerify = new SortedSet<ImageRecord>();
-        private readonly SortedSet<ImageRecord> NegativeImagesForVerify = new SortedSet<ImageRecord>();
+        private readonly SortedDictionary<CategoryRecord, int> AnnotationsCountByCategory = new SortedDictionary<CategoryRecord, int>();
+        private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
+        private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
         private readonly SortedSet<ImageRecord> UnusedImagesForVerify = new SortedSet<ImageRecord>();
-        private readonly List<LabelRecord> LabelsForUndupe = new List<LabelRecord>();
+        private readonly List<AnnotationRecord> LabelsForUndupe = new List<AnnotationRecord>();
         private readonly SortedSet<ImageRecord> ImagesForUndupe = new SortedSet<ImageRecord>();
         #endregion
 
@@ -123,119 +123,134 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 커맨드
-        #region 레이블 분석
+        #region 데이터셋 분석
         public ICommand CmdVerifyLabel { get; }
         private void VerifyLabel() {
-            if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
+            if (!CommonDialogService.OpenJsonFileDialog(out string filePath)) return;
             bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
             if (res is null) return;
             bool imageSizeCheck = res.Value;
             LogVerifyLabel = "";
             ProgressVerifyLabelValue = 0;
             Task.Run(() => {
-                PositiveLabelsByClassForVerify.Clear();
-                PositiveImagesForVerify.Clear();
-                NegativeImagesForVerify.Clear();
+                ImagesForVerify.Clear();
+                CategoriesForVerify.Clear();
+                AnnotationsCountByCategory.Clear();
                 UnusedImagesForVerify.Clear();
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
-                var CacheForImageSize = new SortedDictionary<ImageRecord, (int Width, int Height)?>();
-                string[] lines = File.ReadAllLines(filePath);
-                bool InvalidLabelFlag = false;
+                byte[] CocoContents = File.ReadAllBytes(filePath);
+                COCODataset cocodataset = SerializationService.DeserializeAsRaw(CocoContents);
                 AppendLogVerifyLabel($"\"{filePath}\"의 분석을 시작합니다.");
-                for (int i = 0; i < lines.Length; i++) {
-                    if (IsClosed) return;
-                    ProgressVerifyLabelValue = (int)((double)i / lines.Length * 100);
-                    if (string.IsNullOrWhiteSpace(lines[i])) continue;
-                    (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
-                    if (img is null) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. CSV 값 개수가 6개 미만이거나 좌표값이 숫자 값이 아닙니다.");
-                        InvalidLabelFlag = true;
-                        continue;
-                    }
-                    if (!File.Exists(img.FullPath)) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 해당 경로에 실존하지 않습니다.");
-                        InvalidLabelFlag = true;
-                        continue;
-                    }
-                    if (NegativeImagesForVerify.Contains(img)) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 음성 샘플로 사용된 적이 있는 이미지가 한번 더 사용되었습니다.");
-                        InvalidLabelFlag = true;
-                        continue;
-                    }
-                    if (lbl is null) {
-                        if (PositiveImagesForVerify.Contains(img)) {
-                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 양성 레이블에서 사용된 적이 있는 이미지가 음성 샘플로 사용되었습니다.");
-                            InvalidLabelFlag = true;
-                            continue;
-                        } else {
-                            // 음성 샘플
-                            NegativeImagesForVerify.Add(img);
+                int total = cocodataset.Images.Count + cocodataset.Annotations.Count + cocodataset.Categories.Count;
+                {
+                    SortedSet<int> DuplicatedIDAlreadyDetected = new SortedSet<int>();
+                    SortedSet<ImageRecord> ImageRecords = new SortedSet<ImageRecord>();
+                    SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
+                    foreach ((int idx, ImageCOCO image) in cocodataset.Images.Select((s, idx) => (idx, s))) {
+                        if (IsClosed) return;
+                        ProgressVerifyLabelValue = (int)((double)idx / total * 100);
+                        string fullPath = Path.Combine(basePath, image.FileName);
+                        if (ImagesForVerify.ContainsKey(image.ID)) {
+                            if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyLabel($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
                             continue;
                         }
-                    }
-                    // 경계 상자 위치 좌표가 위아래 혹은 좌우가 뒤집혀있는지 검사.
-                    if (lbl.Width <= 0 || lbl.Height <= 0) {
-                        AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자의 너비 혹은 높이가 0 이하입니다.");
-                        InvalidLabelFlag = true;
-                        continue;
-                    }
-                    // 경계 상자 위치 좌표가 이미지 크기 밖으로 나가는지 검사.
-                    if (imageSizeCheck) {
-                        // 이미지의 크기 체크하기; 이미 이미지를 읽어온 적이 있으면 캐시에서 가져옴.
-                        int width, height;
-                        if (CacheForImageSize.TryGetValue(img, out var size)) {
-                            if (size is null) continue;
-                            (width, height) = size.Value;
-                        } else {
+                        if (!File.Exists(fullPath)) {
+                            AppendLogVerifyLabel($"ID가 {image.ID}인 이미지가 주어진 경로에 존재하지 않습니다.");
+                            continue;
+                        }
+                        ImageRecord imageRecord = new ImageRecord(fullPath, image.Width, image.Height);
+                        if (ImageRecords.Contains(imageRecord)) {
+                            if (DuplicatedImageAlreadyDetected.Add(imageRecord)) AppendLogVerifyLabel($"다음 경로의 이미지가 2번 이상 사용되었습니다: {fullPath}");
+                            continue;
+                        }
+                        if (imageSizeCheck) {
                             try {
-                                using FileStream stream = new FileStream(img.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                                BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                                width = bitmap.PixelWidth;
-                                height = bitmap.PixelHeight;
-                                CacheForImageSize.Add(img, (width, height));
+                                (int width, int height) = Utils.GetSizeOfImage(fullPath);
+                                if (image.Width != width || image.Height != height) {
+                                    AppendLogVerifyLabel($"ID가 {image.ID}인 이미지의 크기가 실제 크기와 다릅니다.");
+                                    continue;
+                                }
                             } catch (NotSupportedException) {
-                                AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 이미지가 손상되어 읽어올 수 없습니다.");
-                                InvalidLabelFlag = true;
-                                CacheForImageSize.Add(img, null);
+                                AppendLogVerifyLabel($"ID가 {image.ID}인 이미지의 크기를 읽어올 수 없습니다.");
+                                continue;
+                            }
+                        } else {
+                            if (image.Width <= 0 || image.Height <= 0) {
+                                AppendLogVerifyLabel($"ID가 {image.ID}인 이미지의 크기가 유효하지 않습니다.");
                                 continue;
                             }
                         }
-                        if (lbl.Left < 0 || lbl.Top < 0 || lbl.Left + lbl.Width > width || lbl.Top + lbl.Height > height) {
-                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
-                            InvalidLabelFlag = true;
+                        ImageRecords.Add(imageRecord);
+                        ImagesForVerify.Add(image.ID, imageRecord);
+                    }
+                }
+                {
+                    SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
+                    SortedSet<CategoryRecord> CategoryRecords = new SortedSet<CategoryRecord>();
+                    SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
+                    foreach ((int idx, CategoryCOCO category) in cocodataset.Categories.Select((s, idx) => (idx, s))) {
+                        if (IsClosed) return;
+                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + idx) / total * 100);
+                        if (CategoriesForVerify.ContainsKey(category.ID)) {
+                            if (DuplicationAlreadyDetected.Add(category.ID)) AppendLogVerifyLabel($"ID가 {category.ID}인 분류가 2개 이상 발견되었습니다.");
                             continue;
                         }
-                    } else {
-                        if (lbl.Left < 0 || lbl.Top < 0) {
-                            AppendLogVerifyLabel($"{i + 1}번째 줄이 유효하지 않습니다. 경계 상자 좌표가 이미지의 크기 밖에 있습니다.");
-                            InvalidLabelFlag = true;
+                        CategoryRecord categoryRecord = CategoryRecord.FromName(category.Name);
+                        if (CategoryRecords.Contains(categoryRecord)) {
+                            if (DuplicatedCategoryAlreadyDetected.Add(categoryRecord)) AppendLogVerifyLabel($"같은 이름의 분류가 2번 이상 사용되었습니다: {category.Name}");
                             continue;
                         }
+                        CategoriesForVerify.Add(category.ID, categoryRecord);
                     }
-                    // 유효한 양성 레이블.
-                    if (PositiveLabelsByClassForVerify.TryGetValue(lbl.Class, out List<LabelRecord>? positiveLabelsInClass)) {
-                        positiveLabelsInClass.Add(lbl);
-                    } else {
-                        List<LabelRecord> labels = new List<LabelRecord> { lbl };
-                        PositiveLabelsByClassForVerify.Add(lbl.Class, labels);
+                }
+                {
+                    SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
+                    SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
+                    foreach ((int idx, AnnotationCOCO annotation) in cocodataset.Annotations.Select((s, idx) => (idx, s))) {
+                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 100);
+                        if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
+                            if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
+                            continue;
+                        }
+                        if (!CategoriesForVerify.TryGetValue(annotation.CategoryID, out CategoryRecord? category)) {
+                            AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 분류 ID를 참조합니다..");
+                            continue;
+                        }
+                        if (!ImagesForVerify.TryGetValue(annotation.ImageID, out ImageRecord? image)) {
+                            AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 이미지 ID를 참조합니다.");
+                            continue;
+                        }
+                        if (annotation.BoundaryBox.Count != 4) {
+                            AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표 개수는 4개여야 합니다.");
+                            continue;
+                        }
+                        double left = annotation.BoundaryBox[0];
+                        double top = annotation.BoundaryBox[1];
+                        double width = annotation.BoundaryBox[2];
+                        double height = annotation.BoundaryBox[3];
+                        if (left < 0 || top < 0 || left + width > image.Width || top + height > image.Height) {
+                            AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표가 이미지의 크기 밖에 있습니다.");
+                            continue;
+                        }
+                        if (width <= 0 || height <= 0) {
+                            AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 너비 또는 높이는 0 이하일 수 없습니다.");
+                            continue;
+                        }
+                        image.Annotations.Add(new AnnotationRecord(image, left, top, width, height, category));
+                        if (!AnnotationsCountByCategory.ContainsKey(category)) AnnotationsCountByCategory[category] = 0;
+                        AnnotationsCountByCategory[category]++;
                     }
-                    PositiveImagesForVerify.Add(img);
                 }
-                ProgressVerifyLabelValue = 100;
-                if (!InvalidLabelFlag) {
-                    AppendLogVerifyLabel("유효하지 않은 레이블이 발견되지 않았습니다.");
-                }
+
                 // 사용되지 않은 이미지 검색
-                SortedSet<ImageRecord> AllImagesInLabel = new SortedSet<ImageRecord>(PositiveImagesForVerify);
-                AllImagesInLabel.UnionWith(NegativeImagesForVerify);
-                if (AllImagesInLabel.Count > 0) {
-                    string CommonParentPath = Utils.GetCommonParentPath(AllImagesInLabel);
+                if (ImagesForVerify.Count > 0) {
+                    string CommonParentPath = Utils.GetCommonParentPath(ImagesForVerify.Values);
                     AppendLogVerifyLabel("", $"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
                     UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
                         .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
-                    UnusedImagesForVerify.ExceptWith(AllImagesInLabel);
+                    UnusedImagesForVerify.ExceptWith(ImagesForVerify.Values);
                     if (UnusedImagesForVerify.Count > 20) {
-                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
+                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
                         AppendLogVerifyLabel(UnusedImagesForVerify.Select(s => s.FullPath).Take(20).ToArray());
                         SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>(UnusedImagesForVerify.Select(s => Path.GetDirectoryName(s.FullPath) ?? ""));
                         if (FoldersOfUnusedImages.Count > 10) {
@@ -246,32 +261,30 @@ namespace LabelAnnotator.ViewModels {
                             AppendLogVerifyLabel(FoldersOfUnusedImages.ToArray());
                         }
                     } else if (UnusedImagesForVerify.Count >= 1) {
-                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다.");
+                        AppendLogVerifyLabel($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다.");
                         AppendLogVerifyLabel(UnusedImagesForVerify.Select(s => s.FullPath).ToArray());
                     }
                 }
                 AppendLogVerifyLabel(
                     "",
                     "분석이 완료되었습니다.",
-                    $"총 레이블 개수: {PositiveLabelsByClassForVerify.Sum(s => s.Value.Count) + NegativeImagesForVerify.Count}",
-                    $"양성 레이블 개수: {PositiveLabelsByClassForVerify.Sum(s => s.Value.Count)}",
-                    $"음성 레이블 개수: {NegativeImagesForVerify.Count}",
-                    $"양성 레이블이 있는 이미지 개수: {PositiveImagesForVerify.Count}",
-                    $"총 이미지 개수: {AllImagesInLabel.Count}",
-                    $"총 분류 개수: {PositiveLabelsByClassForVerify.Count}",
+                    $"어노테이션 개수: {ImagesForVerify.Values.Sum(s => s.Annotations.Count)}",
+                    $"어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(s => s.Annotations.Count > 0)}",
+                    $"음성 이미지 개수: {ImagesForVerify.Values.Count(s => s.Annotations.Count == 0)}",
+                    $"총 이미지 개수: {ImagesForVerify.Count}",
                     ""
                 );
-                AppendLogVerifyLabel(PositiveLabelsByClassForVerify.Select(s =>
-                    $"분류 이름: {s.Key}, 레이블 개수: {s.Value.Count}, 레이블이 있는 이미지 개수: {s.Value.Select(s => s.Image).Distinct().Count()}").ToArray());
+                AppendLogVerifyLabel(AnnotationsCountByCategory.Select(s =>
+                    $"분류 이름: {s.Key}, 어노테이션 개수: {s.Value}, 어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Class == s.Key))}").ToArray());
             });
         }
         public ICommand CmdDeleteUnusedImages { get; }
         private void DeleteUnusedImages() {
             if (UnusedImagesForVerify.Count == 0) {
-                CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 이미지 폴더 내에 레이블에 사용중이지 않은 이미지가 없습니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 분석한 적 없거나 이미지 폴더 내에 데이터셋에 사용중이지 않은 이미지가 없습니다.");
                 return;
             }
-            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 레이블에 사용중이지 않은 이미지를 디스크에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 데이터셋에 사용중이지 않은 이미지를 디스크에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
             foreach (ImageRecord i in UnusedImagesForVerify) {
                 File.Delete(i.FullPath);
@@ -280,29 +293,20 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdExportVerifiedLabel { get; }
         private void ExportVerifiedLabel() {
-            if (NegativeImagesForVerify.Count == 0 && PositiveLabelsByClassForVerify.Count == 0) {
-                CommonDialogService.MessageBox("레이블 파일을 분석한 적 없거나 분석한 레이블 파일 내에 유효 레이블이 없습니다.");
+            if (ImagesForVerify.Count == 0 && CategoriesForVerify.Count == 0) {
+                CommonDialogService.MessageBox("데이터셋을 분석한 적 없거나 분석한 데이터셋 내에 유효한 내용이 없습니다.");
                 return;
             }
             if (!CommonDialogService.SaveCSVFileDialog(out string filePath)) return;
-            bool res = CommonDialogService.MessageBoxOKCancel("분석한 레이블 파일의 내용 중 유효한 레이블만 내보냅니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("분석한 데이터셋의 내용 중 유효한 내용만 내보냅니다.");
             if (!res) return;
-            string saveBasePath = Path.GetDirectoryName(filePath) ?? "";
-            using StreamWriter f = File.CreateText(filePath);
-            // 양성 레이블
-            foreach (IGrouping<ImageRecord, LabelRecord> i in PositiveLabelsByClassForVerify.SelectMany(s => s.Value).GroupBy(s => s.Image)) {
-                foreach (LabelRecord j in i) {
-                    f.WriteLine(SerializationService.CSVSerializeAsPositive(saveBasePath, j, SettingService.Format));
-                }
-            }
-            // 음성 레이블
-            foreach (ImageRecord i in NegativeImagesForVerify) {
-                f.WriteLine(SerializationService.CSVSerializeAsNegative(saveBasePath, i));
-            }
+            string basePath = Path.GetDirectoryName(filePath) ?? "";
+            byte[] CocoContents = SerializationService.Serialize(basePath, ImagesForVerify.Values, CategoriesForVerify.Values);
+            File.WriteAllBytes(filePath, CocoContents);
         }
         #endregion
 
-        #region 레이블 병합
+        #region 데이터셋 병합
         public ICommand CmdAddFileForUnionLabel { get; }
         private void AddFileForUnionLabel() {
             if (CommonDialogService.OpenCSVFilesDialog(out string[] filePaths)) {
@@ -333,13 +337,13 @@ namespace LabelAnnotator.ViewModels {
         private void ExportUnionLabel() {
             if (CommonDialogService.SaveCSVFileDialog(out string outFilePath)) {
                 // 로드
-                List<LabelRecord> labels = new List<LabelRecord>();
+                List<AnnotationRecord> labels = new List<AnnotationRecord>();
                 SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
                 foreach (string inFilePath in FilesForUnionLabel) {
                     string basePath = Path.GetDirectoryName(inFilePath) ?? "";
                     IEnumerable<string> lines = File.ReadLines(inFilePath);
                     foreach (string line in lines) {
-                        (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
+                        (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
                         if (img is object) {
                             if (lbl is object) labels.Add(lbl);
                             images.Add(img);
@@ -349,14 +353,14 @@ namespace LabelAnnotator.ViewModels {
                 // 저장
                 string saveBasePath = Path.GetDirectoryName(outFilePath) ?? "";
                 using StreamWriter f = File.CreateText(outFilePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
+                ILookup<ImageRecord, AnnotationRecord> labelsByImage = labels.ToLookup(s => s.Image);
                 foreach (ImageRecord i in images) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                    IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
-                        // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.CSVSerializeAsPositive(saveBasePath, j, SettingService.Format));
+                        // 양성 데이터셋
+                        foreach (AnnotationRecord j in labelsInImage) f.WriteLine(SerializationService.CSVSerializeAsPositive(saveBasePath, j, SettingService.Format));
                     } else {
-                        // 음성 레이블
+                        // 음성 데이터셋
                         f.WriteLine(SerializationService.CSVSerializeAsNegative(saveBasePath, i));
                     }
                 }
@@ -364,24 +368,24 @@ namespace LabelAnnotator.ViewModels {
         }
         #endregion
 
-        #region 레이블 분리
+        #region 데이터셋 분리
         public ICommand CmdSplitLabel { get; }
         private void SplitLabel() {
             if (!CommonDialogService.OpenCSVFileDialog(out string filePath)) return;
             Random r = new Random();
-            List<LabelRecord> labels = new List<LabelRecord>();
+            List<AnnotationRecord> labels = new List<AnnotationRecord>();
             HashSet<ImageRecord> images = new HashSet<ImageRecord>();
             IEnumerable<string> lines = File.ReadLines(filePath);
             string basePath = Path.GetDirectoryName(filePath) ?? "";
             foreach (string line in lines) {
-                (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
+                (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
                 if (img is object) {
                     if (lbl is object) labels.Add(lbl);
                     images.Add(img);
                 }
             }
             List<ImageRecord> shuffledImages = images.OrderBy(s => r.Next()).ToList();
-            ILookup<ImageRecord, LabelRecord> labelsByImage = labels.ToLookup(s => s.Image);
+            ILookup<ImageRecord, AnnotationRecord> labelsByImage = labels.ToLookup(s => s.Image);
             switch (TacticForSplitLabel) {
             case TacticsForSplitLabel.DevideToNLabels:
                 // 균등 분할
@@ -390,22 +394,22 @@ namespace LabelAnnotator.ViewModels {
                     return;
                 }
                 List<StreamWriter> files = new List<StreamWriter>();
-                var infoByPartition = new List<(HashSet<ClassRecord> Classes, int ImagesCount)>();
+                var infoByPartition = new List<(HashSet<CategoryRecord> Classes, int ImagesCount)>();
                 for (int i = 0; i < NValueForSplitLabel; i++) {
                     // 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).(원래 확장자)
                     StreamWriter file = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.{i + 1}{Path.GetExtension(filePath)}"));
                     files.Add(file);
-                    infoByPartition.Add((new HashSet<ClassRecord>(), 0));
+                    infoByPartition.Add((new HashSet<CategoryRecord>(), 0));
                 }
                 foreach (ImageRecord image in shuffledImages) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                    IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[image];
                     int idx;
                     if (labelsInImage.Any()) {
                         // 양성 이미지인 경우.
                         // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
                         (idx, _, _) = infoByPartition.Select((s, idx) => (idx, s.ImagesCount, labelsInImage.Select(t => t.Class).Except(s.Classes).Count())).OrderByDescending(s => s.Item3)
                                                      .ThenBy(s => s.ImagesCount).ThenBy(s => r.Next()).First();
-                        foreach (LabelRecord label in labelsInImage) files[idx].WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
+                        foreach (AnnotationRecord label in labelsInImage) files[idx].WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
@@ -431,22 +435,22 @@ namespace LabelAnnotator.ViewModels {
                 using StreamWriter OutFileOriginal = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.1{Path.GetExtension(filePath)}"));
                 using StreamWriter OutFileSplit = File.CreateText(Path.Combine($"{Path.GetDirectoryName(filePath)}", $"{Path.GetFileNameWithoutExtension(filePath)}.2{Path.GetExtension(filePath)}"));
                 int ImageCountOfSplit = 0;
-                HashSet<ClassRecord> ClassesOriginal = new HashSet<ClassRecord>();
-                HashSet<ClassRecord> ClassesSplit = new HashSet<ClassRecord>();
+                HashSet<CategoryRecord> ClassesOriginal = new HashSet<CategoryRecord>();
+                HashSet<CategoryRecord> ClassesSplit = new HashSet<CategoryRecord>();
                 foreach ((int idx, ImageRecord image) in shuffledImages.Select((img, idx) => (idx, img))) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
+                    IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[image];
                     int DiversityDeltaOriginal = labelsInImage.Select(s => s.Class).Except(ClassesOriginal).Count();
                     int DiversityDeltaSplit = labelsInImage.Select(s => s.Class).Except(ClassesSplit).Count();
                     if (images.Count - idx + ImageCountOfSplit <= NValueForSplitLabel || (ImageCountOfSplit < NValueForSplitLabel && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
-                        // 아래 두 경우 중 하나일시 해당 이미지를 추출 레이블에 씀
+                        // 아래 두 경우 중 하나일시 해당 이미지를 추출 데이터셋에 씀
                         // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                        // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 레이블 쪽이 더 높거나 같은 경우
-                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
+                        // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
+                        if (labelsInImage.Any()) foreach (AnnotationRecord label in labelsInImage) OutFileSplit.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
                         else OutFileSplit.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, image));
                         ImageCountOfSplit++;
                         ClassesSplit.UnionWith(labelsInImage.Select(s => s.Class));
                     } else {
-                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
+                        if (labelsInImage.Any()) foreach (AnnotationRecord label in labelsInImage) OutFileOriginal.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, label, SettingService.Format));
                         else OutFileOriginal.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, image));
                         ClassesOriginal.UnionWith(labelsInImage.Select(s => s.Class));
                     }
@@ -461,8 +465,8 @@ namespace LabelAnnotator.ViewModels {
                     // 파일 이름: (원래 파일 이름).(최종 폴더 이름).(원래 확장자)
                     using StreamWriter OutputFile = File.CreateText(Path.Combine(TargetDir, $"{Path.GetFileNameWithoutExtension(filePath)}.{Path.GetFileName(imagesInDir.Key)}{Path.GetExtension(filePath)}"));
                     foreach (ImageRecord image in imagesInDir) {
-                        IEnumerable<LabelRecord> labelsInImage = labelsByImage[image];
-                        if (labelsInImage.Any()) foreach (LabelRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.CSVSerializeAsPositive(TargetDir, label, SettingService.Format));
+                        IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[image];
+                        if (labelsInImage.Any()) foreach (AnnotationRecord label in labelsInImage) OutputFile.WriteLine(SerializationService.CSVSerializeAsPositive(TargetDir, label, SettingService.Format));
                         else OutputFile.WriteLine(SerializationService.CSVSerializeAsNegative(TargetDir, image));
                     }
                 }
@@ -471,7 +475,7 @@ namespace LabelAnnotator.ViewModels {
         }
         #endregion
 
-        #region 레이블 중복 제거
+        #region 데이터셋 중복 제거
         public ICommand CmdUndupeLabel { get; }
         private void UndupeLabel() {
             if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
@@ -485,7 +489,7 @@ namespace LabelAnnotator.ViewModels {
                     string basePath = Path.GetDirectoryName(filePath) ?? "";
                     string[] lines = File.ReadAllLines(filePath);
                     for (int i = 0; i < lines.Length; i++) {
-                        (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
+                        (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
                         if (img is object) {
                             if (lbl is object) LabelsForUndupe.Add(lbl);
                             ImagesForUndupe.Add(img);
@@ -493,7 +497,7 @@ namespace LabelAnnotator.ViewModels {
                     }
                     // 중복 제거
                     int TotalSuppressedBoxesCount = 0;
-                    IEnumerable<IEnumerable<LabelRecord>> LabelsByShard;
+                    IEnumerable<IEnumerable<AnnotationRecord>> LabelsByShard;
                     if (UndupeWithoutClass) LabelsByShard = LabelsForUndupe.ToLookup(s => s.Image);
                     else LabelsByShard = LabelsForUndupe.ToLookup(s => (s.Image, s.Class));
                     int CountOfShard = LabelsByShard.Count();
@@ -501,14 +505,14 @@ namespace LabelAnnotator.ViewModels {
                     foreach (var (idx, labelsInImage) in LabelsByShard.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressUndupeLabelValue = (int)((double)(idx + 1) / CountOfShard * 100);
-                        List<LabelRecord> sortedBySize = labelsInImage.OrderBy(s => s.Area).ToList(); // 넓이가 작은 경계 상자를 우선
+                        List<AnnotationRecord> sortedBySize = labelsInImage.OrderBy(s => s.Area).ToList(); // 넓이가 작은 경계 상자를 우선
                         while (sortedBySize.Count >= 2) {
                             // pick
-                            LabelRecord pick = sortedBySize[0];
+                            AnnotationRecord pick = sortedBySize[0];
                             sortedBySize.Remove(pick);
                             // compare
-                            List<LabelRecord> labelsToSuppress = new List<LabelRecord>();
-                            foreach (LabelRecord i in sortedBySize) {
+                            List<AnnotationRecord> labelsToSuppress = new List<AnnotationRecord>();
+                            foreach (AnnotationRecord i in sortedBySize) {
                                 double left = Math.Max(pick.Left, i.Left);
                                 double top = Math.Max(pick.Top, i.Top);
                                 double right = Math.Min(pick.Left + pick.Width, i.Left + i.Width);
@@ -521,7 +525,7 @@ namespace LabelAnnotator.ViewModels {
                                 labelsToSuppress.Add(i);
                             }
                             // suppress
-                            foreach (LabelRecord i in labelsToSuppress) {
+                            foreach (AnnotationRecord i in labelsToSuppress) {
                                 sortedBySize.Remove(i);
                                 LabelsForUndupe.Remove(i);
                                 UndupedImages.Add(i.Image);
@@ -548,20 +552,20 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdExportUndupedLabel { get; }
         private void ExportUndupeLabel() {
             if (LabelsForUndupe.Count == 0 && ImagesForUndupe.Count == 0) {
-                CommonDialogService.MessageBox("레이블 중복 제거를 실행한 적이 없습니다.");
+                CommonDialogService.MessageBox("어노테이션 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
             if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 using StreamWriter f = File.CreateText(filePath);
-                ILookup<ImageRecord, LabelRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
+                ILookup<ImageRecord, AnnotationRecord> labelsByImage = LabelsForUndupe.ToLookup(s => s.Image);
                 foreach (ImageRecord i in ImagesForUndupe) {
-                    IEnumerable<LabelRecord> labelsInImage = labelsByImage[i];
+                    IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[i];
                     if (labelsInImage.Any()) {
-                        // 양성 레이블
-                        foreach (LabelRecord j in labelsInImage) f.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
+                        // 양성 데이터셋
+                        foreach (AnnotationRecord j in labelsInImage) f.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
                     } else {
-                        // 음성 레이블
+                        // 음성 데이터셋
                         f.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
                     }
                 }
@@ -569,7 +573,7 @@ namespace LabelAnnotator.ViewModels {
         }
         #endregion
 
-        #region 레이블 변환
+        #region 데이터셋 변환
         public ICommand CmdConvertLabel { get; }
         private void ConvertLabel() {
             switch (TacticForConvertLabel) {
@@ -582,10 +586,10 @@ namespace LabelAnnotator.ViewModels {
                     using StreamWriter csv = File.CreateText(csvPath);
                     foreach (ImageRecord i in images) {
                         if (i.Annotations.Count > 0) {
-                            // 양성 레이블
-                            foreach (LabelRecord j in i.Annotations) csv.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
+                            // 양성 데이터셋
+                            foreach (AnnotationRecord j in i.Annotations) csv.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
                         } else {
-                            // 음성 레이블
+                            // 음성 데이터셋
                             csv.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
                         }
                     }
@@ -599,11 +603,11 @@ namespace LabelAnnotator.ViewModels {
                         string basePath = Path.GetDirectoryName(filePath) ?? "";
                         string[] lines = File.ReadAllLines(filePath);
                         SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-                        SortedSet<ClassRecord> categories = new SortedSet<ClassRecord>();
+                        SortedSet<CategoryRecord> categories = new SortedSet<CategoryRecord>();
                         for (int i = 0; i < lines.Length; i++) {
                             if (IsClosed) return;
                             ProgressConvertLabelValue = (int)((double)i / lines.Length * 100);
-                            (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
+                            (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
                             if (img is object) {
                                 if (images.TryGetValue(img, out var realImage)) {
                                     img = realImage;
@@ -613,7 +617,7 @@ namespace LabelAnnotator.ViewModels {
                                 }
                                 if (lbl is object) {
                                     img.Annotations.Add(lbl);
-                                    if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) lbl.Class = found;
+                                    if (categories.TryGetValue(lbl.Class, out CategoryRecord? found)) lbl.Class = found;
                                     else categories.Add(lbl.Class);
                                 }
                             }
