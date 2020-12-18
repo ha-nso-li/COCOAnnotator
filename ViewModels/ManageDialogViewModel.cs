@@ -40,6 +40,7 @@ namespace LabelAnnotator.ViewModels {
             CmdSplitLabel = new DelegateCommand(SplitLabel);
             CmdUndupeLabel = new DelegateCommand(UndupeLabel);
             CmdExportUndupedLabel = new DelegateCommand(ExportUndupeLabel);
+            CmdConvertLabel = new DelegateCommand(ConvertLabel);
             CmdClose = new DelegateCommand(Close);
         }
         #endregion
@@ -107,6 +108,16 @@ namespace LabelAnnotator.ViewModels {
         public int ProgressUndupeLabelValue {
             get => _ProgressUndupeLabelValue;
             set => SetProperty(ref _ProgressUndupeLabelValue, value);
+        }
+        private TacticsForConvertLabel _TacticForConvertLabel;
+        public TacticsForConvertLabel TacticForConvertLabel {
+            get => _TacticForConvertLabel;
+            set => SetProperty(ref _TacticForConvertLabel, value);
+        }
+        private int _ProgressConvertLabelValue;
+        public int ProgressConvertLabelValue {
+            get => _ProgressConvertLabelValue;
+            set => SetProperty(ref _ProgressConvertLabelValue, value);
         }
         #endregion
 
@@ -553,6 +564,63 @@ namespace LabelAnnotator.ViewModels {
                         f.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
                     }
                 }
+            }
+        }
+        #endregion
+
+        #region 레이블 변환
+        public ICommand CmdConvertLabel { get; }
+        private void ConvertLabel() {
+            switch (TacticForConvertLabel) {
+            case TacticsForConvertLabel.COCOToCSV: {
+                if (CommonDialogService.OpenJsonFileDialog(out string filePath)) {
+                    string basePath = Path.GetDirectoryName(filePath) ?? "";
+                    byte[] CocoContents = File.ReadAllBytes(filePath);
+                    (IEnumerable<ImageRecord> images, _) = SerializationService.Deserialize(basePath, CocoContents);
+                    string csvPath = Path.Combine(Path.GetDirectoryName(filePath) ?? "", Path.GetFileNameWithoutExtension(filePath) + ".csv");
+                    using StreamWriter csv = File.CreateText(csvPath);
+                    foreach (ImageRecord i in images) {
+                        if (i.Annotations.Count > 0) {
+                            // 양성 레이블
+                            foreach (LabelRecord j in i.Annotations) csv.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
+                        } else {
+                            // 음성 레이블
+                            csv.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
+                        }
+                    }
+                }
+                break;
+            }
+            case TacticsForConvertLabel.CSVToCOCO: {
+                if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
+                    Task.Run(() => {
+                        ProgressConvertLabelValue = 0;
+                        string basePath = Path.GetDirectoryName(filePath) ?? "";
+                        string[] lines = File.ReadAllLines(filePath);
+                        SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
+                        SortedSet<ClassRecord> categories = new SortedSet<ClassRecord>();
+                        for (int i = 0; i < lines.Length; i++) {
+                            if (IsClosed) return;
+                            ProgressConvertLabelValue = (int)((double)i / lines.Length * 100);
+                            (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
+                            if (img is object) {
+                                if (images.TryGetValue(img, out var realImage)) img = realImage;
+                                else images.Add(img);
+                                if (lbl is object) {
+                                    img.Annotations.Add(lbl);
+                                    if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) lbl.Class = found;
+                                    else categories.Add(lbl.Class);
+                                }
+                            }
+                        }
+                        string cocoPath = Path.Combine(Path.GetDirectoryName(filePath) ?? "", Path.GetFileNameWithoutExtension(filePath) + ".json");
+                        byte[] CocoContents = SerializationService.Serialize(basePath, images, categories);
+                        File.WriteAllBytes(cocoPath, CocoContents);
+                        ProgressConvertLabelValue = 100;
+                    });
+                }
+                break;
+            }
             }
         }
         #endregion

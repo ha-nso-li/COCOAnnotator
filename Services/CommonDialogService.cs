@@ -16,6 +16,16 @@ namespace LabelAnnotator.Services {
             return result;
         }
 
+        public bool OpenJsonFileDialog(out string FilePath) {
+            OpenFileDialog dlg = new OpenFileDialog {
+                Filter = "JSON 파일|*.json",
+                Multiselect = false
+            };
+            bool result = dlg.ShowDialog().GetValueOrDefault();
+            FilePath = dlg.FileName;
+            return result;
+        }
+
         public bool OpenCSVFilesDialog(out string[] FilePath) {
             OpenFileDialog dlg = new OpenFileDialog {
                 Filter = "CSV 파일|*.csv",

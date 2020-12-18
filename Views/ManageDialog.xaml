@@ -12,12 +12,13 @@
         </Style>
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
-        <cvt:TacticConverter x:Key="TacticConverter" />
+        <cvt:TacticForSplitLabelConverter x:Key="TacticForSplitLabelConverter" />
+        <cvt:TacticForConvertLabelConverter x:Key="TacticForConvertLabelConverter" />
     </UserControl.Resources>
     <Grid>
         <DockPanel>
             <StackPanel HorizontalAlignment="Right" DockPanel.Dock="Bottom">
-                <Button Content="닫기" TabIndex="19" Margin="2" Padding="5" Command="{Binding CmdClose}" Height="28" />
+                <Button Content="닫기" TabIndex="22" Margin="2" Padding="5" Command="{Binding CmdClose}" Height="28" />
             </StackPanel>
             <TabControl TabIndex="0">
                 <TabItem Header="레이블 분석">
@@ -55,15 +56,15 @@
                         <Label DockPanel.Dock="Top" Content="분할 방법 선택:" />
                         <StackPanel DockPanel.Dock="Top">
                             <RadioButton TabIndex="10" GroupName="TacticsForSplitLabel" Content="각 파일에 균등한 갯수의 이미지가 포함되도록 n개의 레이블 파일로 분할"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=DevideToNLabels}" Margin="1" />
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=DevideToNLabels}" Margin="1" />
                             <RadioButton TabIndex="11" GroupName="TacticsForSplitLabel" Content="레이블 파일에 포함된 이미지중 n개를 다른 파일로 분리"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
                             <RadioButton TabIndex="12" GroupName="TacticsForSplitLabel" Content="각 하위 폴더에 폴더 안의 이미지만을 포함하는 레이블 파일 생성"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=SplitToSubFolders}" Margin="1" />
+                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=SplitToSubFolders}" Margin="1" />
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
                         <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="13" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
-                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
+                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
                                 Margin="2" />
                         <Button DockPanel.Dock="Bottom" TabIndex="14" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                 Command="{Binding CmdSplitLabel}" />
@@ -81,6 +82,21 @@
                         <CheckBox DockPanel.Dock="Top" TabIndex="16" IsChecked="{Binding UndupeWithoutClass}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeLabel}"
                                 IsReadOnly="True" IsTabStop="False" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="레이블 변환">
+                    <DockPanel LastChildFill="False">
+                        <Label DockPanel.Dock="Top" Content="변환 방법 선택:" />
+                        <StackPanel DockPanel.Dock="Top">
+                            <RadioButton TabIndex="19" GroupName="TacticsForConvertLabel" Content="COCO에서 CSV로 변환"
+                                    IsChecked="{Binding TacticForConvertLabel, Converter={StaticResource TacticForConvertLabelConverter}, ConverterParameter=COCOToCSV}" Margin="1" />
+                            <RadioButton TabIndex="20" GroupName="TacticsForConvertLabel" Content="CSV에서 COCO로 변환"
+                                    IsChecked="{Binding TacticForConvertLabel, Converter={StaticResource TacticForConvertLabelConverter}, ConverterParameter=CSVToCOCO}" Margin="1" />
+                        </StackPanel>
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="21" Content="레이블 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertLabel}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertLabelValue}" Margin="5" Height="20" />
+                        </DockPanel>
                     </DockPanel>
                 </TabItem>
             </TabControl>

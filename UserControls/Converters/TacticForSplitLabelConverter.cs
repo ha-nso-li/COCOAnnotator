@@ -6,7 +6,7 @@ using System.Windows.Data;
 
 namespace LabelAnnotator.UserControls.Converters {
     [ValueConversion(typeof(TacticsForSplitLabel), typeof(bool))]
-    public class TacticConverter : EnumConverter<TacticsForSplitLabel> {
+    public class TacticForSplitLabelConverter : EnumConverter<TacticsForSplitLabel> {
         public override object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             if ((string)parameter == nameof(ManageDialog.TxtNValueForSplitLabel)) {
                 // TxtNValueForSplitLabel.IsEnabled
