@@ -194,10 +194,10 @@ namespace LabelAnnotator.ViewModels {
                 foreach (ImageRecord i in Images) {
                     if (i.Annotations.Count > 0) {
                         // 양성 레이블
-                        foreach (LabelRecord j in i.Annotations) f.WriteLine(SerializationService.SerializeAsPositive(basePath, j, SettingService.Format));
+                        foreach (LabelRecord j in i.Annotations) f.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
                     } else {
                         // 음성 레이블
-                        f.WriteLine(SerializationService.SerializeAsNegative(basePath, i));
+                        f.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
                     }
                 }
                 Title = $"CSV 데이터셋 편집기 - {filePath}";
@@ -475,7 +475,7 @@ namespace LabelAnnotator.ViewModels {
             SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
             SortedSet<ClassRecord> categories = new SortedSet<ClassRecord> { ClassRecord.AllLabel() };
             foreach (string line in lines) {
-                (ImageRecord? img, LabelRecord? lbl) = SerializationService.Deserialize(basePath, line, SettingService.Format);
+                (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
                 if (img is object) {
                     if (images.TryGetValue(img, out var realImage)) img = realImage;
                     else images.Add(img);
