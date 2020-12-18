@@ -46,6 +46,16 @@ namespace LabelAnnotator.Services {
             return result;
         }
 
+        public bool SaveJsonFileDialog(out string FilePath) {
+            SaveFileDialog dlg = new SaveFileDialog {
+                Filter = "JSON 파일|*.json",
+                DefaultExt = ".json"
+            };
+            bool result = dlg.ShowDialog().GetValueOrDefault();
+            FilePath = dlg.FileName;
+            return result;
+        }
+
         public bool OpenImagesDialog(out string[] FilePaths) {
             OpenFileDialog dlg = new OpenFileDialog {
                 Filter = $"이미지 파일|{string.Join(";", Utils.ApprovedImageExtensions.Select(s => $"*{s}"))}",

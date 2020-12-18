@@ -7,6 +7,8 @@ namespace LabelAnnotator.Records {
         #region 프로퍼티
         public string FullPath { get; }
         public List<LabelRecord> Annotations { get; }
+        public int Width { get; set; }
+        public int Height { get; set; }
         #endregion
 
         #region 바인딩 전용 프로퍼티
@@ -17,10 +19,14 @@ namespace LabelAnnotator.Records {
         }
         #endregion
 
-        public ImageRecord(string FullPath) {
+        public ImageRecord(string FullPath) : this(FullPath, 0, 0) { }
+
+        public ImageRecord(string FullPath, int Width, int Height) {
             this.FullPath = FullPath;
             _DisplayFilename = "";
             Annotations = new List<LabelRecord>();
+            this.Width = Width;
+            this.Height = Height;
         }
 
         #region 동일성

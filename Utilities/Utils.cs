@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace LabelAnnotator.Utilities {
     /// <summary>
@@ -150,5 +151,11 @@ namespace LabelAnnotator.Utilities {
         /// 이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.
         /// </summary>
         public static ISet<string> ApprovedImageExtensions => new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".png", ".jpeg", ".tif" };
+
+        public static (int Width, int Height) GetSizeOfImage(string ImagePath) {
+            using FileStream stream = new FileStream(ImagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+            return (bitmap.PixelWidth, bitmap.PixelHeight);
+        }
     }
 }

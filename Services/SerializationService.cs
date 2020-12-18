@@ -28,8 +28,8 @@ namespace LabelAnnotator.Services {
                 cocodataset.Images.Add(new ImageCOCO {
                     ID = image_id,
                     FileName = Utils.GetRelativePath(BasePath, i.FullPath),
-                    Width = 0,
-                    Height = 0,
+                    Width = i.Width,
+                    Height = i.Height,
                 });
                 foreach (LabelRecord j in i.Annotations) {
                     int category_id = cocodataset.Categories.FindIndex(s => s.Name == j.Class.Name);
@@ -48,13 +48,13 @@ namespace LabelAnnotator.Services {
         }
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public (IEnumerable<ImageRecord> Images, IEnumerable<ClassRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
+        public (ICollection<ImageRecord> Images, ICollection<ClassRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
             ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
             COCODataset cocodataset = JsonSerializer.Deserialize<COCODataset>(JsonSpan, jsonSerializerOptions);
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, ClassRecord> categories = new SortedDictionary<int, ClassRecord>();
             foreach (ImageCOCO i in cocodataset.Images) {
-                images.Add(i.ID, new ImageRecord(Path.Combine(BasePath, i.FileName)));
+                images.Add(i.ID, new ImageRecord(Path.Combine(BasePath, i.FileName), i.Width, i.Height));
             }
             foreach (CategoryCOCO i in cocodataset.Categories) {
                 categories.Add(i.ID, ClassRecord.FromName(i.Name));

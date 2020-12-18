@@ -21,7 +21,7 @@ namespace LabelAnnotator.ViewModels {
     public class MainWindowViewModel : ViewModelBase {
         #region 생성자
         public MainWindowViewModel() {
-            Title = "CSV 데이터셋 편집기";
+            Title = "COCO 데이터셋 편집기";
 
             ShortcutSaveBbox = Key.S;
             ShortcutImageUp = Key.E;
@@ -182,25 +182,17 @@ namespace LabelAnnotator.ViewModels {
         }
         public ICommand CmdLoadLabel { get; }
         private void LoadLabel() {
-            if (CommonDialogService.OpenCSVFileDialog(out string filePath)) {
+            if (CommonDialogService.OpenJsonFileDialog(out string filePath)) {
                 InternalLoadLabel(filePath);
             }
         }
         public ICommand CmdSaveLabel { get; }
         private void SaveLabel() {
-            if (CommonDialogService.SaveCSVFileDialog(out string filePath)) {
+            if (CommonDialogService.SaveJsonFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
-                using StreamWriter f = File.CreateText(filePath);
-                foreach (ImageRecord i in Images) {
-                    if (i.Annotations.Count > 0) {
-                        // 양성 레이블
-                        foreach (LabelRecord j in i.Annotations) f.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
-                    } else {
-                        // 음성 레이블
-                        f.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
-                    }
-                }
-                Title = $"CSV 데이터셋 편집기 - {filePath}";
+                byte[] CocoContents = SerializationService.Serialize(basePath, Images, Categories);
+                File.WriteAllBytes(filePath, CocoContents);
+                Title = $"COCO 데이터셋 편집기 - {filePath}";
             }
         }
         public ICommand CmdCloseLabel { get; }
@@ -209,7 +201,7 @@ namespace LabelAnnotator.ViewModels {
             if (!res) return;
             Images.Clear();
             Categories.Clear();
-            Title = "CSV 데이터셋 편집기";
+            Title = "COCO 데이터셋 편집기";
         }
         public ICommand CmdManageLabel { get; }
         private void ManageLabel() {
@@ -467,34 +459,22 @@ namespace LabelAnnotator.ViewModels {
             }
         }
         private void InternalLoadLabel(string filePath) {
-            if (!Path.GetExtension(filePath).Equals(".csv", StringComparison.OrdinalIgnoreCase)) return;
+            if (!Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase)) return;
             Images.Clear();
             Categories.Clear();
             string basePath = Path.GetDirectoryName(filePath) ?? "";
-            IEnumerable<string> lines = File.ReadLines(filePath);
-            SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-            SortedSet<ClassRecord> categories = new SortedSet<ClassRecord> { ClassRecord.AllLabel() };
-            foreach (string line in lines) {
-                (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
-                if (img is object) {
-                    if (images.TryGetValue(img, out var realImage)) img = realImage;
-                    else images.Add(img);
-                    if (lbl is object) {
-                        img.Annotations.Add(lbl);
-                        if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) lbl.Class = found;
-                        else categories.Add(lbl.Class);
-                    }
-                }
-            }
+            byte[] CocoContents = File.ReadAllBytes(filePath);
+            (ICollection<ImageRecord> images, ICollection<ClassRecord> categories) = SerializationService.Deserialize(basePath, CocoContents);
             foreach (ImageRecord i in images) Images.Add(i);
             if (Images.Count > 0) SelectedImage = Images[0];
             RefreshCommonPath();
-            if (categories.Count >= 2) {
+            if (categories.Count >= 1) {
+                Categories.Add(ClassRecord.AllLabel());
                 foreach (ClassRecord classname in categories) Categories.Add(classname);
                 SelectedCategory = Categories[0];
             }
             RefreshColorOfCategories();
-            Title = $"CSV 데이터셋 편집기 - {filePath}";
+            Title = $"COCO 데이터셋 편집기 - {filePath}";
         }
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
@@ -512,7 +492,10 @@ namespace LabelAnnotator.ViewModels {
             }
         }
         private void InternelAddImage(string[] filePaths) {
-            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
+            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
+                (int Width, int Height) = Utils.GetSizeOfImage(s);
+                return new ImageRecord(s, Width, Height);
+            }));
             int ImagesCountToAdd = add.Count;
             add.ExceptWith(Images);
             foreach (ImageRecord img in add) Images.Add(img);

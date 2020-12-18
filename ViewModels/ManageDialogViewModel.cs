@@ -24,6 +24,7 @@ namespace LabelAnnotator.ViewModels {
             _LogVerifyLabel = "";
             FilesForUnionLabel = new ObservableCollection<string>();
             _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
+            _TacticForConvertLabel = TacticsForConvertLabel.COCOToCSV;
             _NValueForSplitLabel = 2;
             _LogUndupeLabel = "";
             _IoUThreshold = 0.5;
@@ -231,7 +232,7 @@ namespace LabelAnnotator.ViewModels {
                     string CommonParentPath = Utils.GetCommonParentPath(AllImagesInLabel);
                     AppendLogVerifyLabel("", $"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
                     UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
-                                                                .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
+                        .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
                     UnusedImagesForVerify.ExceptWith(AllImagesInLabel);
                     if (UnusedImagesForVerify.Count > 20) {
                         AppendLogVerifyLabel($"경로내에 존재하지만 유효한 레이블에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
@@ -576,7 +577,7 @@ namespace LabelAnnotator.ViewModels {
                 if (CommonDialogService.OpenJsonFileDialog(out string filePath)) {
                     string basePath = Path.GetDirectoryName(filePath) ?? "";
                     byte[] CocoContents = File.ReadAllBytes(filePath);
-                    (IEnumerable<ImageRecord> images, _) = SerializationService.Deserialize(basePath, CocoContents);
+                    (ICollection<ImageRecord> images, _) = SerializationService.Deserialize(basePath, CocoContents);
                     string csvPath = Path.Combine(Path.GetDirectoryName(filePath) ?? "", Path.GetFileNameWithoutExtension(filePath) + ".csv");
                     using StreamWriter csv = File.CreateText(csvPath);
                     foreach (ImageRecord i in images) {
@@ -604,8 +605,12 @@ namespace LabelAnnotator.ViewModels {
                             ProgressConvertLabelValue = (int)((double)i / lines.Length * 100);
                             (ImageRecord? img, LabelRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
                             if (img is object) {
-                                if (images.TryGetValue(img, out var realImage)) img = realImage;
-                                else images.Add(img);
+                                if (images.TryGetValue(img, out var realImage)) {
+                                    img = realImage;
+                                } else {
+                                    (img.Width, img.Height) = Utils.GetSizeOfImage(img.FullPath);
+                                    images.Add(img);
+                                }
                                 if (lbl is object) {
                                     img.Annotations.Add(lbl);
                                     if (categories.TryGetValue(lbl.Class, out ClassRecord? found)) lbl.Class = found;
