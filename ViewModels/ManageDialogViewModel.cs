@@ -148,7 +148,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
                     foreach ((int idx, ImageCOCO image) in cocodataset.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyLabelValue = (int)((double)idx / total * 100);
+                        ProgressVerifyLabelValue = (int)((double)idx / total * 99);
                         string fullPath = Path.Combine(basePath, image.FileName);
                         if (ImagesForVerify.ContainsKey(image.ID)) {
                             if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyLabel($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
@@ -190,7 +190,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
                     foreach ((int idx, CategoryCOCO category) in cocodataset.Categories.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + idx) / total * 100);
+                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + idx) / total * 99);
                         if (CategoriesForVerify.ContainsKey(category.ID)) {
                             if (DuplicationAlreadyDetected.Add(category.ID)) AppendLogVerifyLabel($"ID가 {category.ID}인 분류가 2개 이상 발견되었습니다.");
                             continue;
@@ -207,7 +207,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
                     foreach ((int idx, AnnotationCOCO annotation) in cocodataset.Annotations.Select((s, idx) => (idx, s))) {
-                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 100);
+                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 99);
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
                             if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
                             continue;
@@ -276,6 +276,7 @@ namespace LabelAnnotator.ViewModels {
                 );
                 AppendLogVerifyLabel(AnnotationsCountByCategory.Select(s =>
                     $"분류 이름: {s.Key}, 어노테이션 개수: {s.Value}, 어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Class == s.Key))}").ToArray());
+                ProgressVerifyLabelValue = 100;
             });
         }
         public ICommand CmdDeleteUnusedImages { get; }

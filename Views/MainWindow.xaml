@@ -46,10 +46,10 @@
                     <Setter Property="Margin" Value="0,0,2,2" />
                 </Style>
             </DockPanel.Resources>
-            <Button DockPanel.Dock="Top" TabIndex="0" Content="레이블 파일 불러오기" Command="{Binding CmdLoadLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="1" Content="레이블 파일 내보내기" Command="{Binding CmdSaveLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="2" Content="레이블 파일 닫기" Command="{Binding CmdCloseLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="3" Content="레이블 파일 관리" Command="{Binding CmdManageLabel}" />
+            <Button DockPanel.Dock="Top" TabIndex="0" Content="데이터셋 불러오기" Command="{Binding CmdLoadLabel}" />
+            <Button DockPanel.Dock="Top" TabIndex="1" Content="데이터셋 내보내기" Command="{Binding CmdSaveLabel}" />
+            <Button DockPanel.Dock="Top" TabIndex="2" Content="데이터셋 닫기" Command="{Binding CmdCloseLabel}" />
+            <Button DockPanel.Dock="Top" TabIndex="3" Content="데이터셋 관리" Command="{Binding CmdManageLabel}" />
             <Button DockPanel.Dock="Top" TabIndex="4" Content="설정" Command="{Binding CmdSetting}" />
             <Button DockPanel.Dock="Bottom" TabIndex="13" Content="아래로 (A)" Command="{Binding CmdCategoryDown}" />
             <Button DockPanel.Dock="Bottom" TabIndex="12" Content="위로 (Q)" Command="{Binding CmdCategoryUp}" />
