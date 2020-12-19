@@ -36,13 +36,13 @@ namespace LabelAnnotator.ViewModels {
             _CategoryNameToAdd = "";
             Images = new FastObservableCollection<ImageRecord>();
             Categories = new ObservableCollection<CategoryRecord>();
-            VisibleLabels = new ObservableCollection<AnnotationRecord>();
+            VisibleAnnotations = new ObservableCollection<AnnotationRecord>();
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
-            CmdLoadLabel = new DelegateCommand(LoadLabel);
-            CmdSaveLabel = new DelegateCommand(SaveLabel);
-            CmdCloseLabel = new DelegateCommand(CloseLabel);
-            CmdManageLabel = new DelegateCommand(ManageLabel);
+            CmdLoadDataset = new DelegateCommand(LoadDataset);
+            CmdSaveDataset = new DelegateCommand(SaveDataset);
+            CmdCloseDataset = new DelegateCommand(CloseDataset);
+            CmdManageDataset = new DelegateCommand(ManageDataset);
             CmdSetting = new DelegateCommand(Setting);
             CmdTryCommitBbox = new DelegateCommand(TryCommitBbox);
             CmdCommitBbox = new DelegateCommand<CommitBboxEventArgs>(CommitBbox);
@@ -70,7 +70,7 @@ namespace LabelAnnotator.ViewModels {
             get => _SelectedImage;
             set {
                 if (SetProperty(ref _SelectedImage, value)) {
-                    VisibleLabels.Clear();
+                    VisibleAnnotations.Clear();
                     if (value is null) {
                         BboxInsertMode = false;
                         MainImageUri = null;
@@ -104,7 +104,7 @@ namespace LabelAnnotator.ViewModels {
                 }
             }
         }
-        public ObservableCollection<AnnotationRecord> VisibleLabels { get; }
+        public ObservableCollection<AnnotationRecord> VisibleAnnotations { get; }
 
         #region 단축키
         private Key _ShortcutSaveBbox;
@@ -177,17 +177,17 @@ namespace LabelAnnotator.ViewModels {
         public ICommand CmdViewportDrop { get; }
         private void ViewportDrop(DragEventArgs e) {
             if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length >= 1) {
-                InternalLoadLabel(files[0]);
+                InternalLoadDataset(files[0]);
             }
         }
-        public ICommand CmdLoadLabel { get; }
-        private void LoadLabel() {
+        public ICommand CmdLoadDataset { get; }
+        private void LoadDataset() {
             if (CommonDialogService.OpenJsonFileDialog(out string filePath)) {
-                InternalLoadLabel(filePath);
+                InternalLoadDataset(filePath);
             }
         }
-        public ICommand CmdSaveLabel { get; }
-        private void SaveLabel() {
+        public ICommand CmdSaveDataset { get; }
+        private void SaveDataset() {
             if (CommonDialogService.SaveJsonFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
                 byte[] CocoContents = SerializationService.Serialize(basePath, Images, Categories);
@@ -195,16 +195,16 @@ namespace LabelAnnotator.ViewModels {
                 Title = $"COCO 데이터셋 편집기 - {filePath}";
             }
         }
-        public ICommand CmdCloseLabel { get; }
-        private void CloseLabel() {
+        public ICommand CmdCloseDataset { get; }
+        private void CloseDataset() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 열려있는 레이블을 모두 초기화합니다");
             if (!res) return;
             Images.Clear();
             Categories.Clear();
             Title = "COCO 데이터셋 편집기";
         }
-        public ICommand CmdManageLabel { get; }
-        private void ManageLabel() {
+        public ICommand CmdManageDataset { get; }
+        private void ManageDataset() {
             UserDialogSerivce.ShowDialog(nameof(ManageDialog), new DialogParameters(), _ => { });
         }
         public ICommand CmdSetting { get; }
@@ -384,7 +384,7 @@ namespace LabelAnnotator.ViewModels {
                 foreach (ImageRecord i in Images) {
                     if (SelectedImages.Contains(i)) i.Annotations.Clear();
                 }
-                VisibleLabels.Clear();
+                VisibleAnnotations.Clear();
                 break;
             }
             case false: {
@@ -446,11 +446,11 @@ namespace LabelAnnotator.ViewModels {
         /// <summary>화면에 표출된 모든 경계 상자를 삭제하고, 현재 선택된 파일과 카테고리에 해당하는 경계 상자를 화면에 표출합니다.</summary>
         private void UpdateBoundaryBoxes() {
             if (SelectedCategory is null || SelectedImage is null) return;
-            VisibleLabels.Clear();
+            VisibleAnnotations.Clear();
             IEnumerable<AnnotationRecord> visibleLabels;
             if (SelectedCategory.All) visibleLabels = SelectedImage.Annotations;
             else visibleLabels = SelectedImage.Annotations.Where(s => s.Class == SelectedCategory);
-            foreach (AnnotationRecord i in visibleLabels) VisibleLabels.Add(i);
+            foreach (AnnotationRecord i in visibleLabels) VisibleAnnotations.Add(i);
         }
         private void RefreshCommonPath() {
             string CommonPath = Utils.GetCommonParentPath(Images);
@@ -458,7 +458,7 @@ namespace LabelAnnotator.ViewModels {
                 i.DisplayFilename = Utils.GetRelativePath(CommonPath, i.FullPath);
             }
         }
-        private void InternalLoadLabel(string filePath) {
+        private void InternalLoadDataset(string filePath) {
             if (!Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase)) return;
             Images.Clear();
             Categories.Clear();

@@ -19,10 +19,10 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="160" />
+            <ColumnDefinition Width="150" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <uc:ImageViewport x:Name="ViewViewport" MainImageUri="{Binding MainImageUri}" FitViewport="{Binding FitViewport}" Labels="{Binding VisibleLabels}" BboxInsertMode="{Binding BboxInsertMode}"
+        <uc:ImageViewport x:Name="ViewViewport" MainImageUri="{Binding MainImageUri}" FitViewport="{Binding FitViewport}" Annotations="{Binding VisibleAnnotations}" BboxInsertMode="{Binding BboxInsertMode}"
                 CurrentClass="{Binding SelectedCategory}" AllowDrop="True" Margin="2">
             <b:Interaction.Triggers>
                 <b:EventTrigger EventName="Drop">
@@ -46,10 +46,10 @@
                     <Setter Property="Margin" Value="0,0,2,2" />
                 </Style>
             </DockPanel.Resources>
-            <Button DockPanel.Dock="Top" TabIndex="0" Content="데이터셋 불러오기" Command="{Binding CmdLoadLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="1" Content="데이터셋 내보내기" Command="{Binding CmdSaveLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="2" Content="데이터셋 닫기" Command="{Binding CmdCloseLabel}" />
-            <Button DockPanel.Dock="Top" TabIndex="3" Content="데이터셋 관리" Command="{Binding CmdManageLabel}" />
+            <Button DockPanel.Dock="Top" TabIndex="0" Content="데이터셋 불러오기" Command="{Binding CmdLoadDataset}" />
+            <Button DockPanel.Dock="Top" TabIndex="1" Content="데이터셋 내보내기" Command="{Binding CmdSaveDataset}" />
+            <Button DockPanel.Dock="Top" TabIndex="2" Content="데이터셋 닫기" Command="{Binding CmdCloseDataset}" />
+            <Button DockPanel.Dock="Top" TabIndex="3" Content="데이터셋 관리" Command="{Binding CmdManageDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="4" Content="설정" Command="{Binding CmdSetting}" />
             <Button DockPanel.Dock="Bottom" TabIndex="13" Content="아래로 (A)" Command="{Binding CmdCategoryDown}" />
             <Button DockPanel.Dock="Bottom" TabIndex="12" Content="위로 (Q)" Command="{Binding CmdCategoryUp}" />
