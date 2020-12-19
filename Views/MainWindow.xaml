@@ -23,7 +23,7 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <uc:ImageViewport x:Name="ViewViewport" MainImageUri="{Binding MainImageUri}" FitViewport="{Binding FitViewport}" Annotations="{Binding VisibleAnnotations}" BboxInsertMode="{Binding BboxInsertMode}"
-                CurrentClass="{Binding SelectedCategory}" AllowDrop="True" Margin="2">
+                CurrentCategory="{Binding SelectedCategory}" AllowDrop="True" Margin="2">
             <b:Interaction.Triggers>
                 <b:EventTrigger EventName="Drop">
                     <prism:InvokeCommandAction Command="{Binding CmdViewportDrop}" />

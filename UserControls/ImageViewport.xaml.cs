@@ -132,10 +132,10 @@ namespace LabelAnnotator.UserControls {
             set => SetValue(BboxInsertModeProperty, value);
         }
 
-        public static readonly DependencyProperty CurrentClassProperty = DependencyProperty.Register(nameof(CurrentClass), typeof(CategoryRecord), typeof(ImageViewport));
-        public CategoryRecord? CurrentClass {
-            get => (CategoryRecord?)GetValue(CurrentClassProperty);
-            set => SetValue(CurrentClassProperty, value);
+        public static readonly DependencyProperty CurrentCategoryProperty = DependencyProperty.Register(nameof(CurrentCategory), typeof(CategoryRecord), typeof(ImageViewport));
+        public CategoryRecord? CurrentCategory {
+            get => (CategoryRecord?)GetValue(CurrentCategoryProperty);
+            set => SetValue(CurrentCategoryProperty, value);
         }
         #endregion
 
@@ -253,7 +253,7 @@ namespace LabelAnnotator.UserControls {
             DragStartPoint = e.GetPosition(ViewImageControl);
         }
         private void ViewImageCanvas_MouseMove(object sender, MouseEventArgs e) {
-            if (!BboxInsertMode || CurrentClass is null) {
+            if (!BboxInsertMode || CurrentCategory is null) {
                 // 크로스헤어 있으면 삭제
                 List<Line> line = ViewImageCanvas.Children.OfType<Line>().ToList();
                 foreach (Line i in line) {
@@ -311,7 +311,7 @@ namespace LabelAnnotator.UserControls {
                             double endY = current.Y;
                             Utils.SortTwoValues(ref startX, ref endX);
                             Utils.SortTwoValues(ref startY, ref endY);
-                            ContentControl bbox = AddBoundaryBox(ZIndex_PreviewBbox, Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, CurrentClass, false);
+                            ContentControl bbox = AddBoundaryBox(ZIndex_PreviewBbox, Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, CurrentCategory, false);
                             PreviewBbox = bbox;
                         } else {
                             double startX = DragStartPoint.Value.X;
@@ -377,12 +377,12 @@ namespace LabelAnnotator.UserControls {
                     if (realBox is AnnotationRecord) deleted.Add(realBox);
                 } else if (bbox.Tag is int tag && tag == Tag_UncommittedBbox) {
                     // 추가
-                    if (CurrentClass is null) continue;
+                    if (CurrentCategory is null) continue;
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                     double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentClass));
+                    added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentCategory));
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);

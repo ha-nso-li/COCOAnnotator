@@ -26,9 +26,9 @@ namespace LabelAnnotator.Services {
             return result;
         }
 
-        public bool OpenCSVFilesDialog(out string[] FilePath) {
+        public bool OpenJsonFilesDialog(out string[] FilePath) {
             OpenFileDialog dlg = new OpenFileDialog {
-                Filter = "CSV 파일|*.csv",
+                Filter = "JSON 파일|*.json",
                 Multiselect = true
             };
             bool result = dlg.ShowDialog().GetValueOrDefault();

@@ -27,9 +27,9 @@
                             <Button DockPanel.Dock="Right" TabIndex="3" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportVerifiedLabel}" />
                             <Button DockPanel.Dock="Right" TabIndex="2" Content="이미지 삭제" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdDeleteUnusedImages}" />
                             <Button DockPanel.Dock="Right" TabIndex="1" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdVerifyLabel}" />
-                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyLabelValue}" Margin="5" Height="20" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyDataset}" Margin="5" Height="20" />
                         </DockPanel>
-                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyLabel" Text="{Binding LogVerifyLabel}"
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyDataset" Text="{Binding LogVerifyDataset}"
                                 IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
                 </TabItem>
@@ -38,17 +38,17 @@
                         <DockPanel DockPanel.Dock="Bottom">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button Content="파일 추가" TabIndex="5" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdAddFileForUnionLabel}" />
+                                        Command="{Binding CmdAddFileForUnionDataset}" />
                                 <Button Content="폴더 추가" TabIndex="6" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdAddFolderForUnionLabel}" />
+                                        Command="{Binding CmdAddFolderForUnionDataset}" />
                                 <Button Content="선택 파일 삭제" TabIndex="7" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdRemoveFileForUnionLabel}" CommandParameter="{Binding ElementName=ListViewFilesForUnionLabel, Path=SelectedItems}" />
+                                        Command="{Binding CmdRemoveFileForUnionDataset}" CommandParameter="{Binding ElementName=ListViewFilesForUnionDataset, Path=SelectedItems}" />
                                 <Button Content="초기화" TabIndex="8" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdResetFileForUnionLabel}" />
-                                <Button Content="내보내기" TabIndex="9" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding CmdExportUnionLabel}" />
+                                        Command="{Binding CmdResetFileForUnionDataset}" />
+                                <Button Content="내보내기" TabIndex="9" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding CmdExportUnionDataset}" />
                             </StackPanel>
                         </DockPanel>
-                        <ListView x:Name="ListViewFilesForUnionLabel" ItemsSource="{Binding FilesForUnionLabel}" TabIndex="4" />
+                        <ListView x:Name="ListViewFilesForUnionDataset" ItemsSource="{Binding FilesForUnionDataset}" TabIndex="4" />
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="데이터셋 분할">
@@ -64,8 +64,8 @@
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
                         <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="13" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
-                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150" HorizontalAlignment="Left"
-                                Margin="2" />
+                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150"
+                                HorizontalAlignment="Left" Margin="2" />
                         <Button DockPanel.Dock="Bottom" TabIndex="14" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
                                 Command="{Binding CmdSplitLabel}" />
                     </DockPanel>

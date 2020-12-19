@@ -21,8 +21,8 @@ namespace LabelAnnotator.ViewModels {
         public ManageDialogViewModel() {
             Title = "데이터셋 관리";
 
-            _LogVerifyLabel = "";
-            FilesForUnionLabel = new ObservableCollection<string>();
+            _LogVerifyDataset = "";
+            FilesForUnionDataset = new ObservableCollection<string>();
             _TacticForSplitLabel = TacticsForSplitLabel.DevideToNLabels;
             _TacticForConvertLabel = TacticsForConvertLabel.COCOToCSV;
             _NValueForSplitLabel = 2;
@@ -33,11 +33,11 @@ namespace LabelAnnotator.ViewModels {
             CmdVerifyLabel = new DelegateCommand(VerifyLabel);
             CmdDeleteUnusedImages = new DelegateCommand(DeleteUnusedImages);
             CmdExportVerifiedLabel = new DelegateCommand(ExportVerifiedLabel);
-            CmdAddFileForUnionLabel = new DelegateCommand(AddFileForUnionLabel);
-            CmdAddFolderForUnionLabel = new DelegateCommand(AddFolderForUnionLabel);
-            CmdRemoveFileForUnionLabel = new DelegateCommand<IList>(RemoveFileForUnionLabel);
-            CmdResetFileForUnionLabel = new DelegateCommand(ResetFileForUnionLabel);
-            CmdExportUnionLabel = new DelegateCommand(ExportUnionLabel);
+            CmdAddFileForUnionDataset = new DelegateCommand(AddFileForUnionDataset);
+            CmdAddFolderForUnionDataset = new DelegateCommand(AddFolderForUnionDataset);
+            CmdRemoveFileForUnionDataset = new DelegateCommand<IList>(RemoveFileForUnionDataset);
+            CmdResetFileForUnionDataset = new DelegateCommand(ResetFileForUnionDataset);
+            CmdExportUnionDataset = new DelegateCommand(ExportUnionDataset);
             CmdSplitLabel = new DelegateCommand(SplitLabel);
             CmdUndupeLabel = new DelegateCommand(UndupeLabel);
             CmdExportUndupedLabel = new DelegateCommand(ExportUndupeLabel);
@@ -56,21 +56,21 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 바인딩되는 프로퍼티
-        private string _LogVerifyLabel;
-        public string LogVerifyLabel {
-            get => _LogVerifyLabel;
+        private string _LogVerifyDataset;
+        public string LogVerifyDataset {
+            get => _LogVerifyDataset;
             set {
-                if (SetProperty(ref _LogVerifyLabel, value)) {
-                    EventAggregator.GetEvent<ScrollTxtLogVerifyLabel>().Publish();
+                if (SetProperty(ref _LogVerifyDataset, value)) {
+                    EventAggregator.GetEvent<ScrollTxtLogVerifyDataset>().Publish();
                 }
             }
         }
-        private int _ProgressVerifyLabelValue;
-        public int ProgressVerifyLabelValue {
-            get => _ProgressVerifyLabelValue;
-            set => SetProperty(ref _ProgressVerifyLabelValue, value);
+        private int _ProgressVerifyDataset;
+        public int ProgressVerifyDataset {
+            get => _ProgressVerifyDataset;
+            set => SetProperty(ref _ProgressVerifyDataset, value);
         }
-        public ObservableCollection<string> FilesForUnionLabel { get; }
+        public ObservableCollection<string> FilesForUnionDataset { get; }
         private string? _SelectedFileForUnionLabel;
         public string? SelectedFileForUnionLabel {
             get => _SelectedFileForUnionLabel;
@@ -130,8 +130,8 @@ namespace LabelAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
             if (res is null) return;
             bool imageSizeCheck = res.Value;
-            LogVerifyLabel = "";
-            ProgressVerifyLabelValue = 0;
+            LogVerifyDataset = "";
+            ProgressVerifyDataset = 0;
             Task.Run(() => {
                 ImagesForVerify.Clear();
                 CategoriesForVerify.Clear();
@@ -148,7 +148,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
                     foreach ((int idx, ImageCOCO image) in cocodataset.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyLabelValue = (int)((double)idx / total * 99);
+                        ProgressVerifyDataset = (int)((double)idx / total * 99);
                         string fullPath = Path.Combine(basePath, image.FileName);
                         if (ImagesForVerify.ContainsKey(image.ID)) {
                             if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyLabel($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
@@ -190,7 +190,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
                     foreach ((int idx, CategoryCOCO category) in cocodataset.Categories.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + idx) / total * 99);
+                        ProgressVerifyDataset = (int)((double)(cocodataset.Images.Count + idx) / total * 99);
                         if (CategoriesForVerify.ContainsKey(category.ID)) {
                             if (DuplicationAlreadyDetected.Add(category.ID)) AppendLogVerifyLabel($"ID가 {category.ID}인 분류가 2개 이상 발견되었습니다.");
                             continue;
@@ -207,7 +207,7 @@ namespace LabelAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
                     foreach ((int idx, AnnotationCOCO annotation) in cocodataset.Annotations.Select((s, idx) => (idx, s))) {
-                        ProgressVerifyLabelValue = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 99);
+                        ProgressVerifyDataset = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 99);
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
                             if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyLabel($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
                             continue;
@@ -276,7 +276,7 @@ namespace LabelAnnotator.ViewModels {
                 );
                 AppendLogVerifyLabel(AnnotationsCountByCategory.Select(s =>
                     $"분류 이름: {s.Key}, 어노테이션 개수: {s.Value}, 어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Class == s.Key))}").ToArray());
-                ProgressVerifyLabelValue = 100;
+                ProgressVerifyDataset = 100;
             });
         }
         public ICommand CmdDeleteUnusedImages { get; }
@@ -308,63 +308,52 @@ namespace LabelAnnotator.ViewModels {
         #endregion
 
         #region 데이터셋 병합
-        public ICommand CmdAddFileForUnionLabel { get; }
-        private void AddFileForUnionLabel() {
-            if (CommonDialogService.OpenCSVFilesDialog(out string[] filePaths)) {
+        public ICommand CmdAddFileForUnionDataset { get; }
+        private void AddFileForUnionDataset() {
+            if (CommonDialogService.OpenJsonFilesDialog(out string[] filePaths)) {
                 foreach (string FileName in filePaths) {
-                    FilesForUnionLabel.Add(FileName);
+                    FilesForUnionDataset.Add(FileName);
                 }
             }
         }
-        public ICommand CmdAddFolderForUnionLabel { get; }
-        private void AddFolderForUnionLabel() {
+        public ICommand CmdAddFolderForUnionDataset { get; }
+        private void AddFolderForUnionDataset() {
             if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
-                foreach (string i in Directory.EnumerateFiles(folderPath, "*.csv", SearchOption.AllDirectories)) FilesForUnionLabel.Add(i);
+                foreach (string i in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.AllDirectories)) FilesForUnionDataset.Add(i);
             }
         }
-        public ICommand CmdRemoveFileForUnionLabel { get; }
-        private void RemoveFileForUnionLabel(IList SelectedItems) {
+        public ICommand CmdRemoveFileForUnionDataset { get; }
+        private void RemoveFileForUnionDataset(IList SelectedItems) {
             List<string> remove = SelectedItems.OfType<string>().ToList();
             foreach (string i in remove) {
                 if (i is null) continue;
-                FilesForUnionLabel.Remove(i);
+                FilesForUnionDataset.Remove(i);
             }
         }
-        public ICommand CmdResetFileForUnionLabel { get; }
-        private void ResetFileForUnionLabel() {
-            FilesForUnionLabel.Clear();
+        public ICommand CmdResetFileForUnionDataset { get; }
+        private void ResetFileForUnionDataset() {
+            FilesForUnionDataset.Clear();
         }
-        public ICommand CmdExportUnionLabel { get; }
-        private void ExportUnionLabel() {
-            if (CommonDialogService.SaveCSVFileDialog(out string outFilePath)) {
+        public ICommand CmdExportUnionDataset { get; }
+        private void ExportUnionDataset() {
+            if (CommonDialogService.SaveJsonFileDialog(out string outFilePath)) {
                 // 로드
-                List<AnnotationRecord> labels = new List<AnnotationRecord>();
-                SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-                foreach (string inFilePath in FilesForUnionLabel) {
-                    string basePath = Path.GetDirectoryName(inFilePath) ?? "";
-                    IEnumerable<string> lines = File.ReadLines(inFilePath);
-                    foreach (string line in lines) {
-                        (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, line, SettingService.Format);
-                        if (img is object) {
-                            if (lbl is object) labels.Add(lbl);
-                            images.Add(img);
-                        }
+                SortedSet<ImageRecord> AllImages = new SortedSet<ImageRecord>();
+                SortedSet<CategoryRecord> AllCategories = new SortedSet<CategoryRecord>();
+                foreach (string inFilePath in FilesForUnionDataset) {
+                    string inBasePath = Path.GetDirectoryName(inFilePath) ?? "";
+                    byte[] InCocoContents = File.ReadAllBytes(inFilePath);
+                    (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = SerializationService.Deserialize(inBasePath, InCocoContents);
+                    AllCategories.UnionWith(categories);
+                    foreach (ImageRecord image in images) {
+                        if (AllImages.TryGetValue(image, out ImageRecord? oldImage)) oldImage.Annotations.AddRange(image.Annotations);
+                        else AllImages.Add(image);
                     }
                 }
                 // 저장
-                string saveBasePath = Path.GetDirectoryName(outFilePath) ?? "";
-                using StreamWriter f = File.CreateText(outFilePath);
-                ILookup<ImageRecord, AnnotationRecord> labelsByImage = labels.ToLookup(s => s.Image);
-                foreach (ImageRecord i in images) {
-                    IEnumerable<AnnotationRecord> labelsInImage = labelsByImage[i];
-                    if (labelsInImage.Any()) {
-                        // 양성 데이터셋
-                        foreach (AnnotationRecord j in labelsInImage) f.WriteLine(SerializationService.CSVSerializeAsPositive(saveBasePath, j, SettingService.Format));
-                    } else {
-                        // 음성 데이터셋
-                        f.WriteLine(SerializationService.CSVSerializeAsNegative(saveBasePath, i));
-                    }
-                }
+                string outBasePath = Path.GetDirectoryName(outFilePath) ?? "";
+                byte[] OutCocoContents = SerializationService.Serialize(outBasePath, AllImages, AllCategories);
+                File.WriteAllBytes(outFilePath, OutCocoContents);
             }
         }
         #endregion
@@ -643,7 +632,7 @@ namespace LabelAnnotator.ViewModels {
 
         #region 프라이빗 메서드
         private void AppendLogVerifyLabel(params string[] logs) {
-            LogVerifyLabel = LogVerifyLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
+            LogVerifyDataset = LogVerifyDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         private void AppendLogUndupeLabel(params string[] logs) {
             LogUndupeLabel = LogUndupeLabel + string.Join(Environment.NewLine, logs) + Environment.NewLine;
