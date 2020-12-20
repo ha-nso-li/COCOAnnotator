@@ -12,7 +12,7 @@ namespace COCOAnnotator {
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry) {
             containerRegistry.RegisterSingleton<CommonDialogService>();
-            containerRegistry.RegisterSingleton<SettingService>();
+            containerRegistry.RegisterInstance(SettingService.Read());
             containerRegistry.RegisterSingleton<SerializationService>();
 
             containerRegistry.RegisterDialog<SettingDialog>();

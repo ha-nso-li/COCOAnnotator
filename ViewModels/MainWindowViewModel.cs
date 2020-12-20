@@ -190,7 +190,7 @@ namespace COCOAnnotator.ViewModels {
         private void SaveDataset() {
             if (CommonDialogService.SaveJsonFileDialog(out string filePath)) {
                 string basePath = Path.GetDirectoryName(filePath) ?? "";
-                byte[] CocoContents = SerializationService.Serialize(basePath, Images, Categories);
+                byte[] CocoContents = SerializationService.Serialize(basePath, Images, Categories.Where(s => !s.All));
                 File.WriteAllBytes(filePath, CocoContents);
                 Title = $"COCO 데이터셋 편집기 - {filePath}";
             }

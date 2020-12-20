@@ -1,10 +1,11 @@
 using COCOAnnotator.Records.Enums;
+using COCOAnnotator.ViewModels.Commons;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System.Windows.Input;
 
 namespace COCOAnnotator.ViewModels {
-    public class SettingDialogViewModel : Commons.DialogViewModelBase {
+    public class SettingDialogViewModel : DialogViewModelBase {
         public SettingDialogViewModel() {
             Title = "설정";
             Format = SettingService.Format;
@@ -27,6 +28,7 @@ namespace COCOAnnotator.ViewModels {
         public override void OnDialogClosed() {
             SettingService.Format = Format;
             SettingService.Color = Color;
+            SettingService.Write();
         }
 
         public ICommand CmdClose { get; }

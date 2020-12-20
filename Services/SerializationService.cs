@@ -9,8 +9,6 @@ using System.Text.Json;
 
 namespace COCOAnnotator.Services {
     public class SerializationService {
-        private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true };
-
         /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
         public byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
@@ -44,7 +42,7 @@ namespace COCOAnnotator.Services {
                     });
                 }
             }
-            return JsonSerializer.SerializeToUtf8Bytes(cocodataset, jsonSerializerOptions);
+            return JsonSerializer.SerializeToUtf8Bytes(cocodataset);
         }
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
@@ -68,7 +66,7 @@ namespace COCOAnnotator.Services {
 
         public COCODataset DeserializeAsRaw(byte[] JsonContents) {
             ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
-            return JsonSerializer.Deserialize<COCODataset>(JsonSpan, jsonSerializerOptions);
+            return JsonSerializer.Deserialize<COCODataset>(JsonSpan);
         }
 
         #region CSV 변환
