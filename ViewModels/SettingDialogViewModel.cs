@@ -8,17 +8,11 @@ namespace COCOAnnotator.ViewModels {
     public class SettingDialogViewModel : DialogViewModelBase {
         public SettingDialogViewModel() {
             Title = "설정";
-            Format = SettingService.Format;
             Color = SettingService.Color;
 
             CmdClose = new DelegateCommand(Close);
         }
 
-        private SettingFormats _Format;
-        public SettingFormats Format {
-            get => _Format;
-            set => SetProperty(ref _Format, value);
-        }
         private SettingColors _Color;
         public SettingColors Color {
             get => _Color;
@@ -26,7 +20,6 @@ namespace COCOAnnotator.ViewModels {
         }
 
         public override void OnDialogClosed() {
-            SettingService.Format = Format;
             SettingService.Color = Color;
             SettingService.Write();
         }

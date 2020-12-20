@@ -1,5 +1,5 @@
 namespace COCOAnnotator.Records.Enums {
-    public enum SettingFormats {
+    public enum CSVFormat {
         LTRB = 0,
         CXCYWH = 1,
         LTWH = 2,

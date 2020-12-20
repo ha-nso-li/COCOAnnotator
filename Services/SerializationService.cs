@@ -72,12 +72,12 @@ namespace COCOAnnotator.Services {
         #region CSV 변환
         /// <summary>주어진 레이블을 CSV로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
-        public string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, SettingFormats Format) {
+        public string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, CSVFormat Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
             return Format switch {
-                SettingFormats.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Category}",
-                SettingFormats.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
-                SettingFormats.LTWH => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
+                CSVFormat.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Category}",
+                CSVFormat.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
+                CSVFormat.LTWH => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
                 _ => ""
             };
         }
@@ -93,7 +93,7 @@ namespace COCOAnnotator.Services {
         /// <item><description><seealso cref="AnnotationRecord"/>만 <see langword="null"/>이면 음성 샘플임을 의미합니다.</description></item>
         /// </list>
         /// </returns>
-        public (ImageRecord?, AnnotationRecord?) CSVDeserialize(string BasePath, string Text, SettingFormats Format) {
+        public (ImageRecord?, AnnotationRecord?) CSVDeserialize(string BasePath, string Text, CSVFormat Format) {
             string[] split = Text.Split(',');
             if (split.Length < 6) return (null, null);
             string path = Path.Combine(BasePath, split[0]);
@@ -107,9 +107,9 @@ namespace COCOAnnotator.Services {
             success &= double.TryParse(split[4], out double num4);
             if (!success) return (null, null);
             return Format switch {
-                SettingFormats.LTRB => (img, new AnnotationRecord(img, num1, num2, num3 - num1, num4 - num2, CategoryRecord.FromName(classname))),
-                SettingFormats.CXCYWH => (img, new AnnotationRecord(img, num1 - num3 / 2, num2 - num4 / 2, num3, num4, CategoryRecord.FromName(classname))),
-                SettingFormats.LTWH => (img, new AnnotationRecord(img, num1, num2, num3, num4, CategoryRecord.FromName(classname))),
+                CSVFormat.LTRB => (img, new AnnotationRecord(img, num1, num2, num3 - num1, num4 - num2, CategoryRecord.FromName(classname))),
+                CSVFormat.CXCYWH => (img, new AnnotationRecord(img, num1 - num3 / 2, num2 - num4 / 2, num3, num4, CategoryRecord.FromName(classname))),
+                CSVFormat.LTWH => (img, new AnnotationRecord(img, num1, num2, num3, num4, CategoryRecord.FromName(classname))),
                 _ => (null, null)
             };
         }

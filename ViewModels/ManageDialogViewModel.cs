@@ -24,11 +24,12 @@ namespace COCOAnnotator.ViewModels {
             _LogVerifyDataset = "";
             FilesForUnionDataset = new ObservableCollection<string>();
             _TacticForSplitDataset = TacticsForSplitDataset.DevideToN;
-            _TacticForConvertDataset = TacticsForConvertDataset.COCOToCSV;
             _NValueForSplitDataset = 2;
             _LogUndupeDataset = "";
             _IoUThreshold = 0.5;
             _UndupeWithoutCategory = true;
+            _TacticForConvertDataset = TacticsForConvertDataset.COCOToCSV;
+            _CSVFormat = CSVFormat.LTRB;
 
             CmdVerifyDataset = new DelegateCommand(VerifyDataset);
             CmdDeleteUnusedImages = new DelegateCommand(DeleteUnusedImages);
@@ -114,6 +115,11 @@ namespace COCOAnnotator.ViewModels {
         public int ProgressConvertDatasetValue {
             get => _ProgressConvertDatasetValue;
             set => SetProperty(ref _ProgressConvertDatasetValue, value);
+        }
+        private CSVFormat _CSVFormat;
+        public CSVFormat CSVFormat {
+            get => _CSVFormat;
+            set => SetProperty(ref _CSVFormat, value);
         }
         #endregion
 
@@ -518,7 +524,7 @@ namespace COCOAnnotator.ViewModels {
                     foreach (ImageRecord i in images) {
                         if (i.Annotations.Count > 0) {
                             // 양성 데이터셋
-                            foreach (AnnotationRecord j in i.Annotations) csv.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, SettingService.Format));
+                            foreach (AnnotationRecord j in i.Annotations) csv.WriteLine(SerializationService.CSVSerializeAsPositive(basePath, j, CSVFormat));
                         } else {
                             // 음성 데이터셋
                             csv.WriteLine(SerializationService.CSVSerializeAsNegative(basePath, i));
@@ -538,7 +544,7 @@ namespace COCOAnnotator.ViewModels {
                         for (int i = 0; i < lines.Length; i++) {
                             if (IsClosed) return;
                             ProgressConvertDatasetValue = (int)((double)i / lines.Length * 100);
-                            (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], SettingService.Format);
+                            (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], CSVFormat);
                             if (img is object) {
                                 if (images.TryGetValue(img, out var realImage)) {
                                     img = realImage;

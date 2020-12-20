@@ -5,16 +5,6 @@ using System.Text.Json;
 
 namespace COCOAnnotator.Services {
     public class SettingService {
-        public SettingFormats _Format;
-        public SettingFormats Format {
-            get => _Format;
-            set {
-                if (_Format != value) {
-                    _Format = value;
-                    NeedSave = true;
-                }
-            }
-        }
         private SettingColors _Color;
         public SettingColors Color {
             get => _Color;
