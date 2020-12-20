@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace LabelAnnotator.UserControls {
+namespace COCOAnnotator.UserControls {
     public class ResizeThumb : Thumb {
         public ResizeThumb() {
             DragDelta += ResizeThumb_DragDelta;

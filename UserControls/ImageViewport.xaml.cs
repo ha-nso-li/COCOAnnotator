@@ -1,6 +1,6 @@
-using LabelAnnotator.Events;
-using LabelAnnotator.Records;
-using LabelAnnotator.Utilities;
+using COCOAnnotator.Events;
+using COCOAnnotator.Records;
+using COCOAnnotator.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace LabelAnnotator.UserControls {
+namespace COCOAnnotator.UserControls {
     public partial class ImageViewport : UserControl {
         public ImageViewport() {
             InitializeComponent();

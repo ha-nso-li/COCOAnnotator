@@ -1,4 +1,4 @@
-# LabelAnnotator
+# COCOAnnotator
 
 객체 검출을 위한 [COCO 데이터셋](https://cocodataset.org/) 포맷의 커스텀 어노테이션 데이터셋 파일을 생성하고 편집, 관리하는 도구입니다.
 
@@ -19,6 +19,6 @@
 dotnet publish -c Release -p:PublishProfile=Properties\PublishProfiles\ReleaseBuild.pubxml
 ```
 
-또는 Visual Studio 2019에서 솔루션을 열어 Build - Publish LabelAnnotator 메뉴를 통해서도 빌드할 수 있습니다. 빌드가 완료되면 bin/Release/netcoreapp3.1/publish 폴더 아래에 스탠드얼론 exe 실행 파일인 LabelAnnotator.exe가 생성됩니다. 실행하고자 하는 PC로 실행 파일을 옮겨 실행할 수 있습니다.
+또는 Visual Studio 2019에서 솔루션을 열어 Build - Publish COCOAnnotator 메뉴를 통해서도 빌드할 수 있습니다. 빌드가 완료되면 bin/Release/netcoreapp3.1/publish 폴더 아래에 스탠드얼론 exe 실행 파일인 COCOAnnotator.exe가 생성됩니다. 실행하고자 하는 PC로 실행 파일을 옮겨 실행할 수 있습니다.
 
 빌드 없이 실행만 하면 되는 경우 SDK 대신 용량이 작은 .NET Core 3.1 Desktop Runtime만 설치해도 됩니다. SDK에는 Runtime이 포함되어 있습니다.

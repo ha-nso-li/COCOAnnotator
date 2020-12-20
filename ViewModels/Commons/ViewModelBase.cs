@@ -1,10 +1,10 @@
-using LabelAnnotator.Services;
+using COCOAnnotator.Services;
 using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
 using Prism.Services.Dialogs;
 
-namespace LabelAnnotator.ViewModels.Commons {
+namespace COCOAnnotator.ViewModels.Commons {
     public abstract class ViewModelBase : BindableBase {
         private string _Title;
         public string Title {

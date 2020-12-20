@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace LabelAnnotator.Utilities {
+namespace COCOAnnotator.Utilities {
     public class FastObservableCollection<T> : ObservableCollection<T> {
         public void RemoveAll(Predicate<T> match) {
             ((List<T>)Items).RemoveAll(match);

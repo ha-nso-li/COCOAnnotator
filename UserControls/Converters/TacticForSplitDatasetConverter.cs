@@ -1,10 +1,10 @@
-using LabelAnnotator.Records.Enums;
-using LabelAnnotator.Views;
+using COCOAnnotator.Records.Enums;
+using COCOAnnotator.Views;
 using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace LabelAnnotator.UserControls.Converters {
+namespace COCOAnnotator.UserControls.Converters {
     [ValueConversion(typeof(TacticsForSplitDataset), typeof(bool))]
     public class TacticForSplitDatasetConverter : EnumConverter<TacticsForSplitDataset> {
         public override object Convert(object value, Type targetType, object parameter, CultureInfo culture) {

@@ -1,4 +1,4 @@
-<prism:PrismApplication x:Class="LabelAnnotator.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+<prism:PrismApplication x:Class="COCOAnnotator.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:prism="http://prismlibrary.com/">
     <Application.Resources>
 

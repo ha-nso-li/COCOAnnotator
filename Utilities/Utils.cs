@@ -1,4 +1,4 @@
-using LabelAnnotator.Records;
+using COCOAnnotator.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace LabelAnnotator.Utilities {
+namespace COCOAnnotator.Utilities {
     /// <summary>
     /// 각종 편의성 메서드를 포함하는 정적 클래스입니다.
     /// </summary>

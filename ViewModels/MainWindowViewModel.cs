@@ -1,9 +1,9 @@
-using LabelAnnotator.Events;
-using LabelAnnotator.Records;
-using LabelAnnotator.Records.Enums;
-using LabelAnnotator.Utilities;
-using LabelAnnotator.ViewModels.Commons;
-using LabelAnnotator.Views;
+using COCOAnnotator.Events;
+using COCOAnnotator.Records;
+using COCOAnnotator.Records.Enums;
+using COCOAnnotator.Utilities;
+using COCOAnnotator.ViewModels.Commons;
+using COCOAnnotator.Views;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System;
@@ -17,7 +17,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace LabelAnnotator.ViewModels {
+namespace COCOAnnotator.ViewModels {
     public class MainWindowViewModel : ViewModelBase {
         #region 생성자
         public MainWindowViewModel() {

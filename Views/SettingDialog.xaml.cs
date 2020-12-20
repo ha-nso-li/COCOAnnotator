@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 
-namespace LabelAnnotator.Views {
+namespace COCOAnnotator.Views {
     public partial class SettingDialog : UserControl {
         public SettingDialog() {
             InitializeComponent();

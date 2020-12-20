@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace LabelAnnotator.Records.COCO {
+namespace COCOAnnotator.Records.COCO {
     public class AnnotationCOCO {
         [JsonPropertyName("id")]
         public int ID { get; set; }

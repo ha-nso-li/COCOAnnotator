@@ -1,13 +1,13 @@
-using LabelAnnotator.Records;
-using LabelAnnotator.Records.COCO;
-using LabelAnnotator.Records.Enums;
-using LabelAnnotator.Utilities;
+using COCOAnnotator.Records;
+using COCOAnnotator.Records.COCO;
+using COCOAnnotator.Records.Enums;
+using COCOAnnotator.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace LabelAnnotator.Services {
+namespace COCOAnnotator.Services {
     public class SerializationService {
         private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true };
 

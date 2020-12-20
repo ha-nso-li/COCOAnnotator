@@ -1,4 +1,4 @@
-namespace LabelAnnotator.Records {
+namespace COCOAnnotator.Records {
     public class AnnotationRecord {
         public ImageRecord Image { get; set; }
 

@@ -1,7 +1,7 @@
-using LabelAnnotator.Records.Enums;
+using COCOAnnotator.Records.Enums;
 using System.Windows.Data;
 
-namespace LabelAnnotator.UserControls.Converters {
+namespace COCOAnnotator.UserControls.Converters {
     [ValueConversion(typeof(SettingColors), typeof(bool))]
     public class SettingColorConverter : EnumConverter<SettingColors> { }
 }

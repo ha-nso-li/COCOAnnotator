@@ -1,10 +1,10 @@
-using LabelAnnotator.Services;
-using LabelAnnotator.Views;
+using COCOAnnotator.Services;
+using COCOAnnotator.Views;
 using Prism.DryIoc;
 using Prism.Ioc;
 using System.Windows;
 
-namespace LabelAnnotator {
+namespace COCOAnnotator {
     public partial class App : PrismApplication {
         protected override Window CreateShell() {
             return Container.Resolve<MainWindow>();

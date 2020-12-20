@@ -1,8 +1,8 @@
-using LabelAnnotator.Events;
+using COCOAnnotator.Events;
 using Prism.Events;
 using System.Windows.Controls;
 
-namespace LabelAnnotator.Views {
+namespace COCOAnnotator.Views {
     public partial class ManageDialog : UserControl {
         public ManageDialog(IEventAggregator EventAggregator) {
             InitializeComponent();

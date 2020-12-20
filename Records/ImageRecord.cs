@@ -2,7 +2,7 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 
-namespace LabelAnnotator.Records {
+namespace COCOAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public string FullPath { get; }

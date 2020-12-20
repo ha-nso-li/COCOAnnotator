@@ -1,7 +1,7 @@
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace LabelAnnotator.UserControls {
+namespace COCOAnnotator.UserControls {
     public class MoveThumb : Thumb {
         public MoveThumb() {
             DragDelta += MoveThumb_DragDelta;

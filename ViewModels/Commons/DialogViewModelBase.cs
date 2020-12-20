@@ -1,7 +1,7 @@
 using Prism.Services.Dialogs;
 using System;
 
-namespace LabelAnnotator.ViewModels.Commons {
+namespace COCOAnnotator.ViewModels.Commons {
     public abstract class DialogViewModelBase : ViewModelBase, IDialogAware {
         protected bool IsClosed;
         public event Action<IDialogResult>? RequestClose;

@@ -2,7 +2,7 @@ using Prism.Mvvm;
 using System;
 using System.Windows.Media;
 
-namespace LabelAnnotator.Records {
+namespace COCOAnnotator.Records {
     public class CategoryRecord : BindableBase, IEquatable<CategoryRecord>, IComparable, IComparable<CategoryRecord> {
         #region 필드와 프로퍼티
         public bool All { get; }

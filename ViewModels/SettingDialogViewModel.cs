@@ -1,9 +1,9 @@
-using LabelAnnotator.Records.Enums;
+using COCOAnnotator.Records.Enums;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System.Windows.Input;
 
-namespace LabelAnnotator.ViewModels {
+namespace COCOAnnotator.ViewModels {
     public class SettingDialogViewModel : Commons.DialogViewModelBase {
         public SettingDialogViewModel() {
             Title = "설정";

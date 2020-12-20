@@ -1,6 +1,6 @@
-<UserControl x:Class="LabelAnnotator.Views.ManageDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:cvt="clr-namespace:LabelAnnotator.UserControls.Converters"
-        mc:Ignorable="d" xmlns:prism="http://prismlibrary.com/" xmlns:vm="clr-namespace:LabelAnnotator.ViewModels" d:DataContext="{d:DesignInstance Type=vm:ManageDialogViewModel}">
+<UserControl x:Class="COCOAnnotator.Views.ManageDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:cvt="clr-namespace:COCOAnnotator.UserControls.Converters"
+        mc:Ignorable="d" xmlns:prism="http://prismlibrary.com/" xmlns:vm="clr-namespace:COCOAnnotator.ViewModels" d:DataContext="{d:DesignInstance Type=vm:ManageDialogViewModel}">
     <prism:Dialog.WindowStyle>
         <Style TargetType="Window">
             <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
@@ -13,7 +13,7 @@
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
         <cvt:TacticForSplitDatasetConverter x:Key="TacticForSplitDatasetConverter" />
-        <cvt:TacticForConvertLabelConverter x:Key="TacticForConvertLabelConverter" />
+        <cvt:TacticForConvertDatasetConverter x:Key="TacticForConvertDatasetConverter" />
     </UserControl.Resources>
     <Grid>
         <DockPanel>
@@ -73,14 +73,14 @@
                 <TabItem Header="데이터셋 중복 제거">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="18" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedLabel}" />
-                            <Button DockPanel.Dock="Right" TabIndex="17" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeLabel}" />
-                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeLabelValue}" Margin="5" Height="20" />
+                            <Button DockPanel.Dock="Right" TabIndex="18" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedDataset}" />
+                            <Button DockPanel.Dock="Right" TabIndex="17" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeDataset}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeDatasetValue}" Margin="5" Height="20" />
                         </DockPanel>
                         <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
                         <TextBox DockPanel.Dock="Top" TabIndex="15" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
-                        <CheckBox DockPanel.Dock="Top" TabIndex="16" IsChecked="{Binding UndupeWithoutClass}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
-                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeLabel}"
+                        <CheckBox DockPanel.Dock="Top" TabIndex="16" IsChecked="{Binding UndupeWithoutCategory}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
+                        <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeDataset}"
                                 IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
                 </TabItem>
@@ -88,14 +88,14 @@
                     <DockPanel LastChildFill="False">
                         <Label DockPanel.Dock="Top" Content="변환 방법 선택:" />
                         <StackPanel DockPanel.Dock="Top">
-                            <RadioButton TabIndex="19" GroupName="TacticsForConvertLabel" Content="COCO에서 CSV로 변환"
-                                    IsChecked="{Binding TacticForConvertLabel, Converter={StaticResource TacticForConvertLabelConverter}, ConverterParameter=COCOToCSV}" Margin="1" />
-                            <RadioButton TabIndex="20" GroupName="TacticsForConvertLabel" Content="CSV에서 COCO로 변환"
-                                    IsChecked="{Binding TacticForConvertLabel, Converter={StaticResource TacticForConvertLabelConverter}, ConverterParameter=CSVToCOCO}" Margin="1" />
+                            <RadioButton TabIndex="19" GroupName="TacticsForConvertDataset" Content="COCO에서 CSV로 변환"
+                                    IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=COCOToCSV}" Margin="1" />
+                            <RadioButton TabIndex="20" GroupName="TacticsForConvertDataset" Content="CSV에서 COCO로 변환"
+                                    IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=CSVToCOCO}" Margin="1" />
                         </StackPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="21" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertLabel}" />
-                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertLabelValue}" Margin="5" Height="20" />
+                            <Button DockPanel.Dock="Right" TabIndex="21" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertDataset}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertDatasetValue}" Margin="5" Height="20" />
                         </DockPanel>
                     </DockPanel>
                 </TabItem>

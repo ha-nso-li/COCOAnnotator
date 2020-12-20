@@ -1,10 +1,10 @@
-using LabelAnnotator.Utilities;
+using COCOAnnotator.Utilities;
 using Microsoft.Win32;
 using System.Linq;
 using System.Windows;
 using WinForm = System.Windows.Forms;
 
-namespace LabelAnnotator.Services {
+namespace COCOAnnotator.Services {
     public class CommonDialogService {
         public bool OpenCSVFileDialog(out string FilePath) {
             OpenFileDialog dlg = new OpenFileDialog {

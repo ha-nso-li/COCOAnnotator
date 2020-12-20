@@ -1,4 +1,4 @@
-namespace LabelAnnotator.Records.Enums {
+namespace COCOAnnotator.Records.Enums {
     public enum TacticsForSplitDataset {
         DevideToN = 0,
         TakeNSamples = 1,

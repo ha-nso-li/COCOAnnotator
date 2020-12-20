@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LabelAnnotator.Records.COCO {
+namespace COCOAnnotator.Records.COCO {
     public class ImageCOCO {
         [JsonPropertyName("id")]
         public int ID { get; set; }

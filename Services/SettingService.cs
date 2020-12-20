@@ -1,10 +1,10 @@
-using LabelAnnotator.Records.Enums;
+using COCOAnnotator.Records.Enums;
 using System;
 using System.Diagnostics;
 using System.IO;
 using YamlDotNet.RepresentationModel;
 
-namespace LabelAnnotator.Services {
+namespace COCOAnnotator.Services {
     public class SettingService {
         #region 설정 관리 내부 메서드
         private YamlStream? _YamlStream;

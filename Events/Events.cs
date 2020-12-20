@@ -1,7 +1,7 @@
-using LabelAnnotator.Records;
+using COCOAnnotator.Records;
 using Prism.Events;
 
-namespace LabelAnnotator.Events {
+namespace COCOAnnotator.Events {
     public class ScrollTxtLogVerifyDataset : PubSubEvent { }
     public class ScrollTxtLogUndupeLabel : PubSubEvent { }
     public class ScrollViewCategoriesList : PubSubEvent<CategoryRecord> { }
