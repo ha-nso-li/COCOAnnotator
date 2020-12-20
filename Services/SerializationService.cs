@@ -32,7 +32,7 @@ namespace LabelAnnotator.Services {
                     Height = i.Height,
                 });
                 foreach (AnnotationRecord j in i.Annotations) {
-                    int category_id = cocodataset.Categories.FindIndex(s => s.Name == j.Class.Name);
+                    int category_id = cocodataset.Categories.FindIndex(s => s.Name == j.Category.Name);
                     int annotation_id = cocodataset.Annotations.Count;
                     cocodataset.Annotations.Add(new AnnotationCOCO {
                         ID = annotation_id,
@@ -77,9 +77,9 @@ namespace LabelAnnotator.Services {
         public string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, SettingFormats Format) {
             string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
             return Format switch {
-                SettingFormats.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Class:0.#}",
-                SettingFormats.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Class:0.#}",
-                SettingFormats.LTWH => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Class:0.#}",
+                SettingFormats.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Category}",
+                SettingFormats.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
+                SettingFormats.LTWH => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
                 _ => ""
             };
         }

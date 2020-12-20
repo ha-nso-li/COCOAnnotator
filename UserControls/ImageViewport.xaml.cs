@@ -116,7 +116,7 @@ namespace LabelAnnotator.UserControls {
             case NotifyCollectionChangedAction.Add:
                 foreach (AnnotationRecord? i in e.NewItems) {
                     if (i is null) continue;
-                    AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Class, true);
+                    AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
                 }
                 break;
             }
@@ -151,7 +151,7 @@ namespace LabelAnnotator.UserControls {
                 }, DispatcherPriority.Loaded);
             }
             foreach (AnnotationRecord i in Annotations) {
-                AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Class, true);
+                AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
             }
         }
         private void ClearBoundaryBoxes() {
@@ -412,7 +412,7 @@ namespace LabelAnnotator.UserControls {
                         }
                         if (notChangedPositionsCount < 4) {
                             changed_old.Add(realBox);
-                            changed_new.Add(new AnnotationRecord(realBox.Image, left, top, width, height, realBox.Class));
+                            changed_new.Add(new AnnotationRecord(realBox.Image, left, top, width, height, realBox.Category));
                         }
                     }
                 }

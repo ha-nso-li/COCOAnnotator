@@ -5,12 +5,12 @@ using System.Globalization;
 using System.Windows.Data;
 
 namespace LabelAnnotator.UserControls.Converters {
-    [ValueConversion(typeof(TacticsForSplitLabel), typeof(bool))]
-    public class TacticForSplitLabelConverter : EnumConverter<TacticsForSplitLabel> {
+    [ValueConversion(typeof(TacticsForSplitDataset), typeof(bool))]
+    public class TacticForSplitDatasetConverter : EnumConverter<TacticsForSplitDataset> {
         public override object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-            if ((string)parameter == nameof(ManageDialog.TxtNValueForSplitLabel)) {
-                // TxtNValueForSplitLabel.IsEnabled
-                return !value.Equals(TacticsForSplitLabel.SplitToSubFolders);
+            if ((string)parameter == nameof(ManageDialog.TxtNValueForSplitDataset)) {
+                // TxtNValueForSplitDataset.IsEnabled
+                return !value.Equals(TacticsForSplitDataset.SplitToSubFolders);
             }
             return base.Convert(value, targetType, parameter, culture);
         }

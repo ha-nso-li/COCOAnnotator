@@ -223,7 +223,7 @@ namespace LabelAnnotator.ViewModels {
             if (SelectedImage is null) return;
 
             foreach (AnnotationRecord i in e.Added) {
-                SelectedImage.Annotations.Add(new AnnotationRecord(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Class));
+                SelectedImage.Annotations.Add(new AnnotationRecord(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Category));
             }
             foreach ((AnnotationRecord old, AnnotationRecord @new) in e.ChangedOldItems.Zip(e.ChangedNewItems)) {
                 int idx = SelectedImage.Annotations.IndexOf(old);
@@ -294,8 +294,8 @@ namespace LabelAnnotator.ViewModels {
                     }
                 }
                 if (!addedflag) Categories.Add(rename);
-                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Class == OldCategory)) {
-                    label.Class = rename;
+                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) {
+                    label.Category = rename;
                 }
                 SelectedCategory = rename;
             } else {
@@ -303,8 +303,8 @@ namespace LabelAnnotator.ViewModels {
                 if (!res) return;
                 CategoryRecord OldCategory = SelectedCategory;
                 Categories.Remove(OldCategory);
-                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Class == OldCategory)) {
-                    label.Class = rename;
+                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) {
+                    label.Category = rename;
                 }
                 SelectedCategory = rename;
             }
@@ -318,7 +318,7 @@ namespace LabelAnnotator.ViewModels {
             switch (res) {
             case true: {
                 foreach (ImageRecord i in Images) {
-                    i.Annotations.RemoveAll(s => s.Class == SelectedCategory);
+                    i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                 }
                 if (Categories.Count <= 2) {
                     Categories.Clear();
@@ -333,7 +333,7 @@ namespace LabelAnnotator.ViewModels {
             case false: {
                 SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>();
                 foreach (ImageRecord i in Images) {
-                    int deletedCount = i.Annotations.RemoveAll(s => s.Class == SelectedCategory);
+                    int deletedCount = i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                     if (deletedCount > 0) ImagesFromDeletedClass.Add(i);
                 }
                 Images.RemoveAll(s => s.Annotations.Count == 0 && ImagesFromDeletedClass.Contains(s));
@@ -449,7 +449,7 @@ namespace LabelAnnotator.ViewModels {
             VisibleAnnotations.Clear();
             IEnumerable<AnnotationRecord> visibleLabels;
             if (SelectedCategory.All) visibleLabels = SelectedImage.Annotations;
-            else visibleLabels = SelectedImage.Annotations.Where(s => s.Class == SelectedCategory);
+            else visibleLabels = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
             foreach (AnnotationRecord i in visibleLabels) VisibleAnnotations.Add(i);
         }
         private void RefreshCommonPath() {

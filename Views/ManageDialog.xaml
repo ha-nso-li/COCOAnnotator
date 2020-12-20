@@ -12,7 +12,7 @@
         </Style>
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
-        <cvt:TacticForSplitLabelConverter x:Key="TacticForSplitLabelConverter" />
+        <cvt:TacticForSplitDatasetConverter x:Key="TacticForSplitDatasetConverter" />
         <cvt:TacticForConvertLabelConverter x:Key="TacticForConvertLabelConverter" />
     </UserControl.Resources>
     <Grid>
@@ -24,9 +24,9 @@
                 <TabItem Header="데이터셋 분석">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="3" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportVerifiedLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="3" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportVerifiedDataset}" />
                             <Button DockPanel.Dock="Right" TabIndex="2" Content="이미지 삭제" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdDeleteUnusedImages}" />
-                            <Button DockPanel.Dock="Right" TabIndex="1" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdVerifyLabel}" />
+                            <Button DockPanel.Dock="Right" TabIndex="1" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdVerifyDataset}" />
                             <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressVerifyDataset}" Margin="5" Height="20" />
                         </DockPanel>
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogVerifyDataset" Text="{Binding LogVerifyDataset}"
@@ -55,19 +55,19 @@
                     <DockPanel LastChildFill="False">
                         <Label DockPanel.Dock="Top" Content="분할 방법 선택:" />
                         <StackPanel DockPanel.Dock="Top">
-                            <RadioButton TabIndex="10" GroupName="TacticsForSplitLabel" Content="균등한 갯수의 이미지가 포함되도록 n개의 데이터셋으로 분할"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=DevideToNLabels}" Margin="1" />
-                            <RadioButton TabIndex="11" GroupName="TacticsForSplitLabel" Content="데이터셋에 포함된 이미지중 n개를 다른 파일로 분리"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
-                            <RadioButton TabIndex="12" GroupName="TacticsForSplitLabel" Content="하위 폴더에 각 폴더 안의 이미지만을 포함하는 데이터셋 생성"
-                                    IsChecked="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=SplitToSubFolders}" Margin="1" />
+                            <RadioButton TabIndex="10" GroupName="TacticsForSplitDataset" Content="균등한 갯수의 이미지가 포함되도록 n개의 데이터셋으로 분할"
+                                    IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=DevideToN}" Margin="1" />
+                            <RadioButton TabIndex="11" GroupName="TacticsForSplitDataset" Content="데이터셋에 포함된 이미지중 n개를 다른 파일로 분리"
+                                    IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
+                            <RadioButton TabIndex="12" GroupName="TacticsForSplitDataset" Content="하위 폴더에 각 폴더 안의 이미지만을 포함하는 데이터셋 생성"
+                                    IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=SplitToSubFolders}" Margin="1" />
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
-                        <TextBox x:Name="TxtNValueForSplitLabel" TabIndex="13" DockPanel.Dock="Top" Text="{Binding NValueForSplitLabel}"
-                                IsEnabled="{Binding TacticForSplitLabel, Converter={StaticResource TacticForSplitLabelConverter}, ConverterParameter=TxtNValueForSplitLabel}" Width="150"
+                        <TextBox x:Name="TxtNValueForSplitDataset" TabIndex="13" DockPanel.Dock="Top" Text="{Binding NValueForSplitDataset}"
+                                IsEnabled="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=TxtNValueForSplitDataset}" Width="150"
                                 HorizontalAlignment="Left" Margin="2" />
                         <Button DockPanel.Dock="Bottom" TabIndex="14" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                Command="{Binding CmdSplitLabel}" />
+                                Command="{Binding CmdSplitDataset}" />
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="데이터셋 중복 제거">
