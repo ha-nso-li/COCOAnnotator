@@ -91,7 +91,7 @@
                 </b:Interaction.Triggers>
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding DisplayFilename}" />
+                        <TextBlock Text="{Binding DisplayFilename}" Foreground="{Binding ColorBrush}" />
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

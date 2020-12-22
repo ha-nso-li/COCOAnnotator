@@ -1,12 +1,14 @@
+using COCOAnnotator.Utilities;
 using Prism.Mvvm;
 using System;
-using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public string FullPath { get; }
-        public List<AnnotationRecord> Annotations { get; }
+        public FastObservableCollection<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
         public int Height { get; set; }
         #endregion
@@ -17,6 +19,7 @@ namespace COCOAnnotator.Records {
             get => _DisplayFilename;
             set => SetProperty(ref _DisplayFilename, value);
         }
+        public SolidColorBrush ColorBrush => Annotations.Count == 0 ? Brushes.DarkGray : Brushes.Black;
         #endregion
 
         public ImageRecord(string FullPath) : this(FullPath, 0, 0) { }
@@ -24,9 +27,15 @@ namespace COCOAnnotator.Records {
         public ImageRecord(string FullPath, int Width, int Height) {
             this.FullPath = FullPath;
             _DisplayFilename = "";
-            Annotations = new List<AnnotationRecord>();
+            Annotations = new FastObservableCollection<AnnotationRecord>();
+            Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;
             this.Height = Height;
+        }
+
+        private void AnnotationCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+            if (e.Action == NotifyCollectionChangedAction.Replace || e.Action == NotifyCollectionChangedAction.Move) return;
+            RaisePropertyChanged(nameof(ColorBrush));
         }
 
         #region 동일성

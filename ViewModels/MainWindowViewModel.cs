@@ -380,10 +380,7 @@ namespace COCOAnnotator.ViewModels {
             switch (res) {
             case true: {
                 SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                if (SelectedImages.Count == 0) return;
-                foreach (ImageRecord i in Images) {
-                    if (SelectedImages.Contains(i)) i.Annotations.Clear();
-                }
+                foreach (ImageRecord i in SelectedImages) i.Annotations.Clear();
                 VisibleAnnotations.Clear();
                 break;
             }
