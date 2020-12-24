@@ -364,10 +364,9 @@ namespace COCOAnnotator.ViewModels {
             if (!CommonDialogService.OpenJsonFileDialog(out string inFilePath)) return;
             List<ImageRecord> shuffledImages;
             string inBasePath = Path.GetDirectoryName(inFilePath) ?? "";
-            Random r = new Random();
             byte[] InCocoContents = File.ReadAllBytes(inFilePath);
             (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = SerializationService.Deserialize(inBasePath, InCocoContents);
-            shuffledImages = images.OrderBy(s => r.Next()).ToList();
+            shuffledImages = images.Shuffle().ToList();
             switch (TacticForSplitDataset) {
             case TacticsForSplitDataset.DevideToN:
                 // 균등 분할
@@ -384,13 +383,13 @@ namespace COCOAnnotator.ViewModels {
                         // 양성 이미지인 경우.
                         // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
                         (SortedSet<ImageRecord> imagesByPartition, SortedSet<CategoryRecord> categoriesByPartition) = infoByPartition
-                            .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Categories).Count()).ThenBy(s => s.Images.Count).ThenBy(s => r.Next()).First();
+                            .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Categories).Count()).ThenBy(s => s.Images.Count).First();
                         imagesByPartition.Add(image);
                         categoriesByPartition.UnionWith(image.Annotations.Select(s => s.Category));
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                        (SortedSet<ImageRecord> imagesByPartition, SortedSet<CategoryRecord> categoriesByPartition) = infoByPartition.OrderBy(s => s.Images.Count).ThenBy(s => r.Next()).First();
+                        (SortedSet<ImageRecord> imagesByPartition, SortedSet<CategoryRecord> categoriesByPartition) = infoByPartition.OrderBy(s => s.Images.Count).First();
                         imagesByPartition.Add(image);
                     }
                 }

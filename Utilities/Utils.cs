@@ -157,5 +157,15 @@ namespace COCOAnnotator.Utilities {
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
             return (bitmap.PixelWidth, bitmap.PixelHeight);
         }
+
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
+            Random rng = new Random();
+            List<T> elements = source.ToList();
+            for (int i = elements.Count - 1; i >= 0; i--) {
+                int swapIndex = rng.Next(i + 1);
+                yield return elements[swapIndex];
+                elements[swapIndex] = elements[i];
+            }
+        }
     }
 }
