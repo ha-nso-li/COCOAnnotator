@@ -325,7 +325,7 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdRemoveFileForUnionDataset { get; }
         private void RemoveFileForUnionDataset(IList SelectedItems) {
-            List<string> remove = SelectedItems.OfType<string>().ToList();
+            string[] remove = SelectedItems.OfType<string>().ToArray();
             foreach (string i in remove) {
                 if (i is null) continue;
                 FilesForUnionDataset.Remove(i);
@@ -362,11 +362,10 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdSplitDataset { get; }
         private void SplitDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string inFilePath)) return;
-            List<ImageRecord> shuffledImages;
             string inBasePath = Path.GetDirectoryName(inFilePath) ?? "";
             byte[] InCocoContents = File.ReadAllBytes(inFilePath);
             (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = SerializationService.Deserialize(inBasePath, InCocoContents);
-            shuffledImages = images.Shuffle().ToList();
+            IEnumerable<ImageRecord> shuffledImages = images.Shuffle();
             switch (TacticForSplitDataset) {
             case TacticsForSplitDataset.DevideToN:
                 // 균등 분할
@@ -389,7 +388,7 @@ namespace COCOAnnotator.ViewModels {
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                        (SortedSet<ImageRecord> imagesByPartition, SortedSet<CategoryRecord> categoriesByPartition) = infoByPartition.OrderBy(s => s.Images.Count).First();
+                        (SortedSet<ImageRecord> imagesByPartition, _) = infoByPartition.OrderBy(s => s.Images.Count).First();
                         imagesByPartition.Add(image);
                     }
                 }
@@ -584,7 +583,8 @@ namespace COCOAnnotator.ViewModels {
             LogUndupeDataset = LogUndupeDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         private IEnumerable<AnnotationRecord> SuppressAnnotations(IEnumerable<AnnotationRecord> Annotations) {
-            List<AnnotationRecord> sortedBySize = Annotations.OrderBy(s => s.Area).ToList(); // 넓이가 작은 경계 상자를 우선
+            List<AnnotationRecord> sortedBySize = Annotations.ToList(); // 넓이가 작은 경계 상자를 우선
+            sortedBySize.Sort((a, b) => a.Area.CompareTo(b.Area));
             while (sortedBySize.Count >= 2) {
                 // pick
                 AnnotationRecord pick = sortedBySize[0];

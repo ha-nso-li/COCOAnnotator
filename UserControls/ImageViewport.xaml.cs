@@ -110,7 +110,7 @@ namespace COCOAnnotator.UserControls {
                 ClearBoundaryBoxes();
                 break;
             case NotifyCollectionChangedAction.Remove:
-                List<ContentControl> delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToList();
+                ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
                 foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
                 break;
             case NotifyCollectionChangedAction.Add:
@@ -155,7 +155,7 @@ namespace COCOAnnotator.UserControls {
             }
         }
         private void ClearBoundaryBoxes() {
-            List<ContentControl> delete = ViewImageCanvas.Children.OfType<ContentControl>().ToList();
+            ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
             foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
         }
         /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
@@ -197,8 +197,8 @@ namespace COCOAnnotator.UserControls {
         private void DeleteLabel(object sender, RoutedEventArgs e) {
             if (!(sender is MenuItem mn)) return;
             // 대응되는 경계상자 숨김
-            List<ContentControl> bbox = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => mn.Tag.Equals(s.Tag)).ToList();
-            foreach (ContentControl i in bbox) i.Visibility = Visibility.Collapsed;
+            ContentControl bbox = ViewImageCanvas.Children.OfType<ContentControl>().First(s => mn.Tag.Equals(s.Tag));
+            bbox.Visibility = Visibility.Collapsed;
         }
         private void RefreshBoundaryBoxes() {
             if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
@@ -255,15 +255,27 @@ namespace COCOAnnotator.UserControls {
         private void ViewImageCanvas_MouseMove(object sender, MouseEventArgs e) {
             if (!BboxInsertMode || CurrentCategory is null) {
                 // 크로스헤어 있으면 삭제
-                List<Line> line = ViewImageCanvas.Children.OfType<Line>().ToList();
-                foreach (Line i in line) {
-                    ViewImageCanvas.Children.Remove(i);
-                }
+                Line[] line = ViewImageCanvas.Children.OfType<Line>().ToArray();
+                foreach (Line i in line) ViewImageCanvas.Children.Remove(i);
             } else {
                 Point current = e.GetPosition(ViewImageControl);
                 // 크로스헤어
-                List<Line> line = ViewImageCanvas.Children.OfType<Line>().ToList();
-                if (line.Count == 0) {
+                IEnumerable<Line> line = ViewImageCanvas.Children.OfType<Line>();
+                if (line.Any()) {
+                    foreach (Line i in line) {
+                        if (i.Tag is int tag) {
+                            if (tag == Tag_HorizontalCrosshair) {
+                                i.X2 = ViewImageCanvas.ActualWidth;
+                                i.Y1 = current.Y;
+                                i.Y2 = current.Y;
+                            } else if (tag == Tag_VerticalCrosshair) {
+                                i.X1 = current.X;
+                                i.X2 = current.X;
+                                i.Y2 = ViewImageCanvas.ActualHeight;
+                            }
+                        }
+                    }
+                } else {
                     Line hline = new Line {
                         X1 = 0,
                         X2 = ViewImageCanvas.ActualWidth,
@@ -286,20 +298,6 @@ namespace COCOAnnotator.UserControls {
                     Panel.SetZIndex(vline, ZIndex_Crosshair);
                     ViewImageCanvas.Children.Add(hline);
                     ViewImageCanvas.Children.Add(vline);
-                } else {
-                    foreach (Line i in line) {
-                        if (i.Tag is int tag) {
-                            if (tag == Tag_HorizontalCrosshair) {
-                                i.X2 = ViewImageCanvas.ActualWidth;
-                                i.Y1 = current.Y;
-                                i.Y2 = current.Y;
-                            } else if (tag == Tag_VerticalCrosshair) {
-                                i.X1 = current.X;
-                                i.X2 = current.X;
-                                i.Y2 = ViewImageCanvas.ActualHeight;
-                            }
-                        }
-                    }
                 }
                 // 미리보기 상자
                 if (DragStartPoint is object) {

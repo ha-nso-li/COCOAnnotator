@@ -476,7 +476,7 @@ namespace COCOAnnotator.ViewModels {
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
             case SettingColors.Fixed:
-                List<Color> colors = Utils.GenerateFixedColor(Categories.Count - 1).ToList();
+                Color[] colors = Utils.GenerateFixedColor(Categories.Count - 1).ToArray();
                 // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
                 for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
                 break;
