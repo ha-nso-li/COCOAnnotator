@@ -475,9 +475,13 @@ namespace COCOAnnotator.ViewModels {
                         foreach (IGrouping<CategoryRecord, AnnotationRecord> annotations in ImagesForUndupe[i].Annotations.GroupBy(s => s.Category))
                             AnnotationsForUndupe.AddRange(SuppressAnnotations(annotations));
                     }
-                    foreach (AnnotationRecord j in AnnotationsForUndupe) ImagesForUndupe[i].Annotations.Remove(j);
-                    TotalSuppressedBoxesCount += AnnotationsForUndupe.Count;
-                    if (AnnotationsForUndupe.Count > 0) SuppressedImages.Add(ImagesForUndupe[i]);
+                    int LocalSuppressedBoxesCount = ImagesForUndupe[i].Annotations.Count - AnnotationsForUndupe.Count;
+                    if (LocalSuppressedBoxesCount > 0) {
+                        ImagesForUndupe[i].Annotations.Clear();
+                        ImagesForUndupe[i].Annotations.AddRange(AnnotationsForUndupe);
+                        TotalSuppressedBoxesCount += LocalSuppressedBoxesCount;
+                        SuppressedImages.Add(ImagesForUndupe[i]);
+                    }
                 }
                 ProgressUndupeDatasetValue = 100;
                 if (TotalSuppressedBoxesCount == 0) {
@@ -585,27 +589,23 @@ namespace COCOAnnotator.ViewModels {
         private IEnumerable<AnnotationRecord> SuppressAnnotations(IEnumerable<AnnotationRecord> Annotations) {
             List<AnnotationRecord> sortedBySize = Annotations.ToList(); // 넓이가 작은 경계 상자를 우선
             sortedBySize.Sort((a, b) => a.Area.CompareTo(b.Area));
-            while (sortedBySize.Count >= 2) {
+            while (sortedBySize.Count > 0) {
                 // pick
                 AnnotationRecord pick = sortedBySize[0];
                 sortedBySize.RemoveAt(0);
-                // compare
-                List<AnnotationRecord> labelsToSuppress = new List<AnnotationRecord>();
-                foreach (AnnotationRecord i in sortedBySize) {
-                    double left = Math.Max(pick.Left, i.Left);
-                    double top = Math.Max(pick.Top, i.Top);
-                    double right = Math.Min(pick.Left + pick.Width, i.Left + i.Width);
-                    double bottom = Math.Min(pick.Top + pick.Height, i.Top + i.Height);
+                // supress
+                for (int i = 0; i < sortedBySize.Count; i++) {
+                    double left = Math.Max(pick.Left, sortedBySize[i].Left);
+                    double top = Math.Max(pick.Top, sortedBySize[i].Top);
+                    double right = Math.Min(pick.Left + pick.Width, sortedBySize[i].Left + sortedBySize[i].Width);
+                    double bottom = Math.Min(pick.Top + pick.Height, sortedBySize[i].Top + sortedBySize[i].Height);
                     if (left >= right || top >= bottom) continue;
                     double sizeIntersection = (right - left) * (bottom - top);
-                    double sizeUnion = pick.Area + i.Area - sizeIntersection;
+                    double sizeUnion = pick.Area + sortedBySize[i].Area - sizeIntersection;
                     double iou = sizeIntersection / sizeUnion;
                     if (iou < IoUThreshold) continue;
-                    labelsToSuppress.Add(i);
-                }
-                // suppress
-                foreach (AnnotationRecord i in labelsToSuppress) {
-                    sortedBySize.Remove(i);
+                    sortedBySize.RemoveAt(i);
+                    i--;
                 }
                 yield return pick;
             }

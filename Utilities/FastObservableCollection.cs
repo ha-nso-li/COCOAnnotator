@@ -6,6 +6,20 @@ using System.ComponentModel;
 
 namespace COCOAnnotator.Utilities {
     public class FastObservableCollection<T> : ObservableCollection<T> {
+        public void AddRange(IEnumerable<T> collection) {
+            if (Items is List<T> ListItems) {
+                ListItems.AddRange(collection);
+            } else {
+                foreach (T i in collection) {
+                    Items.Add(i);
+                }
+            }
+
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+        }
+
         public int RemoveAll(Predicate<T> match) {
             int removedCount;
             if (Items is List<T> ListItems) {
