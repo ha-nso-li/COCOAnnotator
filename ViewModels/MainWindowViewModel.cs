@@ -345,6 +345,7 @@ namespace COCOAnnotator.ViewModels {
                     SelectedCategory = Categories.First(s => s.All);
                 }
                 RefreshColorOfCategories();
+                RefreshCommonPath();
                 break;
             }
             case null:
