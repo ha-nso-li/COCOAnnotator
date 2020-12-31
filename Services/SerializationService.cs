@@ -66,7 +66,7 @@ namespace COCOAnnotator.Services {
 
         public COCODataset DeserializeAsRaw(byte[] JsonContents) {
             ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
-            return JsonSerializer.Deserialize<COCODataset>(JsonSpan);
+            return JsonSerializer.Deserialize<COCODataset>(JsonSpan) ?? new COCODataset();
         }
 
         #region CSV 변환

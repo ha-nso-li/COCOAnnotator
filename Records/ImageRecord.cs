@@ -33,7 +33,7 @@ namespace COCOAnnotator.Records {
             this.Height = Height;
         }
 
-        private void AnnotationCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+        private void AnnotationCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
             if (e.Action == NotifyCollectionChangedAction.Replace || e.Action == NotifyCollectionChangedAction.Move) return;
             RaisePropertyChanged(nameof(ColorBrush));
         }
@@ -61,7 +61,7 @@ namespace COCOAnnotator.Records {
             return obj switch {
                 ImageRecord obj_r => CompareTo(obj_r),
                 null => 1,
-                _ => throw new ArgumentException()
+                _ => throw new ArgumentException(null, nameof(obj))
             };
         }
         public int CompareTo(ImageRecord? other) {

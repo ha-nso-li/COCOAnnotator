@@ -547,14 +547,14 @@ namespace COCOAnnotator.ViewModels {
                             if (IsClosed) return;
                             ProgressConvertDatasetValue = (int)((double)i / lines.Length * 100);
                             (ImageRecord? img, AnnotationRecord? lbl) = SerializationService.CSVDeserialize(basePath, lines[i], CSVFormat);
-                            if (img is object) {
+                            if (img is not null) {
                                 if (images.TryGetValue(img, out var realImage)) {
                                     img = realImage;
                                 } else {
                                     (img.Width, img.Height) = Utils.GetSizeOfImage(img.FullPath);
                                     images.Add(img);
                                 }
-                                if (lbl is object) {
+                                if (lbl is not null) {
                                     img.Annotations.Add(lbl);
                                     if (categories.TryGetValue(lbl.Category, out CategoryRecord? found)) lbl.Category = found;
                                     else categories.Add(lbl.Category);

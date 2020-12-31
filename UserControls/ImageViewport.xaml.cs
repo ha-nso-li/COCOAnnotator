@@ -104,16 +104,18 @@ namespace COCOAnnotator.UserControls {
                 uc.UpdateBoundaryBoxes();
             }
         }
-        private void AnnotationsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+        private void AnnotationsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
             switch (e.Action) {
             case NotifyCollectionChangedAction.Reset:
                 ClearBoundaryBoxes();
                 break;
             case NotifyCollectionChangedAction.Remove:
+                if (e.OldItems is null) return;
                 ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
                 foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
                 break;
             case NotifyCollectionChangedAction.Add:
+                if (e.NewItems is null) return;
                 foreach (AnnotationRecord? i in e.NewItems) {
                     if (i is null) continue;
                     AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
@@ -195,13 +197,13 @@ namespace COCOAnnotator.UserControls {
             return cont;
         }
         private void DeleteLabel(object sender, RoutedEventArgs e) {
-            if (!(sender is MenuItem mn)) return;
+            if (sender is not MenuItem mn) return;
             // 대응되는 경계상자 숨김
             ContentControl bbox = ViewImageCanvas.Children.OfType<ContentControl>().First(s => mn.Tag.Equals(s.Tag));
             bbox.Visibility = Visibility.Collapsed;
         }
         private void RefreshBoundaryBoxes() {
-            if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
+            if (ViewImageControl.Source is not BitmapSource bitmap) return;
             // 경계 상자 위치 갱신은 UI 이미지 크기 조정에 수반되는 경우가 많기 때문에 UI 로드가 끝난 다음에 수행함.
             Dispatcher.Invoke(() => {
                 double afterScale = ViewImageControl.ActualWidth / bitmap.PixelWidth;
@@ -211,8 +213,8 @@ namespace COCOAnnotator.UserControls {
                     double newTop = Canvas.GetTop(box) / CurrentScale * afterScale;
                     double newWidth = box.Width / CurrentScale * afterScale;
                     double newHeight = box.Height / CurrentScale * afterScale;
-                    AnnotationRecord? realBox = Annotations.FirstOrDefault(s => s == box.Tag);
-                    if (realBox is AnnotationRecord) {
+                    AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == box.Tag);
+                    if (realBox is not null) {
                         // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
                         double newLeftFromOriginal = realBox.Left * afterScale;
@@ -300,7 +302,7 @@ namespace COCOAnnotator.UserControls {
                     ViewImageCanvas.Children.Add(vline);
                 }
                 // 미리보기 상자
-                if (DragStartPoint is object) {
+                if (DragStartPoint is not null) {
                     if (e.LeftButton == MouseButtonState.Pressed) {
                         if (PreviewBbox is null) {
                             double startX = DragStartPoint.Value.X;
@@ -325,7 +327,7 @@ namespace COCOAnnotator.UserControls {
                         }
                     } else if (e.LeftButton == MouseButtonState.Released) {
                         // 마우스를 이미지 밖에서 뗀 경우, 마지막 정보를 기준으로 경계 상자로 반영함.
-                        if (PreviewBbox is object) {
+                        if (PreviewBbox is not null) {
                             PreviewBbox.Tag = Tag_UncommittedBbox;
                             PreviewBbox = null;
                             DragStartPoint = null;
@@ -361,7 +363,7 @@ namespace COCOAnnotator.UserControls {
         public event CommitBboxEventHandler? CommitBbox;
 
         public void TryCommitBbox() {
-            if (!(ViewImageControl.Source is BitmapSource bitmap)) return;
+            if (ViewImageControl.Source is not BitmapSource bitmap) return;
 
             List<AnnotationRecord> deleted = new List<AnnotationRecord>();
             List<AnnotationRecord> added = new List<AnnotationRecord>();
@@ -371,24 +373,25 @@ namespace COCOAnnotator.UserControls {
             foreach (ContentControl bbox in bboxes) {
                 if (bbox.Visibility == Visibility.Collapsed) {
                     // 삭제
-                    AnnotationRecord? realBox = Annotations.FirstOrDefault(s => s == bbox.Tag);
-                    if (realBox is AnnotationRecord) deleted.Add(realBox);
+                    AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == bbox.Tag);
+                    if (realBox is not null) deleted.Add(realBox);
                 } else if (bbox.Tag is int tag && tag == Tag_UncommittedBbox) {
                     // 추가
-                    if (CurrentCategory is null) continue;
-                    double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
-                    double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                    double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
-                    double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentCategory));
+                    if (CurrentCategory is not null) {
+                        double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
+                        double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
+                        double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                        double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                        added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentCategory));
+                    }
                 } else {
                     // 이동
                     double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
                     double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                     double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                     double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                    AnnotationRecord? realBox = Annotations.FirstOrDefault(s => s == bbox.Tag);
-                    if (realBox is AnnotationRecord) {
+                    AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == bbox.Tag);
+                    if (realBox is not null) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 새 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)
