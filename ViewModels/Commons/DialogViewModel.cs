@@ -2,7 +2,7 @@ using Prism.Services.Dialogs;
 using System;
 
 namespace COCOAnnotator.ViewModels.Commons {
-    public abstract class DialogViewModelBase : ViewModelBase, IDialogAware {
+    public abstract class DialogViewModel : ViewModel, IDialogAware {
         protected bool IsClosed;
         public event Action<IDialogResult>? RequestClose;
 
@@ -22,7 +22,7 @@ namespace COCOAnnotator.ViewModels.Commons {
 
         }
 
-        protected DialogViewModelBase() {
+        protected DialogViewModel() {
             IsClosed = false;
         }
     }

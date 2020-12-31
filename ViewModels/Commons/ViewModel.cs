@@ -5,7 +5,7 @@ using Prism.Mvvm;
 using Prism.Services.Dialogs;
 
 namespace COCOAnnotator.ViewModels.Commons {
-    public abstract class ViewModelBase : BindableBase {
+    public abstract class ViewModel : BindableBase {
         private string _Title;
         public string Title {
             get => _Title;
@@ -18,7 +18,7 @@ namespace COCOAnnotator.ViewModels.Commons {
         protected SerializationService SerializationService;
         protected SettingService SettingService;
 
-        protected ViewModelBase() {
+        protected ViewModel() {
             _Title = "";
 
             EventAggregator = ContainerLocator.Current.Resolve<IEventAggregator>();
