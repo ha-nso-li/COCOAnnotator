@@ -23,7 +23,7 @@ namespace COCOAnnotator.Services {
             if (File.Exists(SettingPath)) {
                 byte[] bytes = File.ReadAllBytes(SettingPath);
                 ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(bytes);
-                return JsonSerializer.Deserialize<SettingService>(JsonSpan);
+                return JsonSerializer.Deserialize<SettingService>(JsonSpan) ?? new SettingService();
             } else {
                 return new SettingService();
             }
