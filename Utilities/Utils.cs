@@ -124,8 +124,8 @@ namespace COCOAnnotator.Utilities {
                     }
                 }
             }
-            string prefix = first.Substring(0, len);
-            return prefix.Substring(0, prefix.LastIndexOfAny(new char[] { '\\', '/' }));
+            string prefix = first[..len];
+            return prefix[..prefix.LastIndexOfAny(new char[] { '\\', '/' })];
         }
 
         /// <summary>
@@ -162,9 +162,9 @@ namespace COCOAnnotator.Utilities {
             Random rng = new Random();
             T[] elements = source.ToArray();
             for (int i = elements.Length - 1; i >= 0; i--) {
-                int swapIndex = rng.Next(i + 1);
-                yield return elements[swapIndex];
-                elements[swapIndex] = elements[i];
+                int j = rng.Next(i + 1);
+                yield return elements[j];
+                elements[j] = elements[i];
             }
         }
     }
