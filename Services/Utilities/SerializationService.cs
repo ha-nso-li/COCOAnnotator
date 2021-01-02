@@ -1,16 +1,17 @@
 using COCOAnnotator.Records;
 using COCOAnnotator.Records.COCO;
 using COCOAnnotator.Records.Enums;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services.Utilities {
-    public class SerializationService {
+    public static class SerializationService {
         /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
-        /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public static byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
+        /// <param name="JsonPath">직렬화된 JSON 파일이 쓰일 경로입니다.</param>
+        public static async Task SerializeAsync(string JsonPath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
+            string basePath = Path.GetDirectoryName(JsonPath) ?? "";
             COCODataset cocodataset = new COCODataset();
             foreach (CategoryRecord i in Categories) {
                 int id = cocodataset.Categories.Count;
@@ -24,7 +25,7 @@ namespace COCOAnnotator.Services.Utilities {
                 int image_id = cocodataset.Images.Count;
                 cocodataset.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = Miscellaneous.GetRelativePath(BasePath, i.FullPath),
+                    FileName = Miscellaneous.GetRelativePath(basePath, i.FullPath),
                     Width = i.Width,
                     Height = i.Height,
                 });
@@ -41,17 +42,19 @@ namespace COCOAnnotator.Services.Utilities {
                     });
                 }
             }
-            return JsonSerializer.SerializeToUtf8Bytes(cocodataset);
+            using FileStream fileStream = File.Create(JsonPath);
+            await JsonSerializer.SerializeAsync(fileStream, cocodataset).ConfigureAwait(false);
         }
 
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public static (ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
-            COCODataset cocodataset = DeserializeAsRaw(JsonContents);
+        public static async Task<(ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories)> DeserializeAsync(string JsonPath) {
+            COCODataset cocodataset = await DeserializeRawAsync(JsonPath);
+            string basePath = Path.GetDirectoryName(JsonPath) ?? "";
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
             foreach (ImageCOCO i in cocodataset.Images) {
-                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(Path.Combine(BasePath, i.FileName), i.Width, i.Height));
+                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(Path.Combine(basePath, i.FileName), i.Width, i.Height));
             }
             foreach (CategoryCOCO i in cocodataset.Categories) {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
@@ -64,9 +67,9 @@ namespace COCOAnnotator.Services.Utilities {
             return (images.Values, categories.Values);
         }
 
-        public static COCODataset DeserializeAsRaw(byte[] JsonContents) {
-            ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
-            return JsonSerializer.Deserialize<COCODataset>(JsonSpan) ?? new COCODataset();
+        public static async Task<COCODataset> DeserializeRawAsync(string JsonPath) {
+            using FileStream fileStream = File.OpenRead(JsonPath);
+            return await JsonSerializer.DeserializeAsync<COCODataset>(fileStream).ConfigureAwait(false) ?? new COCODataset();
         }
 
         #region CSV 변환

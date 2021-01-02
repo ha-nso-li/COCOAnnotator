@@ -187,11 +187,9 @@ namespace COCOAnnotator.ViewModels {
             }
         }
         public ICommand CmdSaveDataset { get; }
-        private void SaveDataset() {
+        private async void SaveDataset() {
             if (CommonDialogService.SaveJsonFileDialog(out string filePath)) {
-                string basePath = Path.GetDirectoryName(filePath) ?? "";
-                byte[] CocoContents = SerializationService.Serialize(basePath, Images, Categories.Where(s => !s.All));
-                File.WriteAllBytes(filePath, CocoContents);
+                await SerializationService.SerializeAsync(filePath, Images, Categories.Where(s => !s.All));
                 Title = $"COCO 데이터셋 편집기 - {filePath}";
             }
         }
@@ -456,13 +454,11 @@ namespace COCOAnnotator.ViewModels {
                 i.DisplayFilename = Miscellaneous.GetRelativePath(CommonPath, i.FullPath);
             }
         }
-        private void InternalLoadDataset(string filePath) {
+        private async void InternalLoadDataset(string filePath) {
             if (!Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase)) return;
             Images.Clear();
             Categories.Clear();
-            string basePath = Path.GetDirectoryName(filePath) ?? "";
-            byte[] CocoContents = File.ReadAllBytes(filePath);
-            (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = SerializationService.Deserialize(basePath, CocoContents);
+            (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = await SerializationService.DeserializeAsync(filePath);
             foreach (ImageRecord i in images) Images.Add(i);
             if (Images.Count > 0) SelectedImage = Images[0];
             RefreshCommonPath();
