@@ -1,17 +1,14 @@
-using COCOAnnotator.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
-namespace COCOAnnotator.Utilities {
+namespace COCOAnnotator.Services.Utilities {
     /// <summary>
-    /// 각종 편의성 메서드를 포함하는 정적 클래스입니다.
+    /// 사소한 정적 유틸 메서드를 포함하는 서비스입니다.
     /// </summary>
-    public static class Utils {
+    public static class Miscellaneous {
         /// <summary>
         /// 주어진 두 값을 비교하고 작아야 하는 값이 더 크면 두 값을 교환합니다.
         /// </summary>
@@ -107,65 +104,8 @@ namespace COCOAnnotator.Utilities {
         }
 
         /// <summary>
-        /// 컬렉션에 포함된 모든 이미지들이 위치한 경로의 공통 부모 폴더의 경로를 찾습니다.
-        /// </summary>
-        public static string GetCommonParentPath(IEnumerable<ImageRecord> source) {
-            using IEnumerator<ImageRecord> etor = source.GetEnumerator();
-            if (!etor.MoveNext()) return "";
-            string first = etor.Current.FullPath;
-            int len = first.Length;
-            while (etor.MoveNext()) {
-                string current = etor.Current.FullPath;
-                len = Math.Min(len, current.Length);
-                for (int i = 0; i < len; i++) {
-                    if (current[i] != first[i]) {
-                        len = i;
-                        break;
-                    }
-                }
-            }
-            string prefix = first[..len];
-            return prefix[..prefix.LastIndexOfAny(new char[] { '\\', '/' })];
-        }
-
-        /// <summary>
-        /// 주어진 로컬 파일 경로를 이스케이프를 고려하여 URI로 변환합니다.
-        /// </summary>
-        public static Uri ToUri(this string filePath) {
-            StringBuilder uri = new StringBuilder();
-            foreach (char v in filePath) {
-                if ((v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') || (v >= '0' && v <= '9') || v == '+' || v == '/' || v == ':' || v == '.' || v == '-' || v == '_' || v == '~' || v > '\xFF') {
-                    uri.Append(v);
-                } else if (v == Path.DirectorySeparatorChar || v == Path.AltDirectorySeparatorChar) {
-                    uri.Append('/');
-                } else {
-                    uri.Append($"%{Convert.ToByte(v):X2}");
-                }
-            }
-            if (uri.Length >= 2 && uri[0] == '/' && uri[1] == '/') uri.Insert(0, "file:");
-            else uri.Insert(0, "file:///");
-            return new Uri(uri.ToString());
-        }
-
-        /// <summary>
         /// 이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.
         /// </summary>
         public static ISet<string> ApprovedImageExtensions => new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".png", ".jpeg", ".tif" };
-
-        public static (int Width, int Height) GetSizeOfImage(string ImagePath) {
-            using FileStream stream = new FileStream(ImagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-            return (bitmap.PixelWidth, bitmap.PixelHeight);
-        }
-
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
-            Random rng = new Random();
-            T[] elements = source.ToArray();
-            for (int i = elements.Length - 1; i >= 0; i--) {
-                int j = rng.Next(i + 1);
-                yield return elements[j];
-                elements[j] = elements[i];
-            }
-        }
     }
 }

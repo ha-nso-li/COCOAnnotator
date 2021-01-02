@@ -1,4 +1,3 @@
-using COCOAnnotator.Utilities;
 using Prism.Mvvm;
 using System;
 using System.Collections.Specialized;

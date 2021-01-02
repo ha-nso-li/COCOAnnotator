@@ -1,6 +1,6 @@
 using COCOAnnotator.Events;
 using COCOAnnotator.Records;
-using COCOAnnotator.Utilities;
+using COCOAnnotator.Services.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -309,8 +309,8 @@ namespace COCOAnnotator.UserControls {
                             double startY = DragStartPoint.Value.Y;
                             double endX = current.X;
                             double endY = current.Y;
-                            Utils.SortTwoValues(ref startX, ref endX);
-                            Utils.SortTwoValues(ref startY, ref endY);
+                            Miscellaneous.SortTwoValues(ref startX, ref endX);
+                            Miscellaneous.SortTwoValues(ref startY, ref endY);
                             ContentControl bbox = AddBoundaryBox(ZIndex_PreviewBbox, Tag_PreviewBbox, startX, startY, endX - startX, endY - startY, CurrentCategory, false);
                             PreviewBbox = bbox;
                         } else {
@@ -318,8 +318,8 @@ namespace COCOAnnotator.UserControls {
                             double startY = DragStartPoint.Value.Y;
                             double endX = current.X;
                             double endY = current.Y;
-                            Utils.SortTwoValues(ref startX, ref endX);
-                            Utils.SortTwoValues(ref startY, ref endY);
+                            Miscellaneous.SortTwoValues(ref startX, ref endX);
+                            Miscellaneous.SortTwoValues(ref startY, ref endY);
                             PreviewBbox.Width = endX - startX;
                             PreviewBbox.Height = endY - startY;
                             Canvas.SetLeft(PreviewBbox, startX);
@@ -343,8 +343,8 @@ namespace COCOAnnotator.UserControls {
             double startY = DragStartPoint.Value.Y;
             double endX = dragEnd.X;
             double endY = dragEnd.Y;
-            Utils.SortTwoValues(ref startX, ref endX);
-            Utils.SortTwoValues(ref startY, ref endY);
+            Miscellaneous.SortTwoValues(ref startX, ref endX);
+            Miscellaneous.SortTwoValues(ref startY, ref endY);
             PreviewBbox.Width = endX - startX;
             PreviewBbox.Height = endY - startY;
             Canvas.SetLeft(PreviewBbox, startX);

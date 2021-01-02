@@ -1,7 +1,7 @@
 using COCOAnnotator.Events;
 using COCOAnnotator.Records;
 using COCOAnnotator.Records.Enums;
-using COCOAnnotator.Utilities;
+using COCOAnnotator.Services.Utilities;
 using COCOAnnotator.ViewModels.Commons;
 using COCOAnnotator.Views;
 using Prism.Commands;
@@ -451,9 +451,9 @@ namespace COCOAnnotator.ViewModels {
             foreach (AnnotationRecord i in visibleLabels) VisibleAnnotations.Add(i);
         }
         private void RefreshCommonPath() {
-            string CommonPath = Utils.GetCommonParentPath(Images);
+            string CommonPath = Images.GetCommonParentPath();
             foreach (ImageRecord i in Images) {
-                i.DisplayFilename = Utils.GetRelativePath(CommonPath, i.FullPath);
+                i.DisplayFilename = Miscellaneous.GetRelativePath(CommonPath, i.FullPath);
             }
         }
         private void InternalLoadDataset(string filePath) {
@@ -477,22 +477,23 @@ namespace COCOAnnotator.ViewModels {
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
             case SettingColors.Fixed:
-                Color[] colors = Utils.GenerateFixedColor(Categories.Count - 1).ToArray();
+                Color[] colors = Miscellaneous.GenerateFixedColor(Categories.Count - 1).ToArray();
                 // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
                 for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
                 break;
             case SettingColors.Random:
                 IEnumerable<Color> ExistingColors = Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 for (int i = 1; i < Categories.Count; i++) {
-                    if (Categories[i].ColorBrush.Color == Colors.Transparent) Categories[i].ColorBrush = new SolidColorBrush(Utils.GenerateRandomColor(ExistingColors, 100));
+                    if (Categories[i].ColorBrush.Color == Colors.Transparent) Categories[i].ColorBrush = new SolidColorBrush(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
                 }
                 break;
             }
         }
         private void InternelAddImage(string[] filePaths) {
-            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
-                (int Width, int Height) = Utils.GetSizeOfImage(s);
-                return new ImageRecord(s, Width, Height);
+            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Miscellaneous.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
+                ImageRecord img = new ImageRecord(s);
+                img.LoadSize();
+                return img;
             }));
             int ImagesCountToAdd = add.Count;
             add.ExceptWith(Images);

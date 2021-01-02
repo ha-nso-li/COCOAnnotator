@@ -14,8 +14,6 @@ namespace COCOAnnotator.ViewModels.Commons {
 
         protected IEventAggregator EventAggregator;
         protected IDialogService UserDialogSerivce;
-        protected CommonDialogService CommonDialogService;
-        protected SerializationService SerializationService;
         protected SettingService SettingService;
 
         protected ViewModel() {
@@ -23,8 +21,6 @@ namespace COCOAnnotator.ViewModels.Commons {
 
             EventAggregator = ContainerLocator.Current.Resolve<IEventAggregator>();
             UserDialogSerivce = ContainerLocator.Current.Resolve<IDialogService>();
-            CommonDialogService = ContainerLocator.Current.Resolve<CommonDialogService>();
-            SerializationService = ContainerLocator.Current.Resolve<SerializationService>();
             SettingService = ContainerLocator.Current.Resolve<SettingService>();
         }
     }

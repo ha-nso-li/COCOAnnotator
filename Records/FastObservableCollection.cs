@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace COCOAnnotator.Utilities {
+namespace COCOAnnotator.Records {
     public class FastObservableCollection<T> : ObservableCollection<T> {
         public void AddRange(IEnumerable<T> collection) {
             if (Items is List<T> ListItems) {

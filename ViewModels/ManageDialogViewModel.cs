@@ -2,7 +2,7 @@ using COCOAnnotator.Events;
 using COCOAnnotator.Records;
 using COCOAnnotator.Records.COCO;
 using COCOAnnotator.Records.Enums;
-using COCOAnnotator.Utilities;
+using COCOAnnotator.Services.Utilities;
 using COCOAnnotator.ViewModels.Commons;
 using Prism.Commands;
 using Prism.Services.Dialogs;
@@ -166,8 +166,7 @@ namespace COCOAnnotator.ViewModels {
                         }
                         if (imageSizeCheck) {
                             try {
-                                (int width, int height) = Utils.GetSizeOfImage(fullPath);
-                                if (image.Width != width || image.Height != height) {
+                                if (!imageRecord.LoadSize()) {
                                     AppendLogVerifyDataset($"ID가 {image.ID}인 이미지의 크기가 실제 크기와 다릅니다.");
                                     continue;
                                 }
@@ -245,10 +244,10 @@ namespace COCOAnnotator.ViewModels {
 
                 // 사용되지 않은 이미지 검색
                 if (ImagesForVerify.Count > 0) {
-                    string CommonParentPath = Utils.GetCommonParentPath(ImagesForVerify.Values);
+                    string CommonParentPath = ImagesForVerify.Values.GetCommonParentPath();
                     AppendLogVerifyDataset("", $"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
                     UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
-                        .Where(s => Utils.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
+                        .Where(s => Miscellaneous.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
                     UnusedImagesForVerify.ExceptWith(ImagesForVerify.Values);
                     if (UnusedImagesForVerify.Count > 20) {
                         AppendLogVerifyDataset($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
@@ -551,7 +550,7 @@ namespace COCOAnnotator.ViewModels {
                                 if (images.TryGetValue(img, out var realImage)) {
                                     img = realImage;
                                 } else {
-                                    (img.Width, img.Height) = Utils.GetSizeOfImage(img.FullPath);
+                                    img.LoadSize();
                                     images.Add(img);
                                 }
                                 if (lbl is not null) {

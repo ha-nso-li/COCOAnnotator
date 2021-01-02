@@ -1,17 +1,16 @@
 using COCOAnnotator.Records;
 using COCOAnnotator.Records.COCO;
 using COCOAnnotator.Records.Enums;
-using COCOAnnotator.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace COCOAnnotator.Services {
+namespace COCOAnnotator.Services.Utilities {
     public class SerializationService {
         /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
+        public static byte[] Serialize(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             COCODataset cocodataset = new COCODataset();
             foreach (CategoryRecord i in Categories) {
                 int id = cocodataset.Categories.Count;
@@ -25,7 +24,7 @@ namespace COCOAnnotator.Services {
                 int image_id = cocodataset.Images.Count;
                 cocodataset.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = Utils.GetRelativePath(BasePath, i.FullPath),
+                    FileName = Miscellaneous.GetRelativePath(BasePath, i.FullPath),
                     Width = i.Width,
                     Height = i.Height,
                 });
@@ -44,9 +43,10 @@ namespace COCOAnnotator.Services {
             }
             return JsonSerializer.SerializeToUtf8Bytes(cocodataset);
         }
+
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
-        public (ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
+        public static (ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) Deserialize(string BasePath, byte[] JsonContents) {
             COCODataset cocodataset = DeserializeAsRaw(JsonContents);
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
@@ -64,7 +64,7 @@ namespace COCOAnnotator.Services {
             return (images.Values, categories.Values);
         }
 
-        public COCODataset DeserializeAsRaw(byte[] JsonContents) {
+        public static COCODataset DeserializeAsRaw(byte[] JsonContents) {
             ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(JsonContents);
             return JsonSerializer.Deserialize<COCODataset>(JsonSpan) ?? new COCODataset();
         }
@@ -72,8 +72,8 @@ namespace COCOAnnotator.Services {
         #region CSV 변환
         /// <summary>주어진 레이블을 CSV로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
-        public string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, CSVFormat Format) {
-            string path = Utils.GetRelativePath(BasePath, Label.Image.FullPath);
+        public static string CSVSerializeAsPositive(string BasePath, AnnotationRecord Label, CSVFormat Format) {
+            string path = Miscellaneous.GetRelativePath(BasePath, Label.Image.FullPath);
             return Format switch {
                 CSVFormat.LTRB => $"{path},{Label.Left:0.#},{Label.Top:0.#},{Label.Left + Label.Width:0.#},{Label.Top + Label.Height:0.#},{Label.Category}",
                 CSVFormat.CXCYWH => $"{path},{Label.Left + Label.Width / 2:0.#},{Label.Top + Label.Height / 2:0.#},{Label.Width:0.#},{Label.Height:0.#},{Label.Category}",
@@ -83,7 +83,7 @@ namespace COCOAnnotator.Services {
         }
         /// <summary>주어진 이미지를 음성 샘플로 간주하여 CSV로 직렬화합니다.</summary>
         /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 상대 경로 계산에 사용됩니다.</param>
-        public string CSVSerializeAsNegative(string BasePath, ImageRecord Image) => $"{Utils.GetRelativePath(BasePath, Image.FullPath)},,,,,";
+        public static string CSVSerializeAsNegative(string BasePath, ImageRecord Image) => $"{Miscellaneous.GetRelativePath(BasePath, Image.FullPath)},,,,,";
         /// <summary>
         /// 기본 경로와 CSV 레이블 파일의 한 행 내의 문자열을 이용해 이미지와 레이블 레코드를 역직렬화합니다.
         /// </summary>
@@ -93,7 +93,7 @@ namespace COCOAnnotator.Services {
         /// <item><description><seealso cref="AnnotationRecord"/>만 <see langword="null"/>이면 음성 샘플임을 의미합니다.</description></item>
         /// </list>
         /// </returns>
-        public (ImageRecord?, AnnotationRecord?) CSVDeserialize(string BasePath, string Text, CSVFormat Format) {
+        public static (ImageRecord?, AnnotationRecord?) CSVDeserialize(string BasePath, string Text, CSVFormat Format) {
             string[] split = Text.Split(',');
             if (split.Length < 6) return (null, null);
             string path = Path.Combine(BasePath, split[0]);

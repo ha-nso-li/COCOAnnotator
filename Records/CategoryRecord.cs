@@ -43,7 +43,7 @@ namespace COCOAnnotator.Records {
             return obj switch {
                 ImageRecord obj_r => CompareTo(obj_r),
                 null => 1,
-                _ => throw new ArgumentException()
+                _ => throw new ArgumentException(null, nameof(obj)),
             };
         }
         public int CompareTo(CategoryRecord? other) {
