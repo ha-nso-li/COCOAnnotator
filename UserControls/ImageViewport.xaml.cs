@@ -37,9 +37,7 @@ namespace COCOAnnotator.UserControls {
         public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport), new PropertyMetadata(MainImageUriChanged));
         private static void MainImageUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
-                if (e.NewValue is null) {
-                    uc.ViewImageControl.Source = null;
-                } else if (e.NewValue is Uri bitmapUri) {
+                if (e.NewValue is Uri bitmapUri) {
                     BitmapImage bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -56,6 +54,8 @@ namespace COCOAnnotator.UserControls {
                         uc.ViewImageControl.MaxHeight = bitmap.PixelHeight;
                     }
                     uc.UpdateBoundaryBoxes();
+                } else {
+                    uc.ViewImageControl.Source = null;
                 }
             }
         }

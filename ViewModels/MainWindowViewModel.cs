@@ -458,13 +458,13 @@ namespace COCOAnnotator.ViewModels {
             if (!Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase)) return;
             Images.Clear();
             Categories.Clear();
-            (ICollection<ImageRecord> images, ICollection<CategoryRecord> categories) = await SerializationService.DeserializeAsync(filePath);
-            foreach (ImageRecord i in images) Images.Add(i);
+            DatasetRecord dataset = await SerializationService.DeserializeAsync(filePath);
+            foreach (ImageRecord i in dataset.Images) Images.Add(i);
             if (Images.Count > 0) SelectedImage = Images[0];
             RefreshCommonPath();
-            if (categories.Count >= 1) {
+            if (dataset.Categories.Count >= 1) {
                 Categories.Add(CategoryRecord.AllLabel());
-                foreach (CategoryRecord classname in categories) Categories.Add(classname);
+                foreach (CategoryRecord category in dataset.Categories) Categories.Add(category);
                 SelectedCategory = Categories[0];
             }
             RefreshColorOfCategories();
@@ -486,7 +486,8 @@ namespace COCOAnnotator.ViewModels {
             }
         }
         private void InternelAddImage(string[] filePaths) {
-            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => Miscellaneous.ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
+            ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
+            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
                 ImageRecord img = new ImageRecord(s);
                 img.LoadSize();
                 return img;
