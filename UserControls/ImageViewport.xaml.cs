@@ -34,7 +34,8 @@ namespace COCOAnnotator.UserControls {
         private ContentControl? PreviewBbox = null;
 
         #region Dependency Properties
-        public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport), new PropertyMetadata(MainImageUriChanged));
+        public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport),
+            new PropertyMetadata(MainImageUriChanged));
         private static void MainImageUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.NewValue is Uri bitmapUri) {
@@ -64,7 +65,8 @@ namespace COCOAnnotator.UserControls {
             set => SetValue(MainImageUriProperty, value);
         }
 
-        public static readonly DependencyProperty FitViewportProperty = DependencyProperty.Register(nameof(FitViewport), typeof(bool), typeof(ImageViewport), new PropertyMetadata(FitViewportChanged));
+        public static readonly DependencyProperty FitViewportProperty = DependencyProperty.Register(nameof(FitViewport), typeof(bool), typeof(ImageViewport),
+            new PropertyMetadata(FitViewportChanged));
         private static void FitViewportChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc && uc.ViewImageControl.Source is BitmapSource bitmap && e.NewValue is bool FitToViewport) {
                 if (FitToViewport) {
@@ -96,7 +98,8 @@ namespace COCOAnnotator.UserControls {
             set => SetValue(FitViewportProperty, value);
         }
 
-        public static readonly DependencyProperty AnnotationsProperty = DependencyProperty.Register(nameof(Annotations), typeof(IEnumerable<AnnotationRecord>), typeof(ImageViewport), new PropertyMetadata(AnnotationsChanged));
+        public static readonly DependencyProperty AnnotationsProperty = DependencyProperty.Register(nameof(Annotations), typeof(IEnumerable<AnnotationRecord>), typeof(ImageViewport),
+            new PropertyMetadata(AnnotationsChanged));
         private static void AnnotationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.OldValue is INotifyCollectionChanged old) old.CollectionChanged -= uc.AnnotationsCollectionChanged;
@@ -128,7 +131,15 @@ namespace COCOAnnotator.UserControls {
             set => SetValue(AnnotationsProperty, value);
         }
 
-        public static readonly DependencyProperty BboxInsertModeProperty = DependencyProperty.Register(nameof(BboxInsertMode), typeof(bool), typeof(ImageViewport));
+        public static readonly DependencyProperty BboxInsertModeProperty = DependencyProperty.Register(nameof(BboxInsertMode), typeof(bool), typeof(ImageViewport),
+            new PropertyMetadata(BboxInsertModeChanged));
+        private static void BboxInsertModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
+            if (d is ImageViewport uc && e.NewValue is bool bboxInsertMode && !bboxInsertMode) {
+                // 크로스헤어 있으면 삭제
+                Line[] line = uc.ViewImageCanvas.Children.OfType<Line>().ToArray();
+                foreach (Line i in line) uc.ViewImageCanvas.Children.Remove(i);
+            }
+        }
         public bool BboxInsertMode {
             get => (bool)GetValue(BboxInsertModeProperty);
             set => SetValue(BboxInsertModeProperty, value);

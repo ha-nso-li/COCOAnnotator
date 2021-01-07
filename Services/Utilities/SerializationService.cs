@@ -81,8 +81,10 @@ namespace COCOAnnotator.Services.Utilities {
                 } else {
                     foreach (AnnotationRecord annotation in image.Annotations) {
                         await csv.WriteLineAsync(CSVFormat switch {
-                            CSVFormat.LTRB => $"{imagePath},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#},{annotation.Top + annotation.Height:0.#},{annotation.Category}",
-                            CSVFormat.CXCYWH => $"{imagePath},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
+                            CSVFormat.LTRB => $"{imagePath},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#}," +
+                                $"{annotation.Top + annotation.Height:0.#},{annotation.Category}",
+                            CSVFormat.CXCYWH => $"{imagePath},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#}," +
+                                $"{annotation.Height:0.#},{annotation.Category}",
                             CSVFormat.LTWH => $"{imagePath},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
                             _ => throw new ArgumentException(null, nameof(CSVFormat)),
                         }).ConfigureAwait(false);
