@@ -364,9 +364,24 @@ namespace COCOAnnotator.UserControls {
             DragStartPoint = null;
             PreviewBbox = null;
         }
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e) {
+        private void ImageViewport_Unloaded(object sender, RoutedEventArgs e) {
             if (Annotations is INotifyCollectionChanged lbl) {
                 lbl.CollectionChanged -= AnnotationsCollectionChanged;
+            }
+        }
+        private void ViewImageCanvas_MouseWheel(object sender, MouseWheelEventArgs e) {
+            if (FitViewport || BboxInsertMode) return;
+            if (ViewImageControl.Source is BitmapSource bitmap) {
+                double newScale;
+                if (e.Delta > 0) newScale = Math.Clamp(CurrentScale * 1.1, 0.5, 2);
+                else newScale = Math.Clamp(CurrentScale / 1.1, 0.5, 2);
+                double newWidth = bitmap.PixelWidth * newScale;
+                double newHeight = bitmap.PixelHeight * newScale;
+                ViewImageControl.MaxWidth = newWidth;
+                ViewImageControl.MaxHeight = newHeight;
+                ViewGrid.Width = newWidth;
+                ViewGrid.Height = newHeight;
+                RefreshBoundaryBoxes();
             }
         }
         #endregion
