@@ -222,10 +222,10 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표 개수는 4개여야 합니다.");
                             continue;
                         }
-                        double left = annotation.BoundaryBox[0];
-                        double top = annotation.BoundaryBox[1];
-                        double width = annotation.BoundaryBox[2];
-                        double height = annotation.BoundaryBox[3];
+                        float left = annotation.BoundaryBox[0];
+                        float top = annotation.BoundaryBox[1];
+                        float width = annotation.BoundaryBox[2];
+                        float height = annotation.BoundaryBox[3];
                         if (left < 0 || top < 0 || left + width > image.Width || top + height > image.Height) {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표가 이미지의 크기 밖에 있습니다.");
                             continue;

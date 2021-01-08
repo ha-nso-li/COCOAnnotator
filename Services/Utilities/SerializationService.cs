@@ -38,7 +38,7 @@ namespace COCOAnnotator.Services.Utilities {
                         CategoryID = category_id,
                         ImageID = image_id,
                         IsCrowd = 0,
-                        BoundaryBox = new List<double> { j.Left, j.Top, j.Width, j.Height },
+                        BoundaryBox = new List<float> { j.Left, j.Top, j.Width, j.Height },
                         Area = j.Area,
                     });
                 }
@@ -108,10 +108,10 @@ namespace COCOAnnotator.Services.Utilities {
                     if (!images.Contains(image)) images.Add(image);
                 } else {
                     // Positive
-                    if (!double.TryParse(split[1], out double num1)) continue;
-                    if (!double.TryParse(split[2], out double num2)) continue;
-                    if (!double.TryParse(split[3], out double num3)) continue;
-                    if (!double.TryParse(split[4], out double num4)) continue;
+                    if (!float.TryParse(split[1], out float num1)) continue;
+                    if (!float.TryParse(split[2], out float num2)) continue;
+                    if (!float.TryParse(split[3], out float num3)) continue;
+                    if (!float.TryParse(split[4], out float num4)) continue;
                     if (images.TryGetValue(image, out ImageRecord? realImage)) image = realImage;
                     else images.Add(image);
                     CategoryRecord category = CategoryRecord.FromName(categoryName);

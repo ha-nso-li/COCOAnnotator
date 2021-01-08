@@ -16,9 +16,9 @@ namespace COCOAnnotator.Records.COCO {
         public int IsCrowd { get; set; }
 
         [JsonPropertyName("bbox")]
-        public List<double> BoundaryBox { get; set; } = new List<double>();
+        public List<float> BoundaryBox { get; set; } = new List<float>();
 
         [JsonPropertyName("area")]
-        public double Area { get; set; }
+        public float Area { get; set; }
     }
 }

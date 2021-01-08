@@ -173,7 +173,7 @@ namespace COCOAnnotator.UserControls {
         }
         /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
         /// <param name="tag">해당 경계 상자에 해당하는 <seealso cref="AnnotationRecord"/> 객체입니다. 특수 객체일 경우 정수 값을 가집니다.</param>
-        /// <param name="needScale">크기 스케일링 여부입니다. <see langword="true"/>이면 주어진 좌표를 이미지의 화면 크기에 맞게 변환합니다.</param>
+        /// <param name="needScale">크기 변환 여부입니다. 경계 상자 좌표값이 이미지 내 좌표이면 <see langword="true"/>, 컨트롤 내 위치 좌표이면 <see langword="false"/>입니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
         private ContentControl AddBoundaryBox(int zindex, object tag, double left, double top, double width, double height, CategoryRecord category, bool needScale) {
             // 화면의 배율에 맞춰 스케일링
@@ -188,12 +188,11 @@ namespace COCOAnnotator.UserControls {
                 Height = height,
                 Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
                 DataContext = category,
-                ToolTip = category.ToString()
+                Tag = tag,
             };
             Canvas.SetLeft(cont, left);
             Canvas.SetTop(cont, top);
             Panel.SetZIndex(cont, zindex);
-            cont.Tag = tag;
             if (tag is AnnotationRecord) {
                 MenuItem delete = new MenuItem {
                     Header = "삭제",
@@ -203,6 +202,7 @@ namespace COCOAnnotator.UserControls {
                 ContextMenu context = new ContextMenu();
                 context.Items.Add(delete);
                 cont.ContextMenu = context;
+                cont.ToolTip = tag.ToString();
             }
             ViewImageCanvas.Children.Add(cont);
             return cont;
@@ -404,18 +404,18 @@ namespace COCOAnnotator.UserControls {
                 } else if (bbox.Tag is int tag && tag == Tag_UncommittedBbox) {
                     // 추가
                     if (CurrentCategory is not null) {
-                        double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
-                        double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                        double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
-                        double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                        float left = (float)Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
+                        float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
+                        float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                        float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
                         added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentCategory));
                     }
                 } else {
                     // 이동
-                    double left = Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
-                    double top = Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                    double width = Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
-                    double height = Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                    float left = (float)Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
+                    float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
+                    float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                    float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
                     AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == bbox.Tag);
                     if (realBox is not null) {
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);

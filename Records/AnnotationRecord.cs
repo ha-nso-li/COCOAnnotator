@@ -2,15 +2,15 @@ namespace COCOAnnotator.Records {
     public class AnnotationRecord {
         public ImageRecord Image { get; set; }
 
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
+        public float Left { get; set; }
+        public float Top { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
         public CategoryRecord Category { get; set; }
 
-        public double Area => Width * Height;
+        public float Area => Width * Height;
 
-        public AnnotationRecord(ImageRecord Image, double Left, double Top, double Width, double Height, CategoryRecord Category) {
+        public AnnotationRecord(ImageRecord Image, float Left, float Top, float Width, float Height, CategoryRecord Category) {
             this.Image = Image;
             this.Left = Left;
             this.Top = Top;
@@ -19,6 +19,6 @@ namespace COCOAnnotator.Records {
             this.Category = Category;
         }
 
-        public override string ToString() => $"{Category} ({Left},{Top},{Width},{Height})";
+        public override string ToString() => $"{Category} ({Left:0.#},{Top:0.#},{Width:0.#},{Height:0.#})";
     }
 }
