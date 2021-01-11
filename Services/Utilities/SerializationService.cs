@@ -15,7 +15,7 @@ namespace COCOAnnotator.Services.Utilities {
             string basePath = Path.GetDirectoryName(JsonPath) ?? "";
             COCODataset cocodataset = new COCODataset();
             foreach (CategoryRecord i in Categories) {
-                int id = cocodataset.Categories.Count;
+                int id = cocodataset.Categories.Count + 1;
                 cocodataset.Categories.Add(new CategoryCOCO {
                     ID = id,
                     Name = i.Name,
@@ -31,11 +31,12 @@ namespace COCOAnnotator.Services.Utilities {
                     Height = i.Height,
                 });
                 foreach (AnnotationRecord j in i.Annotations) {
-                    int category_id = cocodataset.Categories.FindIndex(s => s.Name == j.Category.Name);
+                    int? category_id = cocodataset.Categories.Find(s => s.Name == j.Category.Name)?.ID;
+                    if (category_id is null) continue;
                     int annotation_id = cocodataset.Annotations.Count;
                     cocodataset.Annotations.Add(new AnnotationCOCO {
                         ID = annotation_id,
-                        CategoryID = category_id,
+                        CategoryID = category_id.Value,
                         ImageID = image_id,
                         IsCrowd = 0,
                         BoundaryBox = new List<float> { j.Left, j.Top, j.Width, j.Height },
