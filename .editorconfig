@@ -1,19 +1,15 @@
 [*]
-charset = utf-8
-
-# C# files
-[*.cs]
 
 #### Core EditorConfig Options ####
 
-# Indentation and spacing
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
 indent_size = 4
 indent_style = space
-tab_width = 4
 
-# New line preferences
-end_of_line = crlf
-insert_final_newline = false
+[*.cs]
 
 #### .NET Coding Conventions ####
 

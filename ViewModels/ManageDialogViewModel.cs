@@ -250,8 +250,9 @@ namespace COCOAnnotator.ViewModels {
                     UnusedImagesForVerify.ExceptWith(ImagesForVerify.Values);
                     if (UnusedImagesForVerify.Count > 20) {
                         AppendLogVerifyDataset($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
-                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => s.FullPath).Take(20).ToArray());
-                        SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>(UnusedImagesForVerify.Select(s => Path.GetDirectoryName(s.FullPath) ?? ""));
+                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => Path.GetRelativePath(CommonParentPath, s.FullPath).Replace('\\', '/')).Take(20).ToArray());
+                        SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>
+                            (UnusedImagesForVerify.Select(s => Path.GetDirectoryName(Path.GetRelativePath(CommonParentPath, s.FullPath)) ?? ""));
                         if (FoldersOfUnusedImages.Count > 10) {
                             AppendLogVerifyDataset($"위 이미지들이 존재하는 폴더는 {FoldersOfUnusedImages.Count}종이 존재합니다. 일부를 출력합니다.");
                             AppendLogVerifyDataset(FoldersOfUnusedImages.Take(10).ToArray());
@@ -261,7 +262,7 @@ namespace COCOAnnotator.ViewModels {
                         }
                     } else if (UnusedImagesForVerify.Count >= 1) {
                         AppendLogVerifyDataset($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다.");
-                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => s.FullPath).ToArray());
+                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => Path.GetRelativePath(CommonParentPath, s.FullPath).Replace('\\', '/')).ToArray());
                     }
                 }
                 AppendLogVerifyDataset(
@@ -470,7 +471,8 @@ namespace COCOAnnotator.ViewModels {
                     AppendLogUndupeDataset("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                 } else {
                     AppendLogUndupeDataset($"분석이 완료되었습니다. 중복된 경계 상자가 {SuppressedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                    SortedSet<string> UniqueImagePaths = new SortedSet<string>(SuppressedImages.Select(s => s.FullPath));
+                    SortedSet<string> UniqueImagePaths = new SortedSet<string>
+                        (SuppressedImages.Select(s => Path.GetRelativePath(Path.GetDirectoryName(filePath) ?? "", s.FullPath).Replace('\\', '/')));
                     if (UniqueImagePaths.Count > 20) {
                         AppendLogUndupeDataset("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
                         AppendLogUndupeDataset(UniqueImagePaths.Take(20).ToArray());
