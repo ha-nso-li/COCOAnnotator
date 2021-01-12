@@ -62,12 +62,12 @@ namespace COCOAnnotator.Services.Utilities {
             byte t = (byte)(v * (1 - (1 - f) * saturation));
 
             return hi switch {
-                0 => Color.FromArgb(255, v, t, p),
-                1 => Color.FromArgb(255, q, v, p),
-                2 => Color.FromArgb(255, p, v, t),
-                3 => Color.FromArgb(255, p, q, v),
-                4 => Color.FromArgb(255, t, p, v),
-                _ => Color.FromArgb(255, v, p, q)
+                0 => Color.FromRgb(v, t, p),
+                1 => Color.FromRgb(q, v, p),
+                2 => Color.FromRgb(p, v, t),
+                3 => Color.FromRgb(p, q, v),
+                4 => Color.FromRgb(t, p, v),
+                _ => Color.FromRgb(v, p, q),
             };
         }
 
@@ -91,16 +91,6 @@ namespace COCOAnnotator.Services.Utilities {
             double gdelta = Math.Pow(color1.G - color2.G, 2);
             double bdelta = Math.Pow(color1.B - color2.B, 2);
             return Math.Sqrt((512 + rmean) * rdelta / 256 + 4 * gdelta + (767 - rmean) * bdelta / 256);
-        }
-
-        /// <summary>
-        /// <paramref name="fromPath"/>에서 <paramref name="toPath"/>로 가는 유닉스 호환 상대 경로를 찾습니다.
-        /// </summary>
-        public static string GetRelativePath(string fromPath, string toPath) {
-            string result = Path.GetRelativePath(fromPath, toPath);
-            // 유닉스 호환 상대 경로로 변경
-            result = result.Replace('\\', '/');
-            return result;
         }
 
         /// <summary>

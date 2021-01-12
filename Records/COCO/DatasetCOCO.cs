@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace COCOAnnotator.Records.COCO {
-    public class COCODataset {
+    public class DatasetCOCO {
         [JsonPropertyName("images")]
         public List<ImageCOCO> Images { get; set; } = new List<ImageCOCO>();
 

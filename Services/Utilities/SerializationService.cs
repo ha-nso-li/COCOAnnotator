@@ -13,28 +13,28 @@ namespace COCOAnnotator.Services.Utilities {
         /// <param name="JsonPath">직렬화된 JSON 파일이 쓰일 경로입니다.</param>
         public static async Task SerializeAsync(string JsonPath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             string basePath = Path.GetDirectoryName(JsonPath) ?? "";
-            COCODataset cocodataset = new COCODataset();
+            DatasetCOCO datasetcoco = new DatasetCOCO();
             foreach (CategoryRecord i in Categories) {
-                int id = cocodataset.Categories.Count + 1;
-                cocodataset.Categories.Add(new CategoryCOCO {
+                int id = datasetcoco.Categories.Count + 1;
+                datasetcoco.Categories.Add(new CategoryCOCO {
                     ID = id,
                     Name = i.Name,
                     SuperCategory = i.Name,
                 });
             }
             foreach (ImageRecord i in Images) {
-                int image_id = cocodataset.Images.Count;
-                cocodataset.Images.Add(new ImageCOCO {
+                int image_id = datasetcoco.Images.Count;
+                datasetcoco.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = Miscellaneous.GetRelativePath(basePath, i.FullPath),
+                    FileName = Path.GetRelativePath(basePath, i.FullPath).Replace('\\', '/'),
                     Width = i.Width,
                     Height = i.Height,
                 });
                 foreach (AnnotationRecord j in i.Annotations) {
-                    int? category_id = cocodataset.Categories.Find(s => s.Name == j.Category.Name)?.ID;
+                    int? category_id = datasetcoco.Categories.Find(s => s.Name == j.Category.Name)?.ID;
                     if (category_id is null) continue;
-                    int annotation_id = cocodataset.Annotations.Count;
-                    cocodataset.Annotations.Add(new AnnotationCOCO {
+                    int annotation_id = datasetcoco.Annotations.Count;
+                    datasetcoco.Annotations.Add(new AnnotationCOCO {
                         ID = annotation_id,
                         CategoryID = category_id.Value,
                         ImageID = image_id,
@@ -45,22 +45,22 @@ namespace COCOAnnotator.Services.Utilities {
                 }
             }
             using FileStream fileStream = File.Create(JsonPath);
-            await JsonSerializer.SerializeAsync(fileStream, cocodataset).ConfigureAwait(false);
+            await JsonSerializer.SerializeAsync(fileStream, datasetcoco).ConfigureAwait(false);
         }
 
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
-        /// <param name="BasePath">레이블 파일이 위치한 경로입니다. 이미지의 절대 경로, 상대 경로 간 변환에 사용됩니다.</param>
+        /// <param name="JsonPath">역직렬화할 JSON 파일이 존재하는 경로입니다.</param>
         public static async Task<DatasetRecord> DeserializeAsync(string JsonPath) {
-            COCODataset cocodataset = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
+            DatasetCOCO datasetcoco = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
-            foreach (ImageCOCO i in cocodataset.Images) {
+            foreach (ImageCOCO i in datasetcoco.Images) {
                 if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(Path.GetFullPath(i.FileName, Path.GetDirectoryName(JsonPath) ?? "").Replace('/', '\\'), i.Width, i.Height));
             }
-            foreach (CategoryCOCO i in cocodataset.Categories) {
+            foreach (CategoryCOCO i in datasetcoco.Categories) {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
             }
-            foreach (AnnotationCOCO i in cocodataset.Annotations) {
+            foreach (AnnotationCOCO i in datasetcoco.Annotations) {
                 if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBox.Count >= 4) {
                     image.Annotations.Add(new AnnotationRecord(image, i.BoundaryBox[0], i.BoundaryBox[1], i.BoundaryBox[2], i.BoundaryBox[3], category));
                 }
@@ -68,15 +68,15 @@ namespace COCOAnnotator.Services.Utilities {
             return new DatasetRecord(images.Values, categories.Values);
         }
 
-        public static async Task<COCODataset> DeserializeRawAsync(string JsonPath) {
+        public static async Task<DatasetCOCO> DeserializeRawAsync(string JsonPath) {
             using FileStream fileStream = File.OpenRead(JsonPath);
-            return await JsonSerializer.DeserializeAsync<COCODataset>(fileStream).ConfigureAwait(false) ?? new COCODataset();
+            return await JsonSerializer.DeserializeAsync<DatasetCOCO>(fileStream).ConfigureAwait(false) ?? new DatasetCOCO();
         }
 
         public static async Task SerializeCSVAsync(string CSVPath, IEnumerable<ImageRecord> Images, CSVFormat CSVFormat) {
             using StreamWriter csv = File.CreateText(CSVPath);
             foreach (ImageRecord image in Images) {
-                string imagePath = Miscellaneous.GetRelativePath(Path.GetDirectoryName(CSVPath) ?? "", image.FullPath);
+                string imagePath = Path.GetRelativePath(Path.GetDirectoryName(CSVPath) ?? "", image.FullPath).Replace('\\', '/');
                 if (image.Annotations.Count == 0) {
                     await csv.WriteLineAsync($"{imagePath},,,,,").ConfigureAwait(false);
                 } else {

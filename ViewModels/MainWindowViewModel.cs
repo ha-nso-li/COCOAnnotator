@@ -451,7 +451,7 @@ namespace COCOAnnotator.ViewModels {
         private void RefreshCommonPath() {
             string CommonPath = Images.GetCommonParentPath();
             foreach (ImageRecord i in Images) {
-                i.DisplayFilename = Miscellaneous.GetRelativePath(CommonPath, i.FullPath);
+                i.DisplayFilename = Path.GetRelativePath(CommonPath, i.FullPath).Replace('\\', '/');
             }
         }
         private async void InternalLoadDataset(string filePath) {

@@ -138,14 +138,14 @@ namespace COCOAnnotator.ViewModels {
                 CategoriesForVerify.Clear();
                 AnnotationsCountByCategory.Clear();
                 UnusedImagesForVerify.Clear();
-                COCODataset cocodataset = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
+                DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
                 AppendLogVerifyDataset($"\"{filePath}\"의 분석을 시작합니다.");
-                int total = cocodataset.Images.Count + cocodataset.Annotations.Count + cocodataset.Categories.Count;
+                int total = datasetcoco.Images.Count + datasetcoco.Annotations.Count + datasetcoco.Categories.Count;
                 {
                     SortedSet<int> DuplicatedIDAlreadyDetected = new SortedSet<int>();
                     SortedSet<ImageRecord> ImageRecords = new SortedSet<ImageRecord>();
                     SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
-                    foreach ((int idx, ImageCOCO image) in cocodataset.Images.Select((s, idx) => (idx, s))) {
+                    foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (int)((double)idx / total * 100);
                         string fullPath = Path.GetFullPath(image.FileName, Path.GetDirectoryName(filePath) ?? "");
@@ -186,9 +186,9 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<CategoryRecord> CategoryRecords = new SortedSet<CategoryRecord>();
                     SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
-                    foreach ((int idx, CategoryCOCO category) in cocodataset.Categories.Select((s, idx) => (idx, s))) {
+                    foreach ((int idx, CategoryCOCO category) in datasetcoco.Categories.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyDataset = (int)((double)(cocodataset.Images.Count + idx) / total * 100);
+                        ProgressVerifyDataset = (int)((double)(datasetcoco.Images.Count + idx) / total * 100);
                         if (CategoriesForVerify.ContainsKey(category.ID)) {
                             if (DuplicationAlreadyDetected.Add(category.ID)) AppendLogVerifyDataset($"ID가 {category.ID}인 분류가 2개 이상 발견되었습니다.");
                             continue;
@@ -204,8 +204,8 @@ namespace COCOAnnotator.ViewModels {
                 {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
-                    foreach ((int idx, AnnotationCOCO annotation) in cocodataset.Annotations.Select((s, idx) => (idx, s))) {
-                        ProgressVerifyDataset = (int)((double)(cocodataset.Images.Count + cocodataset.Categories.Count + idx) / total * 100);
+                    foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Select((s, idx) => (idx, s))) {
+                        ProgressVerifyDataset = (int)((double)(datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) / total * 100);
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
                             if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
                             continue;
