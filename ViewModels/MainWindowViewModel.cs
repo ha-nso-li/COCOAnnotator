@@ -79,10 +79,10 @@ namespace COCOAnnotator.ViewModels {
                             // 그림 업데이트
                             MainImageUri = value.FullPath.ToUri();
                             UpdateBoundaryBoxes();
-                        } catch (FileNotFoundException) {
+                        } catch (IOException) {
                             CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({value.FullPath})");
                         } catch (NotSupportedException) {
-                            CommonDialogService.MessageBox($"이미지 파일이 손상되어 읽어올 수 없습니다. ({value.FullPath})");
+                            CommonDialogService.MessageBox($"이미지 파일을 읽어올 수 없습니다. 손상되었거나 지원하는 포맷이 아닙니다. ({value.FullPath})");
                         }
                     }
                 }
@@ -188,14 +188,13 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdSaveDataset { get; }
         private async void SaveDataset() {
-            if (CommonDialogService.SaveJsonFileDialog(out string filePath)) {
-                await SerializationService.SerializeAsync(filePath, Images, Categories.Where(s => !s.All));
-                Title = $"COCO 데이터셋 편집기 - {filePath}";
-            }
+            string jsonPath = await SerializationService.SerializeAsync(Images, Categories.Where(s => !s.All));
+            Title = $"COCO 데이터셋 편집기 - {jsonPath}";
+            CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
         }
         public ICommand CmdCloseDataset { get; }
         private void CloseDataset() {
-            bool res = CommonDialogService.MessageBoxOKCancel("현재 열려있는 레이블을 모두 초기화합니다");
+            bool res = CommonDialogService.MessageBoxOKCancel("열려있는 데이터셋을 닫습니다. 저장하지 않은 변경 사항이 손실됩니다.");
             if (!res) return;
             Images.Clear();
             Categories.Clear();
@@ -455,7 +454,10 @@ namespace COCOAnnotator.ViewModels {
             }
         }
         private async void InternalLoadDataset(string filePath) {
-            if (!Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase)) return;
+            if (!SerializationService.IsJsonPathValid(filePath)) {
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                return;
+            }
             Images.Clear();
             Categories.Clear();
             DatasetRecord dataset = await SerializationService.DeserializeAsync(filePath);
