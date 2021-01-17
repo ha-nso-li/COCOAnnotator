@@ -14,7 +14,7 @@ namespace COCOAnnotator.Services.Utilities {
         public static async Task<string> SerializeAsync(IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             string CommonParentPath = Images.GetCommonParentPath();
             string InstanceName = Path.GetFileName(CommonParentPath);
-            string JsonPath = Path.GetFullPath(@$"..\annotations\instances_{InstanceName}.json", CommonParentPath);
+            string JsonPath = Path.GetFullPath($@"..\annotations\instances_{InstanceName}.json", CommonParentPath);
             DatasetCOCO datasetcoco = new DatasetCOCO();
             foreach (CategoryRecord i in Categories) {
                 int id = datasetcoco.Categories.Count + 1;
@@ -48,7 +48,6 @@ namespace COCOAnnotator.Services.Utilities {
             }
             using FileStream fileStream = File.Create(JsonPath);
             await JsonSerializer.SerializeAsync(fileStream, datasetcoco).ConfigureAwait(false);
-            System.Diagnostics.Debug.WriteLine(JsonPath);
             return JsonPath;
         }
 
@@ -97,7 +96,7 @@ namespace COCOAnnotator.Services.Utilities {
         public static async Task<DatasetRecord> DeserializeAsync(string JsonPath) {
             string JsonFileName = Path.GetFileNameWithoutExtension(JsonPath);
             string InstanceName = JsonFileName[(JsonFileName.IndexOf('_')+1)..];
-            string BasePath = Path.GetFullPath(@$"..\..\{InstanceName}", JsonPath);
+            string BasePath = Path.GetFullPath($@"..\..\{InstanceName}", JsonPath);
             DatasetCOCO datasetcoco = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
@@ -112,7 +111,7 @@ namespace COCOAnnotator.Services.Utilities {
                     image.Annotations.Add(new AnnotationRecord(image, i.BoundaryBox[0], i.BoundaryBox[1], i.BoundaryBox[2], i.BoundaryBox[3], category));
                 }
             }
-            return new DatasetRecord(images.Values, categories.Values);
+            return new DatasetRecord(BasePath, images.Values, categories.Values);
         }
 
         public static async Task<DatasetCOCO> DeserializeRawAsync(string JsonPath) {
@@ -173,7 +172,7 @@ namespace COCOAnnotator.Services.Utilities {
                     });
                 }
             }
-            return new DatasetRecord(images, categories);
+            return new DatasetRecord(images.GetCommonParentPath(), images, categories);
         }
 
         public static bool IsJsonPathValid(string JsonPath) {
@@ -185,7 +184,6 @@ namespace COCOAnnotator.Services.Utilities {
             if (JsonDirInfo is null) return false;
             if (JsonDirInfo.Parent is null) return false;
             return true;
-
         }
     }
 }

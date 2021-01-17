@@ -7,7 +7,6 @@ using COCOAnnotator.Views;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -22,6 +21,7 @@ namespace COCOAnnotator.ViewModels {
         #region 생성자
         public MainWindowViewModel() {
             Title = "COCO 데이터셋 편집기";
+            ImagesRoot = "";
 
             ShortcutSaveBbox = Key.S;
             ShortcutImageUp = Key.E;
@@ -54,14 +54,15 @@ namespace COCOAnnotator.ViewModels {
             CmdDeleteCategory = new DelegateCommand(DeleteCategory);
             CmdImageUp = new DelegateCommand(ImageUp);
             CmdImageDown = new DelegateCommand(ImageDown);
-            CmdAddImage = new DelegateCommand(AddImage);
-            CmdDeleteImage = new DelegateCommand<IList>(DeleteImage);
+            CmdSetImagesRoot = new DelegateCommand(SetImagesRoot);
+            CmdRefreshImagesList = new DelegateCommand(RefreshImagesList);
             CmdDeleteNegativeImage = new DelegateCommand(DeleteNegativeImage);
-            CmdImagesListDrop = new DelegateCommand<DragEventArgs>(ImagesListDrop);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
             CmdWindowGotFocus = new DelegateCommand<RoutedEventArgs>(WindowGotFocus);
         }
         #endregion
+
+        private string ImagesRoot;
 
         #region 바인딩되는 프로퍼티
         public FastObservableCollection<ImageRecord> Images { get; }
@@ -199,6 +200,7 @@ namespace COCOAnnotator.ViewModels {
             Images.Clear();
             Categories.Clear();
             Title = "COCO 데이터셋 편집기";
+            ImagesRoot = "";
         }
         public ICommand CmdManageDataset { get; }
         private void ManageDataset() {
@@ -342,7 +344,6 @@ namespace COCOAnnotator.ViewModels {
                     SelectedCategory = Categories.First(s => s.All);
                 }
                 RefreshColorOfCategories();
-                RefreshCommonPath();
                 break;
             }
             case null:
@@ -366,45 +367,27 @@ namespace COCOAnnotator.ViewModels {
             SelectedImage = Images[target];
             EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
         }
-        public ICommand CmdAddImage { get; }
-        private void AddImage() {
-            if (CommonDialogService.OpenImagesDialog(out string[] filePaths)) {
-                InternelAddImage(filePaths);
+        public ICommand CmdSetImagesRoot { get; }
+        private void SetImagesRoot() {
+            if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
+                ImagesRoot = folderPath;
+                InternalRefreshImagesList();
+                RefreshDisplayFilename();
             }
         }
-        public ICommand CmdDeleteImage { get; }
-        private void DeleteImage(IList SelectedItems) {
-            bool? res = CommonDialogService.MessageBoxYesNoCancel("현재 선택한 이미지에 포함된 모든 경계 상자를 지웁니다. 해당 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
-            switch (res) {
-            case true: {
-                SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                foreach (ImageRecord i in SelectedImages) i.Annotations.Clear();
-                VisibleAnnotations.Clear();
-                break;
-            }
-            case false: {
-                SortedSet<ImageRecord> SelectedImages = new SortedSet<ImageRecord>(SelectedItems.OfType<ImageRecord>());
-                if (SelectedImages.Count == 0) return;
-                Images.RemoveAll(s => SelectedImages.Contains(s));
-                RefreshCommonPath();
-                break;
-            }
-            case null:
-                return;
-            }
+        public ICommand CmdRefreshImagesList { get; }
+        private void RefreshImagesList() {
+            InternalRefreshImagesList();
+            RefreshDisplayFilename();
         }
         public ICommand CmdDeleteNegativeImage { get; }
         private void DeleteNegativeImage() {
-            bool res = CommonDialogService.MessageBoxOKCancel("현재 레이블 파일에 포함된 모든 음성 샘플 이미지를 지웁니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("현재 데이터셋에 포함된 모든 음성 이미지를 지웁니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
-            Images.RemoveAll(s => s.Annotations.Count == 0);
-            RefreshCommonPath();
-        }
-        public ICommand CmdImagesListDrop { get; }
-        private void ImagesListDrop(DragEventArgs e) {
-            if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length >= 1) {
-                InternelAddImage(files);
+            foreach (ImageRecord i in Images.Where(s => s.Annotations.Count == 0)) {
+                File.Delete(i.FullPath);
             }
+            RefreshImagesList();
         }
         #endregion
 
@@ -447,10 +430,9 @@ namespace COCOAnnotator.ViewModels {
             else visibleLabels = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
             foreach (AnnotationRecord i in visibleLabels) VisibleAnnotations.Add(i);
         }
-        private void RefreshCommonPath() {
-            string CommonPath = Images.GetCommonParentPath();
+        private void RefreshDisplayFilename() {
             foreach (ImageRecord i in Images) {
-                i.DisplayFilename = Path.GetRelativePath(CommonPath, i.FullPath).Replace('\\', '/');
+                i.DisplayFilename = Path.GetRelativePath(ImagesRoot, i.FullPath).Replace('\\', '/');
             }
         }
         private async void InternalLoadDataset(string filePath) {
@@ -463,14 +445,15 @@ namespace COCOAnnotator.ViewModels {
             DatasetRecord dataset = await SerializationService.DeserializeAsync(filePath);
             foreach (ImageRecord i in dataset.Images) Images.Add(i);
             if (Images.Count > 0) SelectedImage = Images[0];
-            RefreshCommonPath();
+            ImagesRoot = dataset.BasePath;
+            RefreshDisplayFilename();
+            Title = $"COCO 데이터셋 편집기 - {filePath}";
             if (dataset.Categories.Count >= 1) {
                 Categories.Add(CategoryRecord.AllLabel());
                 foreach (CategoryRecord category in dataset.Categories) Categories.Add(category);
                 SelectedCategory = Categories[0];
             }
             RefreshColorOfCategories();
-            Title = $"COCO 데이터셋 편집기 - {filePath}";
         }
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
@@ -487,19 +470,21 @@ namespace COCOAnnotator.ViewModels {
                 break;
             }
         }
-        private void InternelAddImage(string[] filePaths) {
+        public void InternalRefreshImagesList() {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
-            SortedSet<ImageRecord> add = new SortedSet<ImageRecord>(filePaths.Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => {
-                ImageRecord img = new ImageRecord(s);
-                img.LoadSize();
-                return img;
-            }));
-            int ImagesCountToAdd = add.Count;
-            add.ExceptWith(Images);
-            foreach (ImageRecord img in add) Images.Add(img);
-            int ImagesCountAdded = add.Count;
-            if (ImagesCountToAdd != ImagesCountAdded) CommonDialogService.MessageBox("선택한 이미지 중 일부가 이미 데이터셋에 포함되어 있습니다. 해당 이미지를 무시했습니다.");
-            if (ImagesCountAdded > 0) RefreshCommonPath();
+            SortedSet<ImageRecord> currentImagesInFolder = new SortedSet<ImageRecord>(
+                Directory.EnumerateFiles(ImagesRoot, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
+            );
+            int removedCount = Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
+            currentImagesInFolder.ExceptWith(Images);
+            int addedCount = currentImagesInFolder.Count;
+            Images.AddRange(currentImagesInFolder.Select(s => { s.LoadSize(); return s; }));
+            if (removedCount > 0) {
+                if (addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");
+                else CommonDialogService.MessageBox($"{removedCount}개의 이미지가 제거되었습니다.");
+            } else {
+                if (addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되었습니다.");
+            }
         }
         #endregion
     }

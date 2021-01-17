@@ -80,15 +80,10 @@
             <Button DockPanel.Dock="Bottom" TabIndex="20" Content="아래로 (D)" Command="{Binding CmdImageDown}" />
             <Button DockPanel.Dock="Bottom" TabIndex="19" Content="위로 (E)" Command="{Binding CmdImageUp}" />
             <Button DockPanel.Dock="Bottom" TabIndex="18" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="선택 이미지 삭제" Command="{Binding CmdDeleteImage}" CommandParameter="{Binding SelectedItems, ElementName=ViewImagesList}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="16" Content="새 이미지 추가" Command="{Binding CmdAddImage}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="이미지 목록 새로고침" Command="{Binding CmdRefreshImagesList}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="16" Content="이미지 폴더 지정" Command="{Binding CmdSetImagesRoot}" />
             <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="15" IsChecked="{Binding FitViewport}" Content="이미지 창에 맞추기 (F)" HorizontalAlignment="Center" />
-            <ListView x:Name="ViewImagesList" TabIndex="14" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}" AllowDrop="True">
-                <b:Interaction.Triggers>
-                    <b:EventTrigger EventName="Drop">
-                        <prism:InvokeCommandAction Command="{Binding CmdImagesListDrop}" />
-                    </b:EventTrigger>
-                </b:Interaction.Triggers>
+            <ListView x:Name="ViewImagesList" TabIndex="14" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayFilename}" Foreground="{Binding ColorBrush}" />

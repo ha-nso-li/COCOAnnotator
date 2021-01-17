@@ -2,6 +2,8 @@ using System.Collections.Generic;
 
 namespace COCOAnnotator.Records {
     public class DatasetRecord {
+        public string BasePath { get; }
+
         public ICollection<ImageRecord> Images { get; }
         public ICollection<CategoryRecord> Categories { get; }
 
@@ -10,7 +12,8 @@ namespace COCOAnnotator.Records {
             Categories = this.Categories;
         }
 
-        public DatasetRecord(ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) {
+        public DatasetRecord(string BasePath, ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) {
+            this.BasePath = BasePath;
             this.Images = Images;
             this.Categories = Categories;
         }

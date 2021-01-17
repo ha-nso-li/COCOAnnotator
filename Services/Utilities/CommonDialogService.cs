@@ -55,16 +55,6 @@ namespace COCOAnnotator.Services.Utilities {
             return result;
         }
 
-        public static bool OpenImagesDialog(out string[] FilePaths) {
-            OpenFileDialog dlg = new OpenFileDialog {
-                Filter = $"이미지 파일|{string.Join(";", Miscellaneous.ApprovedImageExtensions.Select(s => $"*{s}"))}",
-                Multiselect = true,
-            };
-            bool result = dlg.ShowDialog().GetValueOrDefault();
-            FilePaths = dlg.FileNames;
-            return result;
-        }
-
         public static bool OpenFolderDialog(out string FolderPath) {
             WinForm.FolderBrowserDialog dlg = new WinForm.FolderBrowserDialog();
             WinForm.DialogResult result = dlg.ShowDialog();
