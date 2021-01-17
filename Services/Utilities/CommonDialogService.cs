@@ -1,7 +1,6 @@
 using Microsoft.Win32;
-using System.Linq;
-using System.Windows;
 using WinForm = System.Windows.Forms;
+using WPF = System.Windows;
 
 namespace COCOAnnotator.Services.Utilities {
     public static class CommonDialogService {
@@ -63,19 +62,19 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static void MessageBox(string Message) {
-            System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OK, MessageBoxImage.Warning);
+            WPF.MessageBox.Show(Message, "", WPF.MessageBoxButton.OK, WPF.MessageBoxImage.Warning);
         }
 
         public static bool MessageBoxOKCancel(string Message) {
-            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.OKCancel, MessageBoxImage.Information);
-            return result == MessageBoxResult.OK;
+            WPF.MessageBoxResult result = WPF.MessageBox.Show(Message, "", WPF.MessageBoxButton.OKCancel, WPF.MessageBoxImage.Information);
+            return result == WPF.MessageBoxResult.OK;
         }
 
         public static bool? MessageBoxYesNoCancel(string Message) {
-            MessageBoxResult result = System.Windows.MessageBox.Show(Message, "", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            WPF.MessageBoxResult result = WPF.MessageBox.Show(Message, "", WPF.MessageBoxButton.YesNoCancel, WPF.MessageBoxImage.Question);
             return result switch {
-                MessageBoxResult.Yes => true,
-                MessageBoxResult.No => false,
+                WPF.MessageBoxResult.Yes => true,
+                WPF.MessageBoxResult.No => false,
                 _ => null,
             };
         }

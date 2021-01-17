@@ -19,9 +19,11 @@ namespace COCOAnnotator.ViewModels {
             set => SetProperty(ref _Color, value);
         }
 
-        public override void OnDialogClosed() {
+        public override async void OnDialogClosed() {
+            base.OnDialogClosed();
+
             SettingService.Color = Color;
-            SettingService.Write();
+            await SettingService.Write().ConfigureAwait(false);
         }
 
         public ICommand CmdClose { get; }

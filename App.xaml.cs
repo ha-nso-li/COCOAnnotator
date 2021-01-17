@@ -10,8 +10,8 @@ namespace COCOAnnotator {
             return Container.Resolve<MainWindow>();
         }
 
-        protected override void RegisterTypes(IContainerRegistry containerRegistry) {
-            containerRegistry.RegisterInstance(SettingService.Read());
+        protected override async void RegisterTypes(IContainerRegistry containerRegistry) {
+            containerRegistry.RegisterInstance(await SettingService.Read().ConfigureAwait(false));
             containerRegistry.RegisterDialog<SettingDialog>();
             containerRegistry.RegisterDialog<ManageDialog>();
         }

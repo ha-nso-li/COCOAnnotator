@@ -1,7 +1,7 @@
 using COCOAnnotator.Records.Enums;
-using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services {
     public class SettingService {
@@ -19,21 +19,21 @@ namespace COCOAnnotator.Services {
         private bool NeedSave = false;
         private const string SettingPath = "setting.json";
 
-        public static SettingService Read() {
+        public static async Task<SettingService> Read() {
             if (File.Exists(SettingPath)) {
+                using FileStream fileStream = File.OpenRead(SettingPath);
                 byte[] bytes = File.ReadAllBytes(SettingPath);
-                ReadOnlySpan<byte> JsonSpan = new ReadOnlySpan<byte>(bytes);
-                return JsonSerializer.Deserialize<SettingService>(JsonSpan) ?? new SettingService();
+                return await JsonSerializer.DeserializeAsync<SettingService>(fileStream).ConfigureAwait(false) ?? new SettingService();
             } else {
                 return new SettingService();
             }
         }
 
-        public void Write() {
+        public async Task Write() {
             if (!NeedSave) return;
-            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(this);
-            File.WriteAllBytes(SettingPath, bytes);
             NeedSave = false;
+            using FileStream fileStream = File.Create(SettingPath);
+            await JsonSerializer.SerializeAsync(fileStream, this).ConfigureAwait(false);
         }
     }
 }
