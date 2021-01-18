@@ -22,8 +22,8 @@
             <ColumnDefinition Width="150" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <uc:ImageViewport x:Name="ViewViewport" MainImageUri="{Binding MainImageUri}" FitViewport="{Binding FitViewport}" Annotations="{Binding VisibleAnnotations}" BboxInsertMode="{Binding BboxInsertMode}"
-                CurrentCategory="{Binding SelectedCategory}" AllowDrop="True" Margin="2">
+        <uc:ImageViewport x:Name="ViewViewport" MainImageUri="{Binding MainImageUri}" FitViewport="{Binding FitViewport}" Annotations="{Binding VisibleAnnotations}"
+                BboxInsertMode="{Binding BboxInsertMode}" CurrentCategory="{Binding SelectedCategory}" AllowDrop="True" Margin="2">
             <b:Interaction.Triggers>
                 <b:EventTrigger EventName="Drop">
                     <prism:InvokeCommandAction Command="{Binding CmdViewportDrop}" />
@@ -51,15 +51,16 @@
             <Button DockPanel.Dock="Top" TabIndex="2" Content="데이터셋 닫기" Command="{Binding CmdCloseDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="3" Content="데이터셋 관리" Command="{Binding CmdManageDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="4" Content="설정" Command="{Binding CmdSetting}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="13" Content="아래로 (A)" Command="{Binding CmdCategoryDown}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="12" Content="위로 (Q)" Command="{Binding CmdCategoryUp}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="11" Content="경계 상자 저장 (S)" Command="{Binding CmdTryCommitBbox}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="14" Content="아래로 (A)" Command="{Binding CmdCategoryDown}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="13" Content="위로 (Q)" Command="{Binding CmdCategoryUp}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="12" Content="경계 상자 저장 (S)" Command="{Binding CmdTryCommitBbox}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="11" Content="분류 위치 변경" Command="{Binding CmdMoveCategory}" CommandParameter="{Binding SelectedItems, ElementName=ViewCategoriesList}" />
             <Button DockPanel.Dock="Bottom" TabIndex="10" Content="선택 분류 삭제" Command="{Binding CmdDeleteCategory}" />
             <Button DockPanel.Dock="Bottom" TabIndex="9" Content="분류 이름 변경" Command="{Binding CmdRenameCategory}" />
             <Button DockPanel.Dock="Bottom" TabIndex="8" Content="새 분류 추가" Command="{Binding CmdAddCategory}" />
             <TextBox Height="22" DockPanel.Dock="Bottom" TabIndex="7" Text="{Binding CategoryNameToAdd}" />
             <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="6" IsChecked="{Binding BboxInsertMode}" Content="경계 상자 추가 (W)" HorizontalAlignment="Center" />
-            <ListView DockPanel.Dock="Bottom" TabIndex="5" x:Name="ViewCategoriesList" SelectionMode="Single" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
+            <ListView DockPanel.Dock="Bottom" TabIndex="5" x:Name="ViewCategoriesList" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Name}" Foreground="{Binding ColorBrush}" />
@@ -77,13 +78,13 @@
                     <Setter Property="Margin" Value="0,0,2,2" />
                 </Style>
             </DockPanel.Resources>
-            <Button DockPanel.Dock="Bottom" TabIndex="20" Content="아래로 (D)" Command="{Binding CmdImageDown}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="19" Content="위로 (E)" Command="{Binding CmdImageUp}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="18" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="이미지 목록 새로고침" Command="{Binding CmdRefreshImagesList}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="16" Content="이미지 폴더 지정" Command="{Binding CmdSetImagesRoot}" />
-            <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="15" IsChecked="{Binding FitViewport}" Content="이미지 창에 맞추기 (F)" HorizontalAlignment="Center" />
-            <ListView x:Name="ViewImagesList" TabIndex="14" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
+            <Button DockPanel.Dock="Bottom" TabIndex="21" Content="아래로 (D)" Command="{Binding CmdImageDown}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="20" Content="위로 (E)" Command="{Binding CmdImageUp}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="19" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="18" Content="이미지 목록 새로고침" Command="{Binding CmdRefreshImagesList}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="이미지 폴더 지정" Command="{Binding CmdSetImagesRoot}" />
+            <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="16" IsChecked="{Binding FitViewport}" Content="이미지 창에 맞추기 (F)" HorizontalAlignment="Center" />
+            <ListView x:Name="ViewImagesList" TabIndex="15" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding DisplayFilename}" Foreground="{Binding ColorBrush}" />

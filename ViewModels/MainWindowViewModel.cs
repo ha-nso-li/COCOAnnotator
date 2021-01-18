@@ -7,6 +7,7 @@ using COCOAnnotator.Views;
 using Prism.Commands;
 using Prism.Services.Dialogs;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -51,6 +52,7 @@ namespace COCOAnnotator.ViewModels {
             CmdCategoryDown = new DelegateCommand(CategoryDown);
             CmdAddCategory = new DelegateCommand(AddCategory);
             CmdRenameCategory = new DelegateCommand(RenameCategory);
+            CmdMoveCategory = new DelegateCommand<IList>(MoveCategory);
             CmdDeleteCategory = new DelegateCommand(DeleteCategory);
             CmdImageUp = new DelegateCommand(ImageUp);
             CmdImageDown = new DelegateCommand(ImageDown);
@@ -262,16 +264,8 @@ namespace COCOAnnotator.ViewModels {
             if (string.IsNullOrEmpty(CategoryNameToAdd)) return;
             CategoryRecord add = CategoryRecord.FromName(CategoryNameToAdd);
             if (Categories.Contains(add)) return;
-            if (Categories.Count == 0) Categories.Add(CategoryRecord.AllLabel());
-            bool addedflag = false;
-            for (int i = 0; i < Categories.Count; i++) {
-                if (Categories[i] >= add) {
-                    Categories.Insert(i, add);
-                    addedflag = true;
-                    break;
-                }
-            }
-            if (!addedflag) Categories.Add(add);
+            if (Categories.Count == 0) Categories.Add(CategoryRecord.AsAll());
+            Categories.Add(add);
             RefreshColorOfCategories();
         }
         public ICommand CmdRenameCategory { get; }
@@ -284,31 +278,32 @@ namespace COCOAnnotator.ViewModels {
                 rename = CategoryRecord.FromName(CategoryNameToAdd);
                 CategoryRecord OldCategory = SelectedCategory;
                 Categories.Remove(OldCategory);
-                bool addedflag = false;
-                for (int i = 0; i < Categories.Count; i++) {
-                    if (Categories[i] >= rename) {
-                        Categories.Insert(i, rename);
-                        addedflag = true;
-                        break;
-                    }
-                }
-                if (!addedflag) Categories.Add(rename);
-                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) {
-                    label.Category = rename;
-                }
+                Categories.Add(rename);
+                foreach (AnnotationRecord annotation in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
                 SelectedCategory = rename;
             } else {
                 bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 다른 분류 {CategoryNameToAdd}로 병합합니다.");
                 if (!res) return;
                 CategoryRecord OldCategory = SelectedCategory;
                 Categories.Remove(OldCategory);
-                foreach (AnnotationRecord label in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) {
-                    label.Category = rename;
-                }
+                foreach (AnnotationRecord annotation in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
                 SelectedCategory = rename;
             }
             RefreshColorOfCategories();
             UpdateBoundaryBoxes();
+        }
+        public ICommand CmdMoveCategory { get; }
+        private void MoveCategory(IList SelectedItems) {
+            CategoryRecord[] SelectedCategories = SelectedItems.OfType<CategoryRecord>().ToArray();
+            if (SelectedCategories.Length != 2 || SelectedCategories.Any(s => s.All)) {
+                CommonDialogService.MessageBox("분류 2개를 선택하여야 합니다.");
+                return;
+            }
+            CommonDialogService.MessageBox("선택한 두 분류의 위치를 교환합니다.");
+            int idx1 = Categories.IndexOf(SelectedCategories[0]);
+            int idx2 = Categories.IndexOf(SelectedCategories[1]);
+            Categories.Move(idx1, idx2);
+            RefreshColorOfCategories();
         }
         public ICommand CmdDeleteCategory { get; }
         private void DeleteCategory() {
@@ -425,10 +420,10 @@ namespace COCOAnnotator.ViewModels {
         private void UpdateBoundaryBoxes() {
             if (SelectedCategory is null || SelectedImage is null) return;
             VisibleAnnotations.Clear();
-            IEnumerable<AnnotationRecord> visibleLabels;
-            if (SelectedCategory.All) visibleLabels = SelectedImage.Annotations;
-            else visibleLabels = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
-            foreach (AnnotationRecord i in visibleLabels) VisibleAnnotations.Add(i);
+            IEnumerable<AnnotationRecord> visibleAnnotations;
+            if (SelectedCategory.All) visibleAnnotations = SelectedImage.Annotations;
+            else visibleAnnotations = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
+            foreach (AnnotationRecord i in visibleAnnotations) VisibleAnnotations.Add(i);
         }
         private void RefreshDisplayFilename() {
             foreach (ImageRecord i in Images) {
@@ -449,7 +444,7 @@ namespace COCOAnnotator.ViewModels {
             RefreshDisplayFilename();
             Title = $"COCO 데이터셋 편집기 - {filePath}";
             if (dataset.Categories.Count >= 1) {
-                Categories.Add(CategoryRecord.AllLabel());
+                Categories.Add(CategoryRecord.AsAll());
                 foreach (CategoryRecord category in dataset.Categories) Categories.Add(category);
                 SelectedCategory = Categories[0];
             }
