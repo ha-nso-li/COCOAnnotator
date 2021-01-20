@@ -34,16 +34,6 @@ namespace COCOAnnotator.Services.Utilities {
             return result;
         }
 
-        public static bool SaveCSVFileDialog(out string FilePath) {
-            SaveFileDialog dlg = new SaveFileDialog {
-                Filter = "CSV 파일|*.csv",
-                DefaultExt = ".csv"
-            };
-            bool result = dlg.ShowDialog().GetValueOrDefault();
-            FilePath = dlg.FileName;
-            return result;
-        }
-
         public static bool SaveJsonFileDialog(out string FilePath) {
             SaveFileDialog dlg = new SaveFileDialog {
                 Filter = "JSON 파일|*.json",

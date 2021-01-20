@@ -32,7 +32,6 @@ namespace COCOAnnotator.ViewModels {
             _CSVFormat = CSVFormat.LTRB;
 
             CmdVerifyDataset = new DelegateCommand(VerifyDataset);
-            CmdDeleteUnusedImages = new DelegateCommand(DeleteUnusedImages);
             CmdExportVerifiedDataset = new DelegateCommand(ExportVerifiedDataset);
             CmdAddFileForUnionDataset = new DelegateCommand(AddFileForUnionDataset);
             CmdAddFolderForUnionDataset = new DelegateCommand(AddFolderForUnionDataset);
@@ -51,7 +50,6 @@ namespace COCOAnnotator.ViewModels {
         private readonly SortedDictionary<CategoryRecord, int> AnnotationsCountByCategory = new SortedDictionary<CategoryRecord, int>();
         private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
         private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
-        private readonly SortedSet<ImageRecord> UnusedImagesForVerify = new SortedSet<ImageRecord>();
         private readonly List<ImageRecord> ImagesForUndupe = new List<ImageRecord>();
         private readonly List<CategoryRecord> CategoriesForUndupe = new List<CategoryRecord>();
         #endregion
@@ -128,6 +126,10 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdVerifyDataset { get; }
         private void VerifyDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string filePath)) return;
+            if (!SerializationService.IsJsonPathValid(filePath)) {
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                return;
+            }
             bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요. 이미지 크기 검사시 데이터셋 크기에 따라 시간이 오래 걸릴 수 있습니다.");
             if (res is null) return;
             bool imageSizeCheck = res.Value;
@@ -137,9 +139,17 @@ namespace COCOAnnotator.ViewModels {
                 ImagesForVerify.Clear();
                 CategoriesForVerify.Clear();
                 AnnotationsCountByCategory.Clear();
-                UnusedImagesForVerify.Clear();
                 DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string instanceName = fileName[(fileName.IndexOf('_')+1)..];
+                string basePath = Path.GetFullPath($@"..\..\{instanceName}", filePath);
                 AppendLogVerifyDataset($"\"{filePath}\"의 분석을 시작합니다.");
+                if (!Directory.Exists(basePath)) {
+                    AppendLogVerifyDataset($"이미지 폴더인 \"{basePath}\"가 존재하지 않습니다.");
+                    return;
+                } else {
+                    AppendLogVerifyDataset($"이미지 폴더는 \"{basePath}\"입니다.");
+                }
                 int total = datasetcoco.Images.Count + datasetcoco.Annotations.Count + datasetcoco.Categories.Count;
                 {
                     SortedSet<int> DuplicatedIDAlreadyDetected = new SortedSet<int>();
@@ -148,7 +158,7 @@ namespace COCOAnnotator.ViewModels {
                     foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (int)((double)idx / total * 100);
-                        string fullPath = Path.GetFullPath(image.FileName, Path.GetDirectoryName(filePath) ?? "");
+                        string fullPath = Path.GetFullPath(image.FileName, basePath);
                         if (ImagesForVerify.ContainsKey(image.ID)) {
                             if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyDataset($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
                             continue;
@@ -239,32 +249,6 @@ namespace COCOAnnotator.ViewModels {
                         AnnotationsCountByCategory[category]++;
                     }
                 }
-
-                // 사용되지 않은 이미지 검색
-                if (ImagesForVerify.Count > 0) {
-                    string CommonParentPath = ImagesForVerify.Values.GetCommonParentPath();
-                    AppendLogVerifyDataset("", $"사용된 이미지의 공통 부모 경로는 \"{CommonParentPath}\"입니다.");
-                    ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
-                    UnusedImagesForVerify.UnionWith(Directory.EnumerateFiles(CommonParentPath, "*.*", SearchOption.AllDirectories)
-                        .Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s)));
-                    UnusedImagesForVerify.ExceptWith(ImagesForVerify.Values);
-                    if (UnusedImagesForVerify.Count > 20) {
-                        AppendLogVerifyDataset($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다. 일부를 출력합니다.");
-                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => Path.GetRelativePath(CommonParentPath, s.FullPath).Replace('\\', '/')).Take(20).ToArray());
-                        SortedSet<string> FoldersOfUnusedImages = new SortedSet<string>
-                            (UnusedImagesForVerify.Select(s => Path.GetDirectoryName(Path.GetRelativePath(CommonParentPath, s.FullPath)) ?? ""));
-                        if (FoldersOfUnusedImages.Count > 10) {
-                            AppendLogVerifyDataset($"위 이미지들이 존재하는 폴더는 {FoldersOfUnusedImages.Count}종이 존재합니다. 일부를 출력합니다.");
-                            AppendLogVerifyDataset(FoldersOfUnusedImages.Take(10).ToArray());
-                        } else {
-                            AppendLogVerifyDataset($"위 이미지들이 존재하는 폴더는 {FoldersOfUnusedImages.Count}종이 존재합니다.");
-                            AppendLogVerifyDataset(FoldersOfUnusedImages.ToArray());
-                        }
-                    } else if (UnusedImagesForVerify.Count >= 1) {
-                        AppendLogVerifyDataset($"경로내에 존재하지만 유효한 어노테이션에 사용되고 있지 않은 {UnusedImagesForVerify.Count}개의 이미지가 있습니다.");
-                        AppendLogVerifyDataset(UnusedImagesForVerify.Select(s => Path.GetRelativePath(CommonParentPath, s.FullPath).Replace('\\', '/')).ToArray());
-                    }
-                }
                 AppendLogVerifyDataset(
                     "",
                     "분석이 완료되었습니다.",
@@ -274,23 +258,11 @@ namespace COCOAnnotator.ViewModels {
                     $"총 이미지 개수: {ImagesForVerify.Count}",
                     ""
                 );
-                AppendLogVerifyDataset(AnnotationsCountByCategory.Select(s =>
-                    $"분류 이름: {s.Key}, 어노테이션 개수: {s.Value}, 어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Category == s.Key))}").ToArray());
+                AppendLogVerifyDataset(CategoriesForVerify.Select(s =>
+                    $"분류 이름: {s.Value}, 어노테이션 개수: {ImagesForVerify.Values.SelectMany(t => t.Annotations).Count(t => t.Category == s.Value)}, "
+                    + $"어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Category == s.Value))}").ToArray());
                 ProgressVerifyDataset = 100;
             });
-        }
-        public ICommand CmdDeleteUnusedImages { get; }
-        private void DeleteUnusedImages() {
-            if (UnusedImagesForVerify.Count == 0) {
-                CommonDialogService.MessageBox("데이터셋 파일을 분석한 적 없거나 이미지 폴더 내에 데이터셋에 사용중이지 않은 이미지가 없습니다.");
-                return;
-            }
-            bool res = CommonDialogService.MessageBoxOKCancel("이미지 폴더 내에 있지만 데이터셋에 사용중이지 않은 이미지를 디스크에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.");
-            if (!res) return;
-            foreach (ImageRecord i in UnusedImagesForVerify) {
-                File.Delete(i.FullPath);
-            }
-            UnusedImagesForVerify.Clear();
         }
         public ICommand CmdExportVerifiedDataset { get; }
         private async void ExportVerifiedDataset() {
@@ -298,10 +270,8 @@ namespace COCOAnnotator.ViewModels {
                 CommonDialogService.MessageBox("데이터셋을 분석한 적 없거나 분석한 데이터셋 내에 유효한 내용이 없습니다.");
                 return;
             }
-            if (!CommonDialogService.SaveCSVFileDialog(out string filePath)) return;
-            bool res = CommonDialogService.MessageBoxOKCancel("분석한 데이터셋의 내용 중 유효한 내용만 내보냅니다.");
-            if (!res) return;
-            await SerializationService.SerializeAsync(filePath, ImagesForVerify.Values, CategoriesForVerify.Values).ConfigureAwait(false);
+            if (!CommonDialogService.MessageBoxOKCancel("분석한 데이터셋의 내용 중 유효한 내용만 남깁니다.")) return;
+            await SerializationService.SerializeAsync(ImagesForVerify.Values, CategoriesForVerify.Values).ConfigureAwait(false);
         }
         #endregion
 
