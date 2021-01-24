@@ -22,7 +22,6 @@ namespace COCOAnnotator.ViewModels {
         #region 생성자
         public MainWindowViewModel() {
             Title = "COCO 데이터셋 편집기";
-            ImagesRoot = "";
 
             ShortcutSaveBbox = Key.S;
             ShortcutImageUp = Key.E;
@@ -35,8 +34,7 @@ namespace COCOAnnotator.ViewModels {
             _BboxInsertMode = false;
             _FitViewport = true;
             _CategoryNameToAdd = "";
-            Images = new FastObservableCollection<ImageRecord>();
-            Categories = new ObservableCollection<CategoryRecord>();
+            _Dataset = new DatasetRecord();
             VisibleAnnotations = new ObservableCollection<AnnotationRecord>();
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
@@ -56,7 +54,7 @@ namespace COCOAnnotator.ViewModels {
             CmdDeleteCategory = new DelegateCommand(DeleteCategory);
             CmdImageUp = new DelegateCommand(ImageUp);
             CmdImageDown = new DelegateCommand(ImageDown);
-            CmdSetImagesRoot = new DelegateCommand(SetImagesRoot);
+            CmdSetBasePath = new DelegateCommand(SetBasePath);
             CmdRefreshImagesList = new DelegateCommand(RefreshImagesList);
             CmdDeleteNegativeImage = new DelegateCommand(DeleteNegativeImage);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
@@ -64,10 +62,12 @@ namespace COCOAnnotator.ViewModels {
         }
         #endregion
 
-        private string ImagesRoot;
-
         #region 바인딩되는 프로퍼티
-        public FastObservableCollection<ImageRecord> Images { get; }
+        private DatasetRecord _Dataset;
+        public DatasetRecord Dataset {
+            get => _Dataset;
+            set => SetProperty(ref _Dataset, value);
+        }
         private ImageRecord? _SelectedImage;
         public ImageRecord? SelectedImage {
             get => _SelectedImage;
@@ -78,7 +78,7 @@ namespace COCOAnnotator.ViewModels {
                         BboxInsertMode = false;
                         MainImageUri = null;
                     } else {
-                        string imageFullPath = Path.Combine(ImagesRoot, value.Path);
+                        string imageFullPath = Path.Combine(Dataset.BasePath, value.Path);
                         try {
                             // 그림 업데이트
                             MainImageUri = imageFullPath.ToUri();
@@ -92,7 +92,6 @@ namespace COCOAnnotator.ViewModels {
                 }
             }
         }
-        public ObservableCollection<CategoryRecord> Categories { get; }
         private CategoryRecord? _SelectedCategory;
         public CategoryRecord? SelectedCategory {
             get => _SelectedCategory;
@@ -192,7 +191,7 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdSaveDataset { get; }
         private async void SaveDataset() {
-            string jsonPath = await SerializationService.SerializeAsync(Images, Categories.Where(s => !s.All));
+            string jsonPath = await SerializationService.SerializeAsync(Dataset);
             Title = $"COCO 데이터셋 편집기 - {jsonPath}";
             CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
         }
@@ -200,10 +199,10 @@ namespace COCOAnnotator.ViewModels {
         private void CloseDataset() {
             bool res = CommonDialogService.MessageBoxOKCancel("열려있는 데이터셋을 닫습니다. 저장하지 않은 변경 사항이 손실됩니다.");
             if (!res) return;
-            Images.Clear();
-            Categories.Clear();
+            Dataset.Images.Clear();
+            Dataset.Categories.Clear();
+            Dataset.BasePath = "";
             Title = "COCO 데이터셋 편집기";
-            ImagesRoot = "";
         }
         public ICommand CmdManageDataset { get; }
         private void ManageDataset() {
@@ -248,46 +247,46 @@ namespace COCOAnnotator.ViewModels {
         #region 분류 수정
         public ICommand CmdCategoryUp { get; }
         private void CategoryUp() {
-            if (Categories.Count == 0) return;
-            int target = SelectedCategory is null ? Categories.Count - 1 : Math.Max(0, Categories.IndexOf(SelectedCategory) - 1);
-            SelectedCategory = Categories[target];
-            EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Categories[target]);
+            if (Dataset.Categories.Count == 0) return;
+            int target = SelectedCategory is null ? Dataset.Categories.Count - 1 : Math.Max(0, Dataset.Categories.IndexOf(SelectedCategory) - 1);
+            SelectedCategory = Dataset.Categories[target];
+            EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Dataset.Categories[target]);
         }
         public ICommand CmdCategoryDown { get; }
         private void CategoryDown() {
-            if (Categories.Count == 0) return;
-            int target = SelectedCategory is null ? 0 : Math.Min(Categories.Count - 1, Categories.IndexOf(SelectedCategory) + 1);
-            SelectedCategory = Categories[target];
-            EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Categories[target]);
+            if (Dataset.Categories.Count == 0) return;
+            int target = SelectedCategory is null ? 0 : Math.Min(Dataset.Categories.Count - 1, Dataset.Categories.IndexOf(SelectedCategory) + 1);
+            SelectedCategory = Dataset.Categories[target];
+            EventAggregator.GetEvent<ScrollViewCategoriesList>().Publish(Dataset.Categories[target]);
         }
         public ICommand CmdAddCategory { get; }
         private void AddCategory() {
             if (string.IsNullOrEmpty(CategoryNameToAdd)) return;
             CategoryRecord add = CategoryRecord.FromName(CategoryNameToAdd);
-            if (Categories.Contains(add)) return;
-            if (Categories.Count == 0) Categories.Add(CategoryRecord.AsAll());
-            Categories.Add(add);
+            if (Dataset.Categories.Contains(add)) return;
+            if (Dataset.Categories.Count == 0) Dataset.Categories.Add(CategoryRecord.AsAll());
+            Dataset.Categories.Add(add);
             RefreshColorOfCategories();
         }
         public ICommand CmdRenameCategory { get; }
         private void RenameCategory() {
             if (SelectedCategory is null || SelectedCategory.All || string.IsNullOrEmpty(CategoryNameToAdd) || CategoryNameToAdd == SelectedCategory.Name) return;
-            CategoryRecord? rename = Categories.FirstOrDefault(s => s.Name == CategoryNameToAdd);
+            CategoryRecord? rename = Dataset.Categories.FirstOrDefault(s => s.Name == CategoryNameToAdd);
             if (rename is null) {
                 bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 {CategoryNameToAdd}으로 변경합니다.");
                 if (!res) return;
                 rename = CategoryRecord.FromName(CategoryNameToAdd);
                 CategoryRecord OldCategory = SelectedCategory;
-                Categories.Remove(OldCategory);
-                Categories.Add(rename);
-                foreach (AnnotationRecord annotation in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
+                Dataset.Categories.Remove(OldCategory);
+                Dataset.Categories.Add(rename);
+                foreach (AnnotationRecord annotation in Dataset.Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
                 SelectedCategory = rename;
             } else {
                 bool res = CommonDialogService.MessageBoxOKCancel($"분류가 {SelectedCategory}인 모든 경계 상자를 다른 분류 {CategoryNameToAdd}로 병합합니다.");
                 if (!res) return;
                 CategoryRecord OldCategory = SelectedCategory;
-                Categories.Remove(OldCategory);
-                foreach (AnnotationRecord annotation in Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
+                Dataset.Categories.Remove(OldCategory);
+                foreach (AnnotationRecord annotation in Dataset.Images.SelectMany(s => s.Annotations).Where(s => s.Category == OldCategory)) annotation.Category = rename;
                 SelectedCategory = rename;
             }
             RefreshColorOfCategories();
@@ -301,9 +300,9 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             CommonDialogService.MessageBox("선택한 두 분류의 위치를 교환합니다.");
-            int idx1 = Categories.IndexOf(SelectedCategories[0]);
-            int idx2 = Categories.IndexOf(SelectedCategories[1]);
-            Categories.Move(idx1, idx2);
+            int idx1 = Dataset.Categories.IndexOf(SelectedCategories[0]);
+            int idx2 = Dataset.Categories.IndexOf(SelectedCategories[1]);
+            Dataset.Categories.Move(idx1, idx2);
             RefreshColorOfCategories();
         }
         public ICommand CmdDeleteCategory { get; }
@@ -312,32 +311,32 @@ namespace COCOAnnotator.ViewModels {
             bool? res = CommonDialogService.MessageBoxYesNoCancel($"포함한 경계 상자의 분류가 {SelectedCategory} 뿐인 이미지를 음성 샘플로 남기기를 원하시면 '예', 아예 삭제하길 원하시면 '아니요'를 선택해 주세요.");
             switch (res) {
             case true: {
-                foreach (ImageRecord i in Images) {
+                foreach (ImageRecord i in Dataset.Images) {
                     i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                 }
-                if (Categories.Count <= 2) {
-                    Categories.Clear();
+                if (Dataset.Categories.Count <= 2) {
+                    Dataset.Categories.Clear();
                     SelectedCategory = null;
                 } else {
-                    Categories.Remove(SelectedCategory);
-                    SelectedCategory = Categories.First(s => s.All);
+                    Dataset.Categories.Remove(SelectedCategory);
+                    SelectedCategory = Dataset.Categories.First(s => s.All);
                 }
                 RefreshColorOfCategories();
                 break;
             }
             case false: {
                 SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>();
-                foreach (ImageRecord i in Images) {
+                foreach (ImageRecord i in Dataset.Images) {
                     int deletedCount = i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                     if (deletedCount > 0) ImagesFromDeletedClass.Add(i);
                 }
-                Images.RemoveAll(s => s.Annotations.Count == 0 && ImagesFromDeletedClass.Contains(s));
-                if (Categories.Count <= 2) {
-                    Categories.Clear();
+                Dataset.Images.RemoveAll(s => s.Annotations.Count == 0 && ImagesFromDeletedClass.Contains(s));
+                if (Dataset.Categories.Count <= 2) {
+                    Dataset.Categories.Clear();
                     SelectedCategory = null;
                 } else {
-                    Categories.Remove(SelectedCategory);
-                    SelectedCategory = Categories.First(s => s.All);
+                    Dataset.Categories.Remove(SelectedCategory);
+                    SelectedCategory = Dataset.Categories.First(s => s.All);
                 }
                 RefreshColorOfCategories();
                 break;
@@ -351,22 +350,22 @@ namespace COCOAnnotator.ViewModels {
         #region 이미지 수정
         public ICommand CmdImageUp { get; }
         private void ImageUp() {
-            if (Images.Count == 0) return;
-            int target = SelectedImage is null ? Images.Count - 1 : Math.Max(0, Images.IndexOf(SelectedImage) - 1);
-            SelectedImage = Images[target];
-            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
+            if (Dataset.Images.Count == 0) return;
+            int target = SelectedImage is null ? Dataset.Images.Count - 1 : Math.Max(0, Dataset.Images.IndexOf(SelectedImage) - 1);
+            SelectedImage = Dataset.Images[target];
+            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Dataset.Images[target]);
         }
         public ICommand CmdImageDown { get; }
         private void ImageDown() {
-            if (Images.Count == 0) return;
-            int target = SelectedImage is null ? 0 : Math.Min(Images.Count - 1, Images.IndexOf(SelectedImage) + 1);
-            SelectedImage = Images[target];
-            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Images[target]);
+            if (Dataset.Images.Count == 0) return;
+            int target = SelectedImage is null ? 0 : Math.Min(Dataset.Images.Count - 1, Dataset.Images.IndexOf(SelectedImage) + 1);
+            SelectedImage = Dataset.Images[target];
+            EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Dataset.Images[target]);
         }
-        public ICommand CmdSetImagesRoot { get; }
-        private void SetImagesRoot() {
+        public ICommand CmdSetBasePath { get; }
+        private void SetBasePath() {
             if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
-                ImagesRoot = folderPath;
+                Dataset.BasePath = folderPath;
                 InternalRefreshImagesList();
             }
         }
@@ -378,8 +377,8 @@ namespace COCOAnnotator.ViewModels {
         private void DeleteNegativeImage() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 데이터셋에 포함된 모든 음성 이미지를 지웁니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
-            foreach (ImageRecord i in Images.Where(s => s.Annotations.Count == 0)) {
-                string imageFullPath = Path.Combine(ImagesRoot, i.Path);
+            foreach (ImageRecord i in Dataset.Images.Where(s => s.Annotations.Count == 0)) {
+                string imageFullPath = Path.Combine(Dataset.BasePath, i.Path);
                 File.Delete(imageFullPath);
             }
             InternalRefreshImagesList();
@@ -430,31 +429,26 @@ namespace COCOAnnotator.ViewModels {
                 CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
                 return;
             }
-            Images.Clear();
-            Categories.Clear();
-            DatasetRecord dataset = await SerializationService.DeserializeAsync(filePath);
-            foreach (ImageRecord i in dataset.Images) Images.Add(i);
-            if (Images.Count > 0) SelectedImage = Images[0];
-            ImagesRoot = dataset.BasePath;
-            Title = $"COCO 데이터셋 편집기 - {filePath}";
-            if (dataset.Categories.Count >= 1) {
-                Categories.Add(CategoryRecord.AsAll());
-                foreach (CategoryRecord category in dataset.Categories) Categories.Add(category);
-                SelectedCategory = Categories[0];
+            Dataset = await SerializationService.DeserializeAsync(filePath);
+            if (Dataset.Categories.Count > 0) {
+                Dataset.Categories.Insert(0, CategoryRecord.AsAll());
+                SelectedCategory = Dataset.Categories[0];
             }
+            if (Dataset.Images.Count > 0) SelectedImage = Dataset.Images[0];
+            Title = $"COCO 데이터셋 편집기 - {filePath}";
             RefreshColorOfCategories();
         }
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
             case SettingColors.Fixed:
-                Color[] colors = Miscellaneous.GenerateFixedColor(Categories.Count - 1).ToArray();
+                Color[] colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Count - 1).ToArray();
                 // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
-                for (int i = 1; i < Categories.Count; i++) Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
+                for (int i = 1; i < Dataset.Categories.Count; i++) Dataset.Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
                 break;
             case SettingColors.Random:
-                IEnumerable<Color> ExistingColors = Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
-                for (int i = 1; i < Categories.Count; i++) {
-                    if (Categories[i].ColorBrush.Color == Colors.Transparent) Categories[i].ColorBrush = new SolidColorBrush(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
+                IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
+                for (int i = 1; i < Dataset.Categories.Count; i++) {
+                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) Dataset.Categories[i].ColorBrush = new SolidColorBrush(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
                 }
                 break;
             }
@@ -462,13 +456,13 @@ namespace COCOAnnotator.ViewModels {
         public void InternalRefreshImagesList() {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
             SortedSet<ImageRecord> currentImagesInFolder = new SortedSet<ImageRecord>(
-                Directory.EnumerateFiles(ImagesRoot, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
-                    .Select(s => new ImageRecord(Path.GetRelativePath(ImagesRoot, s).Replace('\\', '/')))
+                Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
+                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).Replace('\\', '/')))
             );
-            int removedCount = Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
-            currentImagesInFolder.ExceptWith(Images);
+            int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
+            currentImagesInFolder.ExceptWith(Dataset.Images);
             int addedCount = currentImagesInFolder.Count;
-            Images.AddRange(currentImagesInFolder.Select(s => { s.LoadSize(ImagesRoot); return s; }));
+            Dataset.Images.AddRange(currentImagesInFolder.Select(s => { s.LoadSize(Dataset.BasePath); return s; }));
             if (removedCount > 0) {
                 if (addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");
                 else CommonDialogService.MessageBox($"{removedCount}개의 이미지가 제거되었습니다.");

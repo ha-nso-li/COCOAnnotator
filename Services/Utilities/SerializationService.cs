@@ -4,6 +4,7 @@ using COCOAnnotator.Records.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -11,12 +12,11 @@ namespace COCOAnnotator.Services.Utilities {
     public static class SerializationService {
         /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
         /// <returns>직렬화된 JSON 파일의 경로입니다.</returns>
-        public static async Task<string> SerializeAsync(IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
-            string CommonParentPath = Images.GetCommonParentPath();
-            string InstanceName = Path.GetFileName(CommonParentPath);
-            string JsonPath = Path.GetFullPath($@"..\annotations\instances_{InstanceName}.json", CommonParentPath);
+        public static async Task<string> SerializeAsync(DatasetRecord Dataset) {
+            string InstanceName = Path.GetFileName(Dataset.BasePath);
+            string JsonPath = Path.GetFullPath($@"..\annotations\instances_{InstanceName}.json", Dataset.BasePath);
             DatasetCOCO datasetcoco = new DatasetCOCO();
-            foreach (CategoryRecord i in Categories) {
+            foreach (CategoryRecord i in Dataset.Categories.Where(s => !s.All)) {
                 int id = datasetcoco.Categories.Count + 1;
                 datasetcoco.Categories.Add(new CategoryCOCO {
                     ID = id,
@@ -24,7 +24,7 @@ namespace COCOAnnotator.Services.Utilities {
                     SuperCategory = i.Name,
                 });
             }
-            foreach (ImageRecord i in Images) {
+            foreach (ImageRecord i in Dataset.Images) {
                 int image_id = datasetcoco.Images.Count;
                 datasetcoco.Images.Add(new ImageCOCO {
                     ID = image_id,

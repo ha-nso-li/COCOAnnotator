@@ -21,8 +21,7 @@ namespace COCOAnnotator.Records {
         public ImageRecord(string Path) : this(Path, 0, 0) { }
 
         public ImageRecord(string Path, int Width, int Height) {
-            this.Path = Path;
-            _Path = "";
+            _Path = Path;
             Annotations = new FastObservableCollection<AnnotationRecord>();
             Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;

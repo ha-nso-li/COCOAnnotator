@@ -60,7 +60,7 @@
             <Button DockPanel.Dock="Bottom" TabIndex="8" Content="새 분류 추가" Command="{Binding CmdAddCategory}" />
             <TextBox Height="22" DockPanel.Dock="Bottom" TabIndex="7" Text="{Binding CategoryNameToAdd}" />
             <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="6" IsChecked="{Binding BboxInsertMode}" Content="경계 상자 추가 (W)" HorizontalAlignment="Center" />
-            <ListView DockPanel.Dock="Bottom" TabIndex="5" x:Name="ViewCategoriesList" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}">
+            <ListView DockPanel.Dock="Bottom" TabIndex="5" x:Name="ViewCategoriesList" ItemsSource="{Binding Dataset.Categories}" SelectedItem="{Binding SelectedCategory}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Name}" Foreground="{Binding ColorBrush}" />
@@ -82,9 +82,9 @@
             <Button DockPanel.Dock="Bottom" TabIndex="20" Content="위로 (E)" Command="{Binding CmdImageUp}" />
             <Button DockPanel.Dock="Bottom" TabIndex="19" Content="음성 이미지 삭제" Command="{Binding CmdDeleteNegativeImage}" />
             <Button DockPanel.Dock="Bottom" TabIndex="18" Content="이미지 목록 새로고침" Command="{Binding CmdRefreshImagesList}" />
-            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="이미지 폴더 지정" Command="{Binding CmdSetImagesRoot}" />
+            <Button DockPanel.Dock="Bottom" TabIndex="17" Content="이미지 폴더 지정" Command="{Binding CmdSetBasePath}" />
             <CheckBox DockPanel.Dock="Bottom" Margin="0,3,0,3" TabIndex="16" IsChecked="{Binding FitViewport}" Content="이미지 창에 맞추기 (F)" HorizontalAlignment="Center" />
-            <ListView x:Name="ViewImagesList" TabIndex="15" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
+            <ListView x:Name="ViewImagesList" TabIndex="15" ItemsSource="{Binding Dataset.Images}" SelectedItem="{Binding SelectedImage}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Path}" Foreground="{Binding ColorBrush}" />

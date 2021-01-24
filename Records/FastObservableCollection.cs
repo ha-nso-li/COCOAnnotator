@@ -41,5 +41,9 @@ namespace COCOAnnotator.Records {
 
             return removedCount;
         }
+
+        public FastObservableCollection() : base() { }
+        public FastObservableCollection(IEnumerable<T> collection) : base(collection) { }
+        public FastObservableCollection(List<T> list) : base(list) { }
     }
 }

@@ -47,6 +47,7 @@ namespace COCOAnnotator.ViewModels {
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
+        private string BasePathForVerify = "";
         private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
         private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
         private readonly List<ImageRecord> ImagesForUndupe = new List<ImageRecord>();
@@ -140,13 +141,13 @@ namespace COCOAnnotator.ViewModels {
                 DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string instanceName = fileName[(fileName.IndexOf('_')+1)..];
-                string basePath = Path.GetFullPath($@"..\..\{instanceName}", filePath);
+                BasePathForVerify = Path.GetFullPath($@"..\..\{instanceName}", filePath);
                 AppendLogVerifyDataset($"\"{filePath}\"의 분석을 시작합니다.");
-                if (!Directory.Exists(basePath)) {
-                    AppendLogVerifyDataset($"이미지 폴더인 \"{basePath}\"가 존재하지 않습니다.");
+                if (!Directory.Exists(BasePathForVerify)) {
+                    AppendLogVerifyDataset($"이미지 폴더인 \"{BasePathForVerify}\"가 존재하지 않습니다.");
                     return;
                 } else {
-                    AppendLogVerifyDataset($"이미지 폴더는 \"{basePath}\"입니다.");
+                    AppendLogVerifyDataset($"이미지 폴더는 \"{BasePathForVerify}\"입니다.");
                 }
                 int total = datasetcoco.Images.Count + datasetcoco.Annotations.Count + datasetcoco.Categories.Count;
                 {
@@ -156,7 +157,7 @@ namespace COCOAnnotator.ViewModels {
                     foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (int)((double)idx / total * 100);
-                        string fullPath = Path.GetFullPath(image.FileName, basePath);
+                        string fullPath = Path.GetFullPath(image.FileName, BasePathForVerify);
                         if (ImagesForVerify.ContainsKey(image.ID)) {
                             if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyDataset($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
                             continue;
@@ -172,7 +173,7 @@ namespace COCOAnnotator.ViewModels {
                         }
                         if (imageSizeCheck) {
                             try {
-                                if (imageRecord.LoadSize(basePath)) {
+                                if (imageRecord.LoadSize(BasePathForVerify)) {
                                     AppendLogVerifyDataset($"ID가 {image.ID}인 이미지의 크기가 실제 크기와 다릅니다.");
                                     continue;
                                 }
@@ -271,7 +272,7 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             if (!CommonDialogService.MessageBoxOKCancel("분석한 데이터셋의 내용 중 유효한 내용만 남깁니다.")) return;
-            await SerializationService.SerializeAsync(ImagesForVerify.Values, CategoriesForVerify.Values).ConfigureAwait(false);
+            await SerializationService.SerializeAsync(new DatasetRecord(BasePathForVerify, ImagesForVerify.Values, CategoriesForVerify.Values)).ConfigureAwait(false);
         }
         #endregion
 
@@ -337,7 +338,7 @@ namespace COCOAnnotator.ViewModels {
                 Images.UnionWith(dataset.Images);
             }
             // 저장
-            await SerializationService.SerializeAsync(Images, Categories).ConfigureAwait(false);
+            await SerializationService.SerializeAsync(new DatasetRecord(outBasePath, Images, Categories)).ConfigureAwait(false);
         }
         #endregion
 
