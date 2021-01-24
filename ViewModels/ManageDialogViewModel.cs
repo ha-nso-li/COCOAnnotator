@@ -47,7 +47,6 @@ namespace COCOAnnotator.ViewModels {
         #endregion
 
         #region 필드, 바인딩되지 않는 프로퍼티
-        private readonly SortedDictionary<CategoryRecord, int> AnnotationsCountByCategory = new SortedDictionary<CategoryRecord, int>();
         private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
         private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
         private readonly List<ImageRecord> ImagesForUndupe = new List<ImageRecord>();
@@ -138,7 +137,6 @@ namespace COCOAnnotator.ViewModels {
             Task.Run(async () => {
                 ImagesForVerify.Clear();
                 CategoriesForVerify.Clear();
-                AnnotationsCountByCategory.Clear();
                 DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string instanceName = fileName[(fileName.IndexOf('_')+1)..];
@@ -167,14 +165,14 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {image.ID}인 이미지가 주어진 경로에 존재하지 않습니다.");
                             continue;
                         }
-                        ImageRecord imageRecord = new ImageRecord(fullPath, image.Width, image.Height);
+                        ImageRecord imageRecord = new ImageRecord(image.FileName, image.Width, image.Height);
                         if (ImageRecords.Contains(imageRecord)) {
                             if (DuplicatedImageAlreadyDetected.Add(imageRecord)) AppendLogVerifyDataset($"다음 경로의 이미지가 2번 이상 사용되었습니다: {fullPath}");
                             continue;
                         }
                         if (imageSizeCheck) {
                             try {
-                                if (imageRecord.LoadSize()) {
+                                if (imageRecord.LoadSize(basePath)) {
                                     AppendLogVerifyDataset($"ID가 {image.ID}인 이미지의 크기가 실제 크기와 다릅니다.");
                                     continue;
                                 }
@@ -245,8 +243,6 @@ namespace COCOAnnotator.ViewModels {
                             continue;
                         }
                         image.Annotations.Add(new AnnotationRecord(image, left, top, width, height, category));
-                        if (!AnnotationsCountByCategory.ContainsKey(category)) AnnotationsCountByCategory[category] = 0;
-                        AnnotationsCountByCategory[category]++;
                     }
                 }
                 AppendLogVerifyDataset(
@@ -258,9 +254,13 @@ namespace COCOAnnotator.ViewModels {
                     $"총 이미지 개수: {ImagesForVerify.Count}",
                     ""
                 );
-                AppendLogVerifyDataset(CategoriesForVerify.Select(s =>
-                    $"분류 이름: {s.Value}, 어노테이션 개수: {ImagesForVerify.Values.SelectMany(t => t.Annotations).Count(t => t.Category == s.Value)}, "
-                    + $"어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Category == s.Value))}").ToArray());
+                AppendLogVerifyDataset(
+                    CategoriesForVerify.Select(s =>
+                        $"분류 이름: {s.Value}, " +
+                        $"어노테이션 개수: {ImagesForVerify.Values.SelectMany(t => t.Annotations).Count(t => t.Category == s.Value)}, " +
+                        $"어노테이션이 있는 이미지 개수: {ImagesForVerify.Values.Count(t => t.Annotations.Any(u => u.Category == s.Value))}"
+                    ).ToArray()
+                );
                 ProgressVerifyDataset = 100;
             });
         }
@@ -279,22 +279,29 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdAddFileForUnionDataset { get; }
         private void AddFileForUnionDataset() {
             if (CommonDialogService.OpenJsonFilesDialog(out string[] filePaths)) {
-                foreach (string FileName in filePaths) {
-                    FilesForUnionDataset.Add(FileName);
+                bool error = false;
+                foreach (string filePath in filePaths) {
+                    if (SerializationService.IsJsonPathValid(filePath)) FilesForUnionDataset.Add(filePath);
+                    else error = true;
                 }
+                if (error) CommonDialogService.MessageBox("일부 데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
             }
         }
         public ICommand CmdAddFolderForUnionDataset { get; }
         private void AddFolderForUnionDataset() {
             if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
-                foreach (string i in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.AllDirectories)) FilesForUnionDataset.Add(i);
+                bool error = false;
+                foreach (string filePath in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.AllDirectories)) {
+                    if (SerializationService.IsJsonPathValid(filePath)) FilesForUnionDataset.Add(filePath);
+                    else error = true;
+                }
+                if (error) CommonDialogService.MessageBox("일부 데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
             }
         }
         public ICommand CmdRemoveFileForUnionDataset { get; }
         private void RemoveFileForUnionDataset(IList SelectedItems) {
             string[] remove = SelectedItems.OfType<string>().ToArray();
             foreach (string i in remove) {
-                if (i is null) continue;
                 FilesForUnionDataset.Remove(i);
             }
         }
@@ -305,19 +312,32 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdExportUnionDataset { get; }
         private async void ExportUnionDataset() {
             if (!CommonDialogService.SaveJsonFileDialog(out string outFilePath)) return;
+            if (!SerializationService.IsJsonPathValid(outFilePath)) {
+                CommonDialogService.MessageBox("데이터셋 파일을 저장할 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                return;
+            }
+            if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 병합된 새 데이터셋을 만듭니다. 분류의 배열 순서는 병합 전후 유지되지 않을 수 있습니다.")) return;
             // 로드
-            SortedSet<ImageRecord> AllImages = new SortedSet<ImageRecord>();
-            SortedSet<CategoryRecord> AllCategories = new SortedSet<CategoryRecord>();
+            string outFileName = Path.GetFileNameWithoutExtension(outFilePath);
+            string outInstanceName = outFileName[(outFileName.IndexOf('_') + 1)..];
+            string outBasePath = Path.GetFullPath($@"..\..\{outInstanceName}", outFilePath);
+            SortedSet<ImageRecord> Images = new SortedSet<ImageRecord>();
+            SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
             foreach (string inFilePath in FilesForUnionDataset) {
                 DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-                AllCategories.UnionWith(dataset.Categories);
+                Categories.UnionWith(dataset.Categories);
                 foreach (ImageRecord image in dataset.Images) {
-                    if (AllImages.TryGetValue(image, out ImageRecord? oldImage)) oldImage.Annotations.AddRange(image.Annotations);
-                    else AllImages.Add(image);
+                    string fromImagePath = Path.Combine(dataset.BasePath);
+                    string copiedImagePath = Path.Combine(outBasePath, image.Path);
+                    string? toFolderPath = Path.GetDirectoryName(copiedImagePath);
+                    if (toFolderPath is null) continue;
+                    Directory.CreateDirectory(toFolderPath);
+                    File.Copy(fromImagePath, copiedImagePath);
                 }
+                Images.UnionWith(dataset.Images);
             }
             // 저장
-            await SerializationService.SerializeAsync(outFilePath, AllImages, AllCategories).ConfigureAwait(false);
+            await SerializationService.SerializeAsync(Images, Categories).ConfigureAwait(false);
         }
         #endregion
 
@@ -390,7 +410,7 @@ namespace COCOAnnotator.ViewModels {
                 break;
             case TacticsForSplitDataset.SplitToSubFolders:
                 // 하위 폴더로 분할
-                IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.FullPath) ?? "");
+                IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.Path) ?? "");
                 foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
                     // 파일 이름: (원래 파일 이름).(최종 폴더 이름).json
                     await SerializationService.SerializeAsync(Path.Combine(imagesInDir.Key, $"{Path.GetFileNameWithoutExtension(inFilePath)}.{Path.GetFileName(imagesInDir.Key)}.json"), imagesInDir,
@@ -442,7 +462,7 @@ namespace COCOAnnotator.ViewModels {
                 } else {
                     AppendLogUndupeDataset($"분석이 완료되었습니다. 중복된 경계 상자가 {SuppressedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
                     SortedSet<string> UniqueImagePaths = new SortedSet<string>
-                        (SuppressedImages.Select(s => Path.GetRelativePath(Path.GetDirectoryName(filePath) ?? "", s.FullPath).Replace('\\', '/')));
+                        (SuppressedImages.Select(s => Path.GetRelativePath(Path.GetDirectoryName(filePath) ?? "", s.Path).Replace('\\', '/')));
                     if (UniqueImagePaths.Count > 20) {
                         AppendLogUndupeDataset("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
                         AppendLogUndupeDataset(UniqueImagePaths.Take(20).ToArray());
@@ -483,7 +503,7 @@ namespace COCOAnnotator.ViewModels {
                         foreach ((int idx, ImageRecord image) in dataset.Images.Select((s, idx) => (idx, s))) {
                             if (IsClosed) return;
                             ProgressConvertDatasetValue = (int)((double)idx / dataset.Images.Count * 100);
-                            image.LoadSize();
+                            image.LoadSize(dataset.BasePath);
                         }
                         await SerializationService.SerializeAsync(Path.Combine(Path.GetDirectoryName(csvFilePath) ?? "", Path.GetFileNameWithoutExtension(csvFilePath) + ".json"), dataset.Images,
                             dataset.Categories).ConfigureAwait(false);

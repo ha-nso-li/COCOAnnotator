@@ -78,14 +78,15 @@ namespace COCOAnnotator.ViewModels {
                         BboxInsertMode = false;
                         MainImageUri = null;
                     } else {
+                        string imageFullPath = Path.Combine(ImagesRoot, value.Path);
                         try {
                             // 그림 업데이트
-                            MainImageUri = value.FullPath.ToUri();
+                            MainImageUri = imageFullPath.ToUri();
                             UpdateBoundaryBoxes();
                         } catch (IOException) {
-                            CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({value.FullPath})");
+                            CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({imageFullPath})");
                         } catch (NotSupportedException) {
-                            CommonDialogService.MessageBox($"이미지 파일을 읽어올 수 없습니다. 손상되었거나 지원하는 포맷이 아닙니다. ({value.FullPath})");
+                            CommonDialogService.MessageBox($"이미지 파일을 읽어올 수 없습니다. 손상되었거나 지원하는 포맷이 아닙니다. ({imageFullPath})");
                         }
                     }
                 }
@@ -367,22 +368,21 @@ namespace COCOAnnotator.ViewModels {
             if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
                 ImagesRoot = folderPath;
                 InternalRefreshImagesList();
-                RefreshDisplayFilename();
             }
         }
         public ICommand CmdRefreshImagesList { get; }
         private void RefreshImagesList() {
             InternalRefreshImagesList();
-            RefreshDisplayFilename();
         }
         public ICommand CmdDeleteNegativeImage { get; }
         private void DeleteNegativeImage() {
             bool res = CommonDialogService.MessageBoxOKCancel("현재 데이터셋에 포함된 모든 음성 이미지를 지웁니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
             foreach (ImageRecord i in Images.Where(s => s.Annotations.Count == 0)) {
-                File.Delete(i.FullPath);
+                string imageFullPath = Path.Combine(ImagesRoot, i.Path);
+                File.Delete(imageFullPath);
             }
-            RefreshImagesList();
+            InternalRefreshImagesList();
         }
         #endregion
 
@@ -425,11 +425,6 @@ namespace COCOAnnotator.ViewModels {
             else visibleAnnotations = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
             foreach (AnnotationRecord i in visibleAnnotations) VisibleAnnotations.Add(i);
         }
-        private void RefreshDisplayFilename() {
-            foreach (ImageRecord i in Images) {
-                i.DisplayFilename = Path.GetRelativePath(ImagesRoot, i.FullPath).Replace('\\', '/');
-            }
-        }
         private async void InternalLoadDataset(string filePath) {
             if (!SerializationService.IsJsonPathValid(filePath)) {
                 CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
@@ -441,7 +436,6 @@ namespace COCOAnnotator.ViewModels {
             foreach (ImageRecord i in dataset.Images) Images.Add(i);
             if (Images.Count > 0) SelectedImage = Images[0];
             ImagesRoot = dataset.BasePath;
-            RefreshDisplayFilename();
             Title = $"COCO 데이터셋 편집기 - {filePath}";
             if (dataset.Categories.Count >= 1) {
                 Categories.Add(CategoryRecord.AsAll());
@@ -468,12 +462,13 @@ namespace COCOAnnotator.ViewModels {
         public void InternalRefreshImagesList() {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
             SortedSet<ImageRecord> currentImagesInFolder = new SortedSet<ImageRecord>(
-                Directory.EnumerateFiles(ImagesRoot, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s))).Select(s => new ImageRecord(s))
+                Directory.EnumerateFiles(ImagesRoot, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
+                    .Select(s => new ImageRecord(Path.GetRelativePath(ImagesRoot, s).Replace('\\', '/')))
             );
             int removedCount = Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Images);
             int addedCount = currentImagesInFolder.Count;
-            Images.AddRange(currentImagesInFolder.Select(s => { s.LoadSize(); return s; }));
+            Images.AddRange(currentImagesInFolder.Select(s => { s.LoadSize(ImagesRoot); return s; }));
             if (removedCount > 0) {
                 if (addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");
                 else CommonDialogService.MessageBox($"{removedCount}개의 이미지가 제거되었습니다.");

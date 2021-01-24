@@ -1,31 +1,28 @@
 using Prism.Mvvm;
 using System;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
-        public string FullPath { get; }
         public FastObservableCollection<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
         public int Height { get; set; }
-        #endregion
-
-        #region 바인딩 전용 프로퍼티
-        private string _DisplayFilename;
-        public string DisplayFilename {
-            get => _DisplayFilename;
-            set => SetProperty(ref _DisplayFilename, value);
+        private string _Path;
+        public string Path {
+            get => _Path;
+            set => SetProperty(ref _Path, value);
         }
         public SolidColorBrush ColorBrush => Annotations.Count == 0 ? Brushes.DarkGray : Brushes.Black;
         #endregion
 
-        public ImageRecord(string FullPath) : this(FullPath, 0, 0) { }
+        public ImageRecord(string Path) : this(Path, 0, 0) { }
 
-        public ImageRecord(string FullPath, int Width, int Height) {
-            this.FullPath = FullPath;
-            _DisplayFilename = "";
+        public ImageRecord(string Path, int Width, int Height) {
+            this.Path = Path;
+            _Path = "";
             Annotations = new FastObservableCollection<AnnotationRecord>();
             Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;
@@ -38,19 +35,19 @@ namespace COCOAnnotator.Records {
         }
 
         #region 동일성
-        public override bool Equals(object? obj) {
+        public override bool Equals([NotNullWhen(true)] object? obj) {
             return obj switch {
                 ImageRecord obj_r => Equals(obj_r),
                 _ => false
             };
         }
-        public bool Equals(ImageRecord? other) {
+        public bool Equals([NotNullWhen(true)] ImageRecord? other) {
             return other switch {
-                ImageRecord _ => FullPath.Equals(other.FullPath),
+                ImageRecord _ => Path.Equals(other.Path),
                 _ => false
             };
         }
-        public override int GetHashCode() => FullPath.GetHashCode();
+        public override int GetHashCode() => Path.GetHashCode();
         public static bool operator ==(ImageRecord record1, ImageRecord record2) => record1.Equals(record2);
         public static bool operator !=(ImageRecord record1, ImageRecord record2) => !record1.Equals(record2);
         #endregion
@@ -65,7 +62,7 @@ namespace COCOAnnotator.Records {
         }
         public int CompareTo(ImageRecord? other) {
             return other switch {
-                ImageRecord _ => FullPath.CompareTo(other.FullPath),
+                ImageRecord _ => Path.CompareTo(other.Path),
                 null => 1
             };
         }
@@ -75,7 +72,7 @@ namespace COCOAnnotator.Records {
         public static bool operator >=(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) >= 0;
         #endregion
 
-        public override string ToString() => FullPath;
+        public override string ToString() => Path;
 
         public static ImageRecord Empty => new ImageRecord("");
     }

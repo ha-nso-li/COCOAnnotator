@@ -87,7 +87,7 @@
             <ListView x:Name="ViewImagesList" TabIndex="15" ItemsSource="{Binding Images}" SelectedItem="{Binding SelectedImage}">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding DisplayFilename}" Foreground="{Binding ColorBrush}" />
+                        <TextBlock Text="{Binding Path}" Foreground="{Binding ColorBrush}" />
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

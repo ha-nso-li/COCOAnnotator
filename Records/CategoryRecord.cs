@@ -1,5 +1,6 @@
 using Prism.Mvvm;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
@@ -15,13 +16,13 @@ namespace COCOAnnotator.Records {
         #endregion
 
         #region 동일성
-        public override bool Equals(object? obj) {
+        public override bool Equals([NotNullWhen(true)] object? obj) {
             return obj switch {
                 CategoryRecord obj_r => Equals(obj_r),
                 _ => false
             };
         }
-        public bool Equals(CategoryRecord? other) {
+        public bool Equals([NotNullWhen(true)] CategoryRecord? other) {
             return other switch {
                 CategoryRecord _ when All => other.All,
                 CategoryRecord _ => Name.Equals(other.Name),

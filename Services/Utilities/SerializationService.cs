@@ -28,7 +28,7 @@ namespace COCOAnnotator.Services.Utilities {
                 int image_id = datasetcoco.Images.Count;
                 datasetcoco.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = Path.GetRelativePath(CommonParentPath, i.FullPath).Replace('\\', '/'),
+                    FileName = i.Path.Replace('\\', '/'),
                     Width = i.Width,
                     Height = i.Height,
                 });
@@ -69,7 +69,7 @@ namespace COCOAnnotator.Services.Utilities {
                 int image_id = datasetcoco.Images.Count;
                 datasetcoco.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = Path.GetRelativePath(basePath, i.FullPath).Replace('\\', '/'),
+                    FileName = i.Path.Replace('\\', '/'),
                     Width = i.Width,
                     Height = i.Height,
                 });
@@ -101,7 +101,7 @@ namespace COCOAnnotator.Services.Utilities {
             SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
             SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
             foreach (ImageCOCO i in datasetcoco.Images) {
-                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(Path.GetFullPath(i.FileName, BasePath).Replace('/', '\\'), i.Width, i.Height));
+                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(i.FileName.Replace('/', '\\'), i.Width, i.Height));
             }
             foreach (CategoryCOCO i in datasetcoco.Categories) {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
@@ -122,7 +122,7 @@ namespace COCOAnnotator.Services.Utilities {
         public static async Task SerializeCSVAsync(string CSVPath, IEnumerable<ImageRecord> Images, CSVFormat CSVFormat) {
             using StreamWriter csv = File.CreateText(CSVPath);
             foreach (ImageRecord image in Images) {
-                string imagePath = Path.GetRelativePath(Path.GetDirectoryName(CSVPath) ?? "", image.FullPath).Replace('\\', '/');
+                string imagePath = Path.GetRelativePath(Path.GetDirectoryName(CSVPath) ?? "", image.Path).Replace('\\', '/');
                 if (image.Annotations.Count == 0) {
                     await csv.WriteLineAsync($"{imagePath},,,,,").ConfigureAwait(false);
                 } else {

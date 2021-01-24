@@ -17,10 +17,10 @@ namespace COCOAnnotator.Services.Utilities {
         public static string GetCommonParentPath(this IEnumerable<ImageRecord> source) {
             using IEnumerator<ImageRecord> etor = source.GetEnumerator();
             if (!etor.MoveNext()) return "";
-            string first = etor.Current.FullPath;
+            string first = etor.Current.Path;
             int len = first.Length;
             while (etor.MoveNext()) {
-                string current = etor.Current.FullPath;
+                string current = etor.Current.Path;
                 len = Math.Min(len, current.Length);
                 for (int i = 0; i < len; i++) {
                     if (current[i] != first[i]) {
@@ -62,8 +62,8 @@ namespace COCOAnnotator.Services.Utilities {
             }
         }
 
-        public static bool LoadSize(this ImageRecord Image) {
-            using FileStream stream = new FileStream(Image.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        public static bool LoadSize(this ImageRecord Image, string BasePath) {
+            using FileStream stream = new FileStream(Path.Combine(BasePath, Image.Path), FileMode.Open, FileAccess.Read, FileShare.Read);
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
             int oldWidth = Image.Width;
             int oldHeight = Image.Height;
