@@ -54,7 +54,6 @@ namespace COCOAnnotator.ViewModels {
             CmdDeleteCategory = new DelegateCommand(DeleteCategory);
             CmdImageUp = new DelegateCommand(ImageUp);
             CmdImageDown = new DelegateCommand(ImageDown);
-            CmdSetBasePath = new DelegateCommand(SetBasePath);
             CmdRefreshImagesList = new DelegateCommand(RefreshImagesList);
             CmdDeleteNegativeImage = new DelegateCommand(DeleteNegativeImage);
             CmdToggleFitToViewport = new DelegateCommand(ToggleFitToViewport);
@@ -197,12 +196,19 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdCloseDataset { get; }
         private void CloseDataset() {
-            bool res = CommonDialogService.MessageBoxOKCancel("열려있는 데이터셋을 닫습니다. 저장하지 않은 변경 사항이 손실됩니다.");
-            if (!res) return;
-            Dataset.Images.Clear();
-            Dataset.Categories.Clear();
-            Dataset.BasePath = "";
-            Title = "COCO 데이터셋 편집기";
+            if (Dataset.BasePath == "") {
+                if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
+                    Dataset.BasePath = folderPath;
+                    InternalRefreshImagesList();
+                }
+            } else {
+                bool res = CommonDialogService.MessageBoxOKCancel("열려있는 데이터셋을 닫습니다. 저장하지 않은 변경 사항이 손실됩니다.");
+                if (!res) return;
+                Dataset.Images.Clear();
+                Dataset.Categories.Clear();
+                Dataset.BasePath = "";
+                Title = "COCO 데이터셋 편집기";
+            }
         }
         public ICommand CmdManageDataset { get; }
         private void ManageDataset() {
@@ -362,20 +368,13 @@ namespace COCOAnnotator.ViewModels {
             SelectedImage = Dataset.Images[target];
             EventAggregator.GetEvent<ScrollViewImagesList>().Publish(Dataset.Images[target]);
         }
-        public ICommand CmdSetBasePath { get; }
-        private void SetBasePath() {
-            if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
-                Dataset.BasePath = folderPath;
-                InternalRefreshImagesList();
-            }
-        }
         public ICommand CmdRefreshImagesList { get; }
         private void RefreshImagesList() {
             InternalRefreshImagesList();
         }
         public ICommand CmdDeleteNegativeImage { get; }
         private void DeleteNegativeImage() {
-            bool res = CommonDialogService.MessageBoxOKCancel("현재 데이터셋에 포함된 모든 음성 이미지를 지웁니다. 이 작업은 되돌릴 수 없습니다.");
+            bool res = CommonDialogService.MessageBoxOKCancel("현재 데이터셋에 포함된 모든 음성 이미지를 디스크에서 삭제합니다. 이 작업은 되돌릴 수 없습니다.");
             if (!res) return;
             foreach (ImageRecord i in Dataset.Images.Where(s => s.Annotations.Count == 0)) {
                 string imageFullPath = Path.Combine(Dataset.BasePath, i.Path);
