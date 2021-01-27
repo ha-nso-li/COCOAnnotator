@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services.Utilities {
     public static class SerializationService {
-        /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
+        /// <summary>주어진 데이터셋을 UTF-8 COCO JSON으로 직렬화합니다.</summary>
         /// <returns>직렬화된 JSON 파일의 경로입니다.</returns>
         public static async Task<string> SerializeAsync(DatasetRecord Dataset) {
             string InstanceName = Path.GetFileName(Dataset.BasePath);

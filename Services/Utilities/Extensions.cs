@@ -52,16 +52,6 @@ namespace COCOAnnotator.Services.Utilities {
             return new Uri(uri.ToString());
         }
 
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
-            Random rng = new Random();
-            T[] elements = source.ToArray();
-            for (int i = elements.Length - 1; i >= 0; i--) {
-                int j = rng.Next(i + 1);
-                yield return elements[j];
-                elements[j] = elements[i];
-            }
-        }
-
         public static bool LoadSize(this ImageRecord Image, string BasePath) {
             using FileStream stream = new FileStream(Path.Combine(BasePath, Image.Path), FileMode.Open, FileAccess.Read, FileShare.Read);
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
@@ -70,6 +60,16 @@ namespace COCOAnnotator.Services.Utilities {
             Image.Width = bitmap.PixelWidth;
             Image.Height = bitmap.PixelHeight;
             return oldWidth != Image.Width || oldHeight != Image.Height;
+        }
+
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
+            Random rng = new Random();
+            T[] elements = source.ToArray();
+            for (int i = elements.Length - 1; i >= 0; i--) {
+                int j = rng.Next(i + 1);
+                yield return elements[j];
+                elements[j] = elements[i];
+            }
         }
     }
 }

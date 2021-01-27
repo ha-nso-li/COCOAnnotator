@@ -24,7 +24,7 @@ namespace COCOAnnotator.Records {
             Categories = new ObservableCollection<CategoryRecord>();
         }
 
-        public DatasetRecord(string BasePath, ICollection<ImageRecord> Images, ICollection<CategoryRecord> Categories) {
+        public DatasetRecord(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             _BasePath = BasePath;
             this.Images = new FastObservableCollection<ImageRecord>(Images);
             this.Categories = new ObservableCollection<CategoryRecord>(Categories);

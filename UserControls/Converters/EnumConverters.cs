@@ -1,3 +1,4 @@
+using COCOAnnotator.Records.Enums;
 using System;
 using System.Globalization;
 using System.Windows.Data;
@@ -19,4 +20,16 @@ namespace COCOAnnotator.UserControls.Converters {
             }
         }
     }
+
+    [ValueConversion(typeof(CSVFormat), typeof(bool))]
+    public class CSVFormatConverter : EnumConverter<CSVFormat> { }
+
+    [ValueConversion(typeof(SettingColors), typeof(bool))]
+    public class SettingColorConverter : EnumConverter<SettingColors> { }
+
+    [ValueConversion(typeof(TacticsForConvertDataset), typeof(bool))]
+    public class TacticForConvertDatasetConverter : EnumConverter<TacticsForConvertDataset> { }
+
+    [ValueConversion(typeof(TacticsForSplitDataset), typeof(bool))]
+    public class TacticForSplitDatasetConverter : EnumConverter<TacticsForSplitDataset> { }
 }

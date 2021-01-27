@@ -326,16 +326,9 @@ namespace COCOAnnotator.ViewModels {
             SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
             foreach (string inFilePath in FilesForUnionDataset) {
                 DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-                Categories.UnionWith(dataset.Categories);
-                foreach (ImageRecord image in dataset.Images) {
-                    string fromImagePath = Path.Combine(dataset.BasePath);
-                    string copiedImagePath = Path.Combine(outBasePath, image.Path);
-                    string? toFolderPath = Path.GetDirectoryName(copiedImagePath);
-                    if (toFolderPath is null) continue;
-                    Directory.CreateDirectory(toFolderPath);
-                    File.Copy(fromImagePath, copiedImagePath);
-                }
+                foreach (ImageRecord image in dataset.Images) CopyFile(Path.Combine(dataset.BasePath, image.Path), Path.Combine(outBasePath, image.Path));
                 Images.UnionWith(dataset.Images);
+                Categories.UnionWith(dataset.Categories);
             }
             // 저장
             await SerializationService.SerializeAsync(new DatasetRecord(outBasePath, Images, Categories)).ConfigureAwait(false);
@@ -346,77 +339,72 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdSplitDataset { get; }
         private async void SplitDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string inFilePath)) return;
-            (ICollection<ImageRecord> images, _) = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-            IEnumerable<ImageRecord> shuffledImages = images.Shuffle();
+            if (!SerializationService.IsJsonPathValid(inFilePath)) {
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                return;
+            }
+            DatasetRecord inDataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
+            IEnumerable<ImageRecord> shuffledImages = inDataset.Images.Shuffle();
+            string inFileName = Path.GetFileNameWithoutExtension(inFilePath);
+            string inInstanceName = inFileName[(inFileName.IndexOf('_') + 1)..];
+            if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 분할된 새 데이터셋을 만듭니다.")) return;
             switch (TacticForSplitDataset) {
             case TacticsForSplitDataset.DevideToN:
                 // 균등 분할
-                if (NValueForSplitDataset < 2 || NValueForSplitDataset > images.Count) {
+                if (NValueForSplitDataset < 2 || NValueForSplitDataset > inDataset.Images.Count) {
                     CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                     return;
                 }
-                var infoByPartition = new List<(SortedSet<ImageRecord> Images, SortedSet<CategoryRecord> Categories)>();
+                List<DatasetRecord> outDatasetByPartition = new List<DatasetRecord>();
+                List<SortedSet<CategoryRecord>> categoriesByPartition = new List<SortedSet<CategoryRecord>>();
                 for (int i = 0; i < NValueForSplitDataset; i++) {
-                    infoByPartition.Add((new SortedSet<ImageRecord>(), new SortedSet<CategoryRecord>()));
+                    outDatasetByPartition.Add(new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
+                    categoriesByPartition.Add(new SortedSet<CategoryRecord>());
                 }
                 foreach (ImageRecord image in shuffledImages) {
                     if (image.Annotations.Count > 0) {
                         // 양성 이미지인 경우.
                         // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
-                        (SortedSet<ImageRecord> imagesByPartition, SortedSet<CategoryRecord> categoriesByPartition) = infoByPartition
-                            .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Categories).Count()).ThenBy(s => s.Images.Count).First();
-                        imagesByPartition.Add(image);
-                        categoriesByPartition.UnionWith(image.Annotations.Select(s => s.Category));
+                        DatasetRecord datasetOfPartition = outDatasetByPartition
+                            .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(s => s.Category)).Count())
+                            .ThenBy(s => s.Images.Count).First();
+                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
+                        datasetOfPartition.Images.Add(image);
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                        (SortedSet<ImageRecord> imagesByPartition, _) = infoByPartition.OrderBy(s => s.Images.Count).First();
-                        imagesByPartition.Add(image);
+                        DatasetRecord datasetOfPartition = outDatasetByPartition.OrderBy(s => s.Images.Count).First();
+                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
+                        datasetOfPartition.Images.Add(image);
                     }
                 }
-                for (int i = 0; i < NValueForSplitDataset; i++) {
-                    // 출력 파일 이름: (원래 파일 이름).(파티션 번호 1부터 시작).json
-                    await SerializationService.SerializeAsync(Path.Combine(Path.GetDirectoryName(inFilePath) ?? "", $"{Path.GetFileNameWithoutExtension(inFilePath)}.{i + 1}.json"),
-                        infoByPartition[i].Images, infoByPartition[i].Categories).ConfigureAwait(false);
-                }
+                foreach (DatasetRecord i in outDatasetByPartition) await SerializationService.SerializeAsync(i).ConfigureAwait(false);
                 break;
             case TacticsForSplitDataset.TakeNSamples:
                 // 일부 추출
-                if (NValueForSplitDataset < 1 || NValueForSplitDataset >= images.Count) {
+                if (NValueForSplitDataset < 1 || NValueForSplitDataset >= inDataset.Images.Count) {
                     CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                     return;
                 }
-                SortedSet<ImageRecord> OriginalImages = new SortedSet<ImageRecord>();
-                SortedSet<CategoryRecord> OriginalCategories = new SortedSet<CategoryRecord>();
-                SortedSet<ImageRecord> SplitImages = new SortedSet<ImageRecord>();
-                SortedSet<CategoryRecord> SplitCategories = new SortedSet<CategoryRecord>();
+                DatasetRecord OriginalDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                DatasetRecord SplitDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
                 foreach (ImageRecord image in shuffledImages) {
-                    int DiversityDeltaOriginal = image.Annotations.Select(s => s.Category).Except(OriginalCategories).Count();
-                    int DiversityDeltaSplit = image.Annotations.Select(s => s.Category).Except(SplitCategories).Count();
-                    if (OriginalImages.Count + NValueForSplitDataset + 1 >= images.Count || (SplitImages.Count < NValueForSplitDataset && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
-                        // 아래 두 경우 중 하나일시 해당 이미지를 추출 데이터셋에 씀
-                        // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                        // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
-                        SplitImages.Add(image);
-                        SplitCategories.UnionWith(image.Annotations.Select(s => s.Category));
+                    int DiversityDeltaOriginal = image.Annotations.Select(s => s.Category).Except(OriginalDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category)).Count();
+                    int DiversityDeltaSplit = image.Annotations.Select(s => s.Category).Except(SplitDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category)).Count();
+                    // 아래 두 경우 중 하나일시 해당 이미지를 추출 데이터셋에 씀
+                    // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
+                    // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
+                    if (OriginalDataset.Images.Count + NValueForSplitDataset + 1 >= inDataset.Images.Count ||
+                        (SplitDataset.Images.Count < NValueForSplitDataset && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(SplitDataset.BasePath, image.Path));
+                        SplitDataset.Images.Add(image);
                     } else {
-                        OriginalImages.Add(image);
-                        OriginalCategories.UnionWith(image.Annotations.Select(s => s.Category));
+                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(OriginalDataset.BasePath, image.Path));
+                        OriginalDataset.Images.Add(image);
                     }
                 }
-                await SerializationService.SerializeAsync(Path.Combine(Path.GetDirectoryName(inFilePath) ?? "", $"{Path.GetFileNameWithoutExtension(inFilePath)}.1.json"), OriginalImages,
-                    OriginalCategories).ConfigureAwait(false);
-                await SerializationService.SerializeAsync(Path.Combine(Path.GetDirectoryName(inFilePath) ?? "", $"{Path.GetFileNameWithoutExtension(inFilePath)}.2.json"), SplitImages,
-                    SplitCategories).ConfigureAwait(false);
-                break;
-            case TacticsForSplitDataset.SplitToSubFolders:
-                // 하위 폴더로 분할
-                IEnumerable<IGrouping<string, ImageRecord>> imagesByDir = images.GroupBy(s => Path.GetDirectoryName(s.Path) ?? "");
-                foreach (IGrouping<string, ImageRecord> imagesInDir in imagesByDir) {
-                    // 파일 이름: (원래 파일 이름).(최종 폴더 이름).json
-                    await SerializationService.SerializeAsync(Path.Combine(imagesInDir.Key, $"{Path.GetFileNameWithoutExtension(inFilePath)}.{Path.GetFileName(imagesInDir.Key)}.json"), imagesInDir,
-                        imagesInDir.SelectMany(s => s.Annotations.Select(t => t.Category)).Distinct()).ConfigureAwait(false);
-                }
+                await SerializationService.SerializeAsync(OriginalDataset).ConfigureAwait(false);
+                await SerializationService.SerializeAsync(SplitDataset).ConfigureAwait(false);
                 break;
             }
         }
@@ -552,6 +540,12 @@ namespace COCOAnnotator.ViewModels {
                 }
                 yield return pick;
             }
+        }
+        private void CopyFile(string FromPath, string ToPath) {
+            string? ToDirectory = Path.GetDirectoryName(ToPath);
+            if (ToDirectory is null) return;
+            Directory.CreateDirectory(ToDirectory);
+            File.Copy(FromPath, ToPath);
         }
         #endregion
     }
