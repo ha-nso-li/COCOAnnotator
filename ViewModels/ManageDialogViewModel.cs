@@ -50,8 +50,7 @@ namespace COCOAnnotator.ViewModels {
         private string BasePathForVerify = "";
         private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
         private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
-        private readonly List<ImageRecord> ImagesForUndupe = new List<ImageRecord>();
-        private readonly List<CategoryRecord> CategoriesForUndupe = new List<CategoryRecord>();
+        private DatasetRecord DatasetForUndupe = new DatasetRecord();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -414,35 +413,35 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdUndupeDataset { get; }
         private void UndupeDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string filePath)) return;
+            if (!SerializationService.IsJsonPathValid(filePath)) {
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                return;
+            }
             LogUndupeDataset = "";
             ProgressUndupeDatasetValue = 0;
-            ImagesForUndupe.Clear();
-            CategoriesForUndupe.Clear();
             Task.Run(async () => {
                 AppendLogUndupeDataset($"{filePath}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                 // 로드
-                DatasetRecord dataset = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
-                ImagesForUndupe.AddRange(dataset.Images);
-                CategoriesForUndupe.AddRange(dataset.Categories);
+                DatasetForUndupe = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
                 // 중복 제거
                 int TotalSuppressedBoxesCount = 0;
                 List<ImageRecord> SuppressedImages = new List<ImageRecord>();
-                for (int i = 0; i < ImagesForUndupe.Count; i++) {
+                for (int i = 0; i < DatasetForUndupe.Images.Count; i++) {
                     if (IsClosed) return;
-                    ProgressUndupeDatasetValue = (int)((double)i / ImagesForUndupe.Count * 100);
-                    List<AnnotationRecord> AnnotationsForUndupe = new List<AnnotationRecord>();
+                    ProgressUndupeDatasetValue = (int)((double)i / DatasetForUndupe.Images.Count * 100);
+                    List<AnnotationRecord> UndupedAnnotations = new List<AnnotationRecord>();
                     if (UndupeWithoutCategory) {
-                        AnnotationsForUndupe.AddRange(SuppressAnnotations(ImagesForUndupe[i].Annotations));
+                        UndupedAnnotations.AddRange(SuppressAnnotations(DatasetForUndupe.Images[i].Annotations));
                     } else {
-                        foreach (IGrouping<CategoryRecord, AnnotationRecord> annotations in ImagesForUndupe[i].Annotations.GroupBy(s => s.Category))
-                            AnnotationsForUndupe.AddRange(SuppressAnnotations(annotations));
+                        foreach (IGrouping<CategoryRecord, AnnotationRecord> annotations in DatasetForUndupe.Images[i].Annotations.GroupBy(s => s.Category))
+                            UndupedAnnotations.AddRange(SuppressAnnotations(annotations));
                     }
-                    int LocalSuppressedBoxesCount = ImagesForUndupe[i].Annotations.Count - AnnotationsForUndupe.Count;
+                    int LocalSuppressedBoxesCount = DatasetForUndupe.Images[i].Annotations.Count - UndupedAnnotations.Count;
                     if (LocalSuppressedBoxesCount > 0) {
-                        ImagesForUndupe[i].Annotations.Clear();
-                        ImagesForUndupe[i].Annotations.AddRange(AnnotationsForUndupe);
+                        DatasetForUndupe.Images[i].Annotations.Clear();
+                        DatasetForUndupe.Images[i].Annotations.AddRange(UndupedAnnotations);
                         TotalSuppressedBoxesCount += LocalSuppressedBoxesCount;
-                        SuppressedImages.Add(ImagesForUndupe[i]);
+                        SuppressedImages.Add(DatasetForUndupe.Images[i]);
                     }
                 }
                 ProgressUndupeDatasetValue = 100;
@@ -464,12 +463,11 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdExportUndupedDataset { get; }
         private async void ExportUndupedDataset() {
-            if (ImagesForUndupe.Count == 0 && CategoriesForUndupe.Count == 0) {
+            if (DatasetForUndupe.BasePath == "") {
                 CommonDialogService.MessageBox("어노테이션 중복 제거를 실행한 적이 없습니다.");
                 return;
             }
-            if (!CommonDialogService.SaveJsonFileDialog(out string filePath)) return;
-            await SerializationService.SerializeAsync(filePath, ImagesForUndupe, CategoriesForUndupe).ConfigureAwait(false);
+            await SerializationService.SerializeAsync(DatasetForUndupe).ConfigureAwait(false);
         }
         #endregion
 
