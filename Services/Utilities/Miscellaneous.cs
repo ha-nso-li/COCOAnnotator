@@ -89,5 +89,12 @@ namespace COCOAnnotator.Services.Utilities {
         /// 이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.
         /// </summary>
         public static ISet<string> ApprovedImageExtensions => new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".png", ".jpeg", ".tif" };
+
+        public static void CopyFile(string FromPath, string ToPath) {
+            string? ToDirectory = Path.GetDirectoryName(ToPath);
+            if (ToDirectory is null) return;
+            Directory.CreateDirectory(ToDirectory);
+            File.Copy(FromPath, ToPath);
+        }
     }
 }

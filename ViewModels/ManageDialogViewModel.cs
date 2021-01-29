@@ -326,7 +326,7 @@ namespace COCOAnnotator.ViewModels {
             SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
             foreach (string inFilePath in FilesForUnionDataset) {
                 DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-                foreach (ImageRecord image in dataset.Images) CopyFile(Path.Combine(dataset.BasePath, image.Path), Path.Combine(outBasePath, image.Path));
+                foreach (ImageRecord image in dataset.Images) Miscellaneous.CopyFile(Path.Combine(dataset.BasePath, image.Path), Path.Combine(outBasePath, image.Path));
                 Images.UnionWith(dataset.Images);
                 Categories.UnionWith(dataset.Categories);
             }
@@ -368,13 +368,13 @@ namespace COCOAnnotator.ViewModels {
                         DatasetRecord datasetOfPartition = outDatasetByPartition
                             .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(s => s.Category)).Count())
                             .ThenBy(s => s.Images.Count).First();
-                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
+                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
                         datasetOfPartition.Images.Add(image);
                     } else {
                         // 음성 이미지인 경우.
                         // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
                         DatasetRecord datasetOfPartition = outDatasetByPartition.OrderBy(s => s.Images.Count).First();
-                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
+                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
                         datasetOfPartition.Images.Add(image);
                     }
                 }
@@ -396,10 +396,10 @@ namespace COCOAnnotator.ViewModels {
                     // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
                     if (OriginalDataset.Images.Count + NValueForSplitDataset + 1 >= inDataset.Images.Count ||
                         (SplitDataset.Images.Count < NValueForSplitDataset && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
-                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(SplitDataset.BasePath, image.Path));
+                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(SplitDataset.BasePath, image.Path));
                         SplitDataset.Images.Add(image);
                     } else {
-                        CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(OriginalDataset.BasePath, image.Path));
+                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(OriginalDataset.BasePath, image.Path));
                         OriginalDataset.Images.Add(image);
                     }
                 }
@@ -540,12 +540,6 @@ namespace COCOAnnotator.ViewModels {
                 }
                 yield return pick;
             }
-        }
-        private void CopyFile(string FromPath, string ToPath) {
-            string? ToDirectory = Path.GetDirectoryName(ToPath);
-            if (ToDirectory is null) return;
-            Directory.CreateDirectory(ToDirectory);
-            File.Copy(FromPath, ToPath);
         }
         #endregion
     }
