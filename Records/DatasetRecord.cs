@@ -13,11 +13,6 @@ namespace COCOAnnotator.Records {
         public FastObservableCollection<ImageRecord> Images { get; }
         public ObservableCollection<CategoryRecord> Categories { get; }
 
-        public void Deconstruct(out ICollection<ImageRecord> Images, out ICollection<CategoryRecord> Categories) {
-            Images = this.Images;
-            Categories = this.Categories;
-        }
-
         public DatasetRecord() {
             _BasePath = "";
             Images = new FastObservableCollection<ImageRecord>();

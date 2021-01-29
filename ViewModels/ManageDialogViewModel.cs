@@ -475,29 +475,40 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdConvertDataset { get; }
         private async void ConvertDataset() {
             switch (TacticForConvertDataset) {
-            case TacticsForConvertDataset.COCOToCSV:
+            case TacticsForConvertDataset.COCOToCSV: {
                 if (CommonDialogService.OpenJsonFileDialog(out string jsonFilePath)) {
-                    (ICollection<ImageRecord> images, _) = await SerializationService.DeserializeAsync(jsonFilePath).ConfigureAwait(false);
-                    await SerializationService.SerializeCSVAsync(Path.Combine(Path.GetDirectoryName(jsonFilePath) ?? "", Path.GetFileNameWithoutExtension(jsonFilePath) + ".csv"), images, CSVFormat)
-                        .ConfigureAwait(false);
+                    if (!SerializationService.IsJsonPathValid(jsonFilePath)) {
+                        CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                        return;
+                    }
+                    DatasetRecord dataset = await SerializationService.DeserializeAsync(jsonFilePath).ConfigureAwait(false);
+                    string csvFilePath = Path.Combine(dataset.BasePath, Path.GetFileName(dataset.BasePath) + ".csv");
+                    await SerializationService.SerializeCSVAsync(csvFilePath, dataset.Images, CSVFormat).ConfigureAwait(false);
+                    CommonDialogService.MessageBox($"\"{csvFilePath}\"에 변환된 데이터셋이 저장되었습니다.");
                 }
                 break;
-            case TacticsForConvertDataset.CSVToCOCO:
+            }
+            case TacticsForConvertDataset.CSVToCOCO: {
                 if (CommonDialogService.OpenCSVFileDialog(out string csvFilePath)) {
                     _ = Task.Run(async () => {
                         ProgressConvertDatasetValue = 0;
                         DatasetRecord dataset = await SerializationService.DeserializeCSVAsync(csvFilePath, CSVFormat).ConfigureAwait(false);
+                        if (Directory.GetParent(dataset.BasePath) is null) {
+                            CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 루트 폴더가 아니어야 합니다.");
+                            return;
+                        }
                         foreach ((int idx, ImageRecord image) in dataset.Images.Select((s, idx) => (idx, s))) {
                             if (IsClosed) return;
                             ProgressConvertDatasetValue = (int)((double)idx / dataset.Images.Count * 100);
                             image.LoadSize(dataset.BasePath);
                         }
-                        await SerializationService.SerializeAsync(Path.Combine(Path.GetDirectoryName(csvFilePath) ?? "", Path.GetFileNameWithoutExtension(csvFilePath) + ".json"), dataset.Images,
-                            dataset.Categories).ConfigureAwait(false);
+                        string jsonFilePath = await SerializationService.SerializeAsync(dataset).ConfigureAwait(false);
                         ProgressConvertDatasetValue = 100;
+                        CommonDialogService.MessageBox($"\"{jsonFilePath}\"에 변환된 데이터셋이 저장되었습니다.");
                     });
                 }
                 break;
+            }
             }
         }
         #endregion

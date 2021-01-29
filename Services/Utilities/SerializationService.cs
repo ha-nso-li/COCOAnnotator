@@ -51,46 +51,6 @@ namespace COCOAnnotator.Services.Utilities {
             return JsonPath;
         }
 
-        /// <summary>주어진 이미지 및 분류를 UTF-8 COCO JSON으로 직렬화합니다.</summary>
-        /// <param name="JsonPath">직렬화된 JSON 파일이 쓰일 경로입니다.</param>
-        [Obsolete("인수 2개를 사용하는 버전으로 모두 교체하고 사용되었던 코드를 모두 COCO 디렉토리 구조 대응으로 변경해야 함.")]
-        public static async Task SerializeAsync(string JsonPath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
-            string basePath = Path.GetDirectoryName(JsonPath) ?? "";
-            DatasetCOCO datasetcoco = new DatasetCOCO();
-            foreach (CategoryRecord i in Categories) {
-                int id = datasetcoco.Categories.Count + 1;
-                datasetcoco.Categories.Add(new CategoryCOCO {
-                    ID = id,
-                    Name = i.Name,
-                    SuperCategory = i.Name,
-                });
-            }
-            foreach (ImageRecord i in Images) {
-                int image_id = datasetcoco.Images.Count;
-                datasetcoco.Images.Add(new ImageCOCO {
-                    ID = image_id,
-                    FileName = i.Path.Replace('\\', '/'),
-                    Width = i.Width,
-                    Height = i.Height,
-                });
-                foreach (AnnotationRecord j in i.Annotations) {
-                    int? category_id = datasetcoco.Categories.Find(s => s.Name == j.Category.Name)?.ID;
-                    if (category_id is null) continue;
-                    int annotation_id = datasetcoco.Annotations.Count;
-                    datasetcoco.Annotations.Add(new AnnotationCOCO {
-                        ID = annotation_id,
-                        CategoryID = category_id.Value,
-                        ImageID = image_id,
-                        IsCrowd = 0,
-                        BoundaryBox = new List<float> { j.Left, j.Top, j.Width, j.Height },
-                        Area = j.Area,
-                    });
-                }
-            }
-            using FileStream fileStream = File.Create(JsonPath);
-            await JsonSerializer.SerializeAsync(fileStream, datasetcoco).ConfigureAwait(false);
-        }
-
         /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="JsonPath">역직렬화할 JSON 파일이 존재하는 경로입니다.</param>
         public static async Task<DatasetRecord> DeserializeAsync(string JsonPath) {
@@ -177,7 +137,6 @@ namespace COCOAnnotator.Services.Utilities {
 
         public static bool IsJsonPathValid(string JsonPath) {
             FileInfo JsonFileInfo = new FileInfo(JsonPath);
-            if (!JsonFileInfo.Exists) return false;
             if (!JsonFileInfo.Extension.Equals(".json", StringComparison.OrdinalIgnoreCase)) return false;
             if (!JsonFileInfo.Name.StartsWith("instances_", StringComparison.OrdinalIgnoreCase)) return false;
             DirectoryInfo? JsonDirInfo = JsonFileInfo.Directory;
