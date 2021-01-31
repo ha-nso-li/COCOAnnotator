@@ -37,17 +37,14 @@
                 <TabItem Header="데이터셋 병합">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="파일 추가" TabIndex="4" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdAddFileForUnionDataset}" />
-                                <Button Content="폴더 추가" TabIndex="5" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdAddFolderForUnionDataset}" />
-                                <Button Content="선택 파일 삭제" TabIndex="6" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
+                            <DockPanel DockPanel.Dock="Right">
+                                <Button DockPanel.Dock="Right" Content="내보내기" TabIndex="7" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUnionDataset}" />
+                                <Button DockPanel.Dock="Right" Content="초기화" TabIndex="6" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdResetFileForUnionDataset}" />
+                                <Button DockPanel.Dock="Right" Content="파일 삭제" TabIndex="5" Margin="2" Padding="5" Height="28" VerticalAlignment="Center"
                                         Command="{Binding CmdRemoveFileForUnionDataset}" CommandParameter="{Binding ElementName=ListViewFilesForUnionDataset, Path=SelectedItems}" />
-                                <Button Content="초기화" TabIndex="7" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                        Command="{Binding CmdResetFileForUnionDataset}" />
-                                <Button Content="내보내기" TabIndex="8" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right" Command="{Binding CmdExportUnionDataset}" />
-                            </StackPanel>
+                                <Button DockPanel.Dock="Right" Content="파일 추가" TabIndex="4" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdAddFileForUnionDataset}" />
+                                <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUnionDataset}" Margin="5" Height="20" />
+                            </DockPanel>
                         </DockPanel>
                         <ListView x:Name="ListViewFilesForUnionDataset" ItemsSource="{Binding FilesForUnionDataset}" TabIndex="3" />
                     </DockPanel>
@@ -56,27 +53,29 @@
                     <DockPanel LastChildFill="False">
                         <Label DockPanel.Dock="Top" Content="분할 방법 선택:" />
                         <StackPanel DockPanel.Dock="Top">
-                            <RadioButton TabIndex="9" GroupName="TacticsForSplitDataset" Content="균등한 갯수의 이미지가 포함되도록 n개의 데이터셋으로 분할"
+                            <RadioButton TabIndex="8" GroupName="TacticsForSplitDataset" Content="균등한 갯수의 이미지가 포함되도록 n개의 데이터셋으로 분할"
                                     IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=DevideToN}" Margin="1" />
-                            <RadioButton TabIndex="10" GroupName="TacticsForSplitDataset" Content="데이터셋에 포함된 이미지중 n개를 다른 파일로 분리"
+                            <RadioButton TabIndex="9" GroupName="TacticsForSplitDataset" Content="데이터셋에 포함된 이미지중 n개를 다른 파일로 분리"
                                     IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
-                        <TextBox TabIndex="11" DockPanel.Dock="Top" Text="{Binding NValueForSplitDataset}" Width="150" HorizontalAlignment="Left" Margin="2" />
-                        <Button DockPanel.Dock="Bottom" TabIndex="12" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                Command="{Binding CmdSplitDataset}" />
+                        <TextBox TabIndex="10" DockPanel.Dock="Top" Text="{Binding NValueForSplitDataset}" Width="150" HorizontalAlignment="Left" Margin="2" />
+                        <DockPanel DockPanel.Dock="Bottom">
+                            <Button DockPanel.Dock="Right" TabIndex="11" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdSplitDataset}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressSplitDataset}" Margin="5" Height="20" />
+                        </DockPanel>
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="데이터셋 중복 제거">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="16" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedDataset}" />
-                            <Button DockPanel.Dock="Right" TabIndex="15" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeDataset}" />
-                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeDatasetValue}" Margin="5" Height="20" />
+                            <Button DockPanel.Dock="Right" TabIndex="15" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedDataset}" />
+                            <Button DockPanel.Dock="Right" TabIndex="14" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeDataset}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeDataset}" Margin="5" Height="20" />
                         </DockPanel>
                         <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
-                        <TextBox DockPanel.Dock="Top" TabIndex="13" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
-                        <CheckBox DockPanel.Dock="Top" TabIndex="14" IsChecked="{Binding UndupeWithoutCategory}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
+                        <TextBox DockPanel.Dock="Top" TabIndex="12" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
+                        <CheckBox DockPanel.Dock="Top" TabIndex="13" IsChecked="{Binding UndupeWithoutCategory}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeDataset}"
                                 IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
@@ -85,22 +84,22 @@
                     <DockPanel LastChildFill="False">
                         <GroupBox DockPanel.Dock="Top" Header="데이터셋 변환 방법" Margin="3" Width="200" HorizontalAlignment="Left">
                             <StackPanel Margin="3">
-                                <RadioButton TabIndex="17" GroupName="TacticsForConvertDataset" Content="COCO에서 CSV로 변환"
+                                <RadioButton TabIndex="16" GroupName="TacticsForConvertDataset" Content="COCO에서 CSV로 변환"
                                         IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=COCOToCSV}" Margin="1" />
-                                <RadioButton TabIndex="18" GroupName="TacticsForConvertDataset" Content="CSV에서 COCO로 변환"
+                                <RadioButton TabIndex="17" GroupName="TacticsForConvertDataset" Content="CSV에서 COCO로 변환"
                                         IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=CSVToCOCO}" Margin="1" />
                             </StackPanel>
                         </GroupBox>
                         <GroupBox DockPanel.Dock="Top" Header="CSV 파일 형식" Margin="3" Width="250" HorizontalAlignment="Left">
                             <StackPanel Margin="3">
-                                <RadioButton GroupName="CSVFormat" TabIndex="19" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTRB}">좌-상-우-하 (LTRB)</RadioButton>
-                                <RadioButton GroupName="CSVFormat" TabIndex="20" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTWH}">좌-상-가로-세로 (LTWH)</RadioButton>
-                                <RadioButton GroupName="CSVFormat" TabIndex="21" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="18" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTRB}">좌-상-우-하 (LTRB)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="19" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTWH}">좌-상-가로-세로 (LTWH)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="20" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
                             </StackPanel>
                         </GroupBox>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="22" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertDataset}" />
-                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertDatasetValue}" Margin="5" Height="20" />
+                            <Button DockPanel.Dock="Right" TabIndex="21" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertDataset}" />
+                            <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertDataset}" Margin="5" Height="20" />
                         </DockPanel>
                     </DockPanel>
                 </TabItem>

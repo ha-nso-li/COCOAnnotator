@@ -40,7 +40,7 @@ namespace COCOAnnotator.ViewModels {
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadDataset = new DelegateCommand(LoadDataset);
             CmdSaveDataset = new DelegateCommand(SaveDataset);
-            CmdCloseDataset = new DelegateCommand(CloseDataset);
+            CmdOpenFolderOrCloseDataset = new DelegateCommand(OpenFolderOrCloseDataset);
             CmdManageDataset = new DelegateCommand(ManageDataset);
             CmdSetting = new DelegateCommand(Setting);
             CmdTryCommitBbox = new DelegateCommand(TryCommitBbox);
@@ -194,8 +194,8 @@ namespace COCOAnnotator.ViewModels {
             Title = $"COCO 데이터셋 편집기 - {jsonPath}";
             CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
         }
-        public ICommand CmdCloseDataset { get; }
-        private void CloseDataset() {
+        public ICommand CmdOpenFolderOrCloseDataset { get; }
+        private void OpenFolderOrCloseDataset() {
             if (Dataset.BasePath == "") {
                 if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
                     Dataset.BasePath = folderPath;
@@ -461,6 +461,7 @@ namespace COCOAnnotator.ViewModels {
             int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Dataset.Images);
             foreach (ImageRecord i in currentImagesInFolder) i.LoadSize(Dataset.BasePath);
+            Dataset.Images.AddRange(currentImagesInFolder);
             int addedCount = currentImagesInFolder.Count;
             if (removedCount > 0) {
                 if (addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");

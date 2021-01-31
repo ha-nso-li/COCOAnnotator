@@ -34,7 +34,6 @@ namespace COCOAnnotator.ViewModels {
             CmdVerifyDataset = new DelegateCommand(VerifyDataset);
             CmdExportVerifiedDataset = new DelegateCommand(ExportVerifiedDataset);
             CmdAddFileForUnionDataset = new DelegateCommand(AddFileForUnionDataset);
-            CmdAddFolderForUnionDataset = new DelegateCommand(AddFolderForUnionDataset);
             CmdRemoveFileForUnionDataset = new DelegateCommand<IList>(RemoveFileForUnionDataset);
             CmdResetFileForUnionDataset = new DelegateCommand(ResetFileForUnionDataset);
             CmdExportUnionDataset = new DelegateCommand(ExportUnionDataset);
@@ -69,6 +68,11 @@ namespace COCOAnnotator.ViewModels {
             set => SetProperty(ref _ProgressVerifyDataset, value);
         }
         public ObservableCollection<string> FilesForUnionDataset { get; }
+        private int _ProgressUnionDataset;
+        public int ProgressUnionDataset {
+            get => _ProgressUnionDataset;
+            set => SetProperty(ref _ProgressUnionDataset, value);
+        }
         private TacticsForSplitDataset _TacticForSplitDataset;
         public TacticsForSplitDataset TacticForSplitDataset {
             get => _TacticForSplitDataset;
@@ -78,6 +82,11 @@ namespace COCOAnnotator.ViewModels {
         public int NValueForSplitDataset {
             get => _NValueForSplitDataset;
             set => SetProperty(ref _NValueForSplitDataset, value);
+        }
+        private int _ProgressSplitDataset;
+        public int ProgressSplitDataset {
+            get => _ProgressSplitDataset;
+            set => SetProperty(ref _ProgressSplitDataset, value);
         }
         private double _IoUThreshold;
         public double IoUThreshold {
@@ -98,20 +107,20 @@ namespace COCOAnnotator.ViewModels {
                 }
             }
         }
-        private int _ProgressUndupeDatasetValue;
-        public int ProgressUndupeDatasetValue {
-            get => _ProgressUndupeDatasetValue;
-            set => SetProperty(ref _ProgressUndupeDatasetValue, value);
+        private int _ProgressUndupeDataset;
+        public int ProgressUndupeDataset {
+            get => _ProgressUndupeDataset;
+            set => SetProperty(ref _ProgressUndupeDataset, value);
         }
         private TacticsForConvertDataset _TacticForConvertDataset;
         public TacticsForConvertDataset TacticForConvertDataset {
             get => _TacticForConvertDataset;
             set => SetProperty(ref _TacticForConvertDataset, value);
         }
-        private int _ProgressConvertDatasetValue;
-        public int ProgressConvertDatasetValue {
-            get => _ProgressConvertDatasetValue;
-            set => SetProperty(ref _ProgressConvertDatasetValue, value);
+        private int _ProgressConvertDataset;
+        public int ProgressConvertDataset {
+            get => _ProgressConvertDataset;
+            set => SetProperty(ref _ProgressConvertDataset, value);
         }
         private CSVFormat _CSVFormat;
         public CSVFormat CSVFormat {
@@ -133,8 +142,8 @@ namespace COCOAnnotator.ViewModels {
             if (res is null) return;
             bool imageSizeCheck = res.Value;
             LogVerifyDataset = "";
-            ProgressVerifyDataset = 0;
             Task.Run(async () => {
+                ProgressVerifyDataset = 0;
                 ImagesForVerify.Clear();
                 CategoriesForVerify.Clear();
                 DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
@@ -213,6 +222,7 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
                     foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Select((s, idx) => (idx, s))) {
+                        if (IsClosed) return;
                         ProgressVerifyDataset = (datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) * 100 / total;
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
                             if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
@@ -284,18 +294,7 @@ namespace COCOAnnotator.ViewModels {
                     if (SerializationService.IsJsonPathValid(filePath)) FilesForUnionDataset.Add(filePath);
                     else error = true;
                 }
-                if (error) CommonDialogService.MessageBox("일부 데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
-            }
-        }
-        public ICommand CmdAddFolderForUnionDataset { get; }
-        private void AddFolderForUnionDataset() {
-            if (CommonDialogService.OpenFolderDialog(out string folderPath)) {
-                bool error = false;
-                foreach (string filePath in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.AllDirectories)) {
-                    if (SerializationService.IsJsonPathValid(filePath)) FilesForUnionDataset.Add(filePath);
-                    else error = true;
-                }
-                if (error) CommonDialogService.MessageBox("일부 데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                if (error) CommonDialogService.MessageBox("데이터셋 파일을 가져올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
             }
         }
         public ICommand CmdRemoveFileForUnionDataset { get; }
@@ -310,31 +309,45 @@ namespace COCOAnnotator.ViewModels {
             FilesForUnionDataset.Clear();
         }
         public ICommand CmdExportUnionDataset { get; }
-        private async void ExportUnionDataset() {
+        private void ExportUnionDataset() {
             if (!CommonDialogService.SaveJsonFileDialog(out string outFilePath)) return;
             if (!SerializationService.IsJsonPathValid(outFilePath)) {
                 CommonDialogService.MessageBox("데이터셋 파일을 저장할 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
                 return;
             }
             if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 병합된 새 데이터셋을 만듭니다. 분류의 배열 순서는 병합 전후 유지되지 않을 수 있습니다.")) return;
-            // 로드
-            string outFileName = Path.GetFileNameWithoutExtension(outFilePath);
-            string outInstanceName = outFileName[(outFileName.IndexOf('_') + 1)..];
-            string outBasePath = Path.GetFullPath($@"..\..\{outInstanceName}", outFilePath);
-            SortedSet<ImageRecord> Images = new SortedSet<ImageRecord>();
-            SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
-            foreach (string inFilePath in FilesForUnionDataset) {
-                DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-                foreach (ImageRecord image in dataset.Images) Miscellaneous.CopyFile(Path.Combine(dataset.BasePath, image.Path), Path.Combine(outBasePath, image.Path));
-                Images.UnionWith(dataset.Images);
-                Categories.UnionWith(dataset.Categories);
-            }
-            // 저장
-            await SerializationService.SerializeAsync(new DatasetRecord(outBasePath, Images, Categories)).ConfigureAwait(false);
+            Task.Run(async () => {
+                ProgressUnionDataset = 0;
+                // 로드
+                string outFileName = Path.GetFileNameWithoutExtension(outFilePath);
+                string outInstanceName = outFileName[(outFileName.IndexOf('_') + 1)..];
+                string outBasePath = Path.GetFullPath($@"..\..\{outInstanceName}", outFilePath);
+                List<DatasetRecord> Datasets = new List<DatasetRecord>();
+                SortedSet<ImageRecord> Images = new SortedSet<ImageRecord>();
+                SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
+                foreach (string inFilePath in FilesForUnionDataset) {
+                    if (IsClosed) return;
+                    DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
+                    Images.UnionWith(dataset.Images);
+                    Categories.UnionWith(dataset.Categories);
+                    Datasets.Add(dataset);
+                }
+                SortedSet<ImageRecord> AlreadyCopiedImages = new SortedSet<ImageRecord>();
+                foreach (DatasetRecord dataset in Datasets) {
+                    foreach (ImageRecord image in dataset.Images) {
+                        if (IsClosed) return;
+                        ProgressUnionDataset = AlreadyCopiedImages.Count * 100 / Images.Count;
+                        if (AlreadyCopiedImages.Add(image)) Miscellaneous.CopyFile(Path.Combine(dataset.BasePath, image.Path), Path.Combine(outBasePath, image.Path));
+                    }
+                }
+                // 저장
+                await SerializationService.SerializeAsync(new DatasetRecord(outBasePath, Images, Categories)).ConfigureAwait(false);
+                ProgressUnionDataset = 100;
+            });
         }
         #endregion
 
-        #region 데이터셋 분리
+        #region 데이터셋 분할
         public ICommand CmdSplitDataset { get; }
         private async void SplitDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string inFilePath)) return;
@@ -343,7 +356,7 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             DatasetRecord inDataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
-            IEnumerable<ImageRecord> shuffledImages = inDataset.Images.Shuffle();
+            ImageRecord[] shuffledImages = inDataset.Images.Shuffle().ToArray();
             string inFileName = Path.GetFileNameWithoutExtension(inFilePath);
             string inInstanceName = inFileName[(inFileName.IndexOf('_') + 1)..];
             if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 분할된 새 데이터셋을 만듭니다.")) return;
@@ -354,30 +367,40 @@ namespace COCOAnnotator.ViewModels {
                     CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                     return;
                 }
-                List<DatasetRecord> outDatasetByPartition = new List<DatasetRecord>();
-                List<SortedSet<CategoryRecord>> categoriesByPartition = new List<SortedSet<CategoryRecord>>();
-                for (int i = 0; i < NValueForSplitDataset; i++) {
-                    outDatasetByPartition.Add(new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
-                    categoriesByPartition.Add(new SortedSet<CategoryRecord>());
-                }
-                foreach (ImageRecord image in shuffledImages) {
-                    if (image.Annotations.Count > 0) {
-                        // 양성 이미지인 경우.
-                        // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
-                        DatasetRecord datasetOfPartition = outDatasetByPartition
-                            .OrderByDescending(s => image.Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(s => s.Category)).Count())
-                            .ThenBy(s => s.Images.Count).First();
-                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
-                        datasetOfPartition.Images.Add(image);
-                    } else {
-                        // 음성 이미지인 경우.
-                        // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
-                        DatasetRecord datasetOfPartition = outDatasetByPartition.OrderBy(s => s.Images.Count).First();
-                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(datasetOfPartition.BasePath, image.Path));
-                        datasetOfPartition.Images.Add(image);
+                _ = Task.Run(async () => {
+                    ProgressSplitDataset = 0;
+                    List<DatasetRecord> outDatasetByPartition = new List<DatasetRecord>();
+                    List<SortedSet<CategoryRecord>> categoriesByPartition = new List<SortedSet<CategoryRecord>>();
+                    for (int i = 0; i < NValueForSplitDataset; i++) {
+                        if (IsClosed) return;
+                        outDatasetByPartition.Add(new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
+                        categoriesByPartition.Add(new SortedSet<CategoryRecord>());
                     }
-                }
-                foreach (DatasetRecord i in outDatasetByPartition) await SerializationService.SerializeAsync(i).ConfigureAwait(false);
+                    for (int i = 0; i < shuffledImages.Length; i++) {
+                        if (IsClosed) return;
+                        ProgressSplitDataset = i * 100 / shuffledImages.Length;
+                        if (shuffledImages[i].Annotations.Count > 0) {
+                            // 양성 이미지인 경우.
+                            // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
+                            DatasetRecord datasetOfPartition = outDatasetByPartition
+                                .OrderByDescending(s => shuffledImages[i].Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(s => s.Category)).Count())
+                                .ThenBy(s => s.Images.Count).First();
+                            Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, shuffledImages[i].Path), Path.Combine(datasetOfPartition.BasePath, shuffledImages[i].Path));
+                            datasetOfPartition.Images.Add(shuffledImages[i]);
+                        } else {
+                            // 음성 이미지인 경우.
+                            // 파티션에 포함된 이미지 개수가 적은 순으로만 선택.
+                            DatasetRecord datasetOfPartition = outDatasetByPartition.OrderBy(s => s.Images.Count).First();
+                            Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, shuffledImages[i].Path), Path.Combine(datasetOfPartition.BasePath, shuffledImages[i].Path));
+                            datasetOfPartition.Images.Add(shuffledImages[i]);
+                        }
+                    }
+                    foreach (DatasetRecord i in outDatasetByPartition) {
+                        if (IsClosed) return;
+                        await SerializationService.SerializeAsync(i).ConfigureAwait(false);
+                    }
+                    ProgressSplitDataset = 100;
+                });
                 break;
             case TacticsForSplitDataset.TakeNSamples:
                 // 일부 추출
@@ -385,25 +408,31 @@ namespace COCOAnnotator.ViewModels {
                     CommonDialogService.MessageBox("입력한 숫자가 올바르지 않습니다.");
                     return;
                 }
-                DatasetRecord OriginalDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
-                DatasetRecord SplitDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
-                foreach (ImageRecord image in shuffledImages) {
-                    int DiversityDeltaOriginal = image.Annotations.Select(s => s.Category).Except(OriginalDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category)).Count();
-                    int DiversityDeltaSplit = image.Annotations.Select(s => s.Category).Except(SplitDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category)).Count();
-                    // 아래 두 경우 중 하나일시 해당 이미지를 추출 데이터셋에 씀
-                    // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
-                    // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
-                    if (OriginalDataset.Images.Count + NValueForSplitDataset + 1 >= inDataset.Images.Count ||
-                        (SplitDataset.Images.Count < NValueForSplitDataset && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
-                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(SplitDataset.BasePath, image.Path));
-                        SplitDataset.Images.Add(image);
-                    } else {
-                        Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, image.Path), Path.Combine(OriginalDataset.BasePath, image.Path));
-                        OriginalDataset.Images.Add(image);
+                _ = Task.Run(async () => {
+                    ProgressSplitDataset = 0;
+                    DatasetRecord OriginalDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                    DatasetRecord SplitDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                    for (int i = 0; i < shuffledImages.Length; i++) {
+                        if (IsClosed) return;
+                        ProgressSplitDataset = i * 100 / shuffledImages.Length;
+                        int DiversityDeltaOriginal = shuffledImages[i].Annotations.Select(s => s.Category).Except(OriginalDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category))
+                            .Count();
+                        int DiversityDeltaSplit = shuffledImages[i].Annotations.Select(s => s.Category).Except(SplitDataset.Images.SelectMany(s => s.Annotations).Select(s => s.Category)).Count();
+                        // 아래 두 경우 중 하나일시 해당 이미지를 추출 데이터셋에 씀
+                        // 1. 남은 이미지 전부를 추출해야만 추출량 목표치를 채울 수 있는 경우
+                        // 2. 아직 추출량 목표치가 남아 있으며, 분류 다양성이 증가하는 정도가 추출 데이터셋 쪽이 더 높거나 같은 경우
+                        if (OriginalDataset.Images.Count + NValueForSplitDataset + 1 >= inDataset.Images.Count ||
+                            (SplitDataset.Images.Count < NValueForSplitDataset && DiversityDeltaSplit >= DiversityDeltaOriginal)) {
+                            Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, shuffledImages[i].Path), Path.Combine(SplitDataset.BasePath, shuffledImages[i].Path));
+                            SplitDataset.Images.Add(shuffledImages[i]);
+                        } else {
+                            Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, shuffledImages[i].Path), Path.Combine(OriginalDataset.BasePath, shuffledImages[i].Path));
+                            OriginalDataset.Images.Add(shuffledImages[i]);
+                        }
                     }
-                }
-                await SerializationService.SerializeAsync(OriginalDataset).ConfigureAwait(false);
-                await SerializationService.SerializeAsync(SplitDataset).ConfigureAwait(false);
+                    await SerializationService.SerializeAsync(OriginalDataset).ConfigureAwait(false);
+                    await SerializationService.SerializeAsync(SplitDataset).ConfigureAwait(false);
+                });
                 break;
             }
         }
@@ -418,8 +447,8 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             LogUndupeDataset = "";
-            ProgressUndupeDatasetValue = 0;
             Task.Run(async () => {
+                ProgressUndupeDataset = 0;
                 AppendLogUndupeDataset($"{filePath}에서 위치, 크기가 유사한 중복 경계상자를 제거합니다.");
                 // 로드
                 DatasetForUndupe = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
@@ -428,7 +457,7 @@ namespace COCOAnnotator.ViewModels {
                 List<ImageRecord> SuppressedImages = new List<ImageRecord>();
                 for (int i = 0; i < DatasetForUndupe.Images.Count; i++) {
                     if (IsClosed) return;
-                    ProgressUndupeDatasetValue = i * 100 / DatasetForUndupe.Images.Count;
+                    ProgressUndupeDataset = i * 100 / DatasetForUndupe.Images.Count;
                     List<AnnotationRecord> UndupedAnnotations = new List<AnnotationRecord>();
                     if (UndupeWithoutCategory) {
                         UndupedAnnotations.AddRange(SuppressAnnotations(DatasetForUndupe.Images[i].Annotations));
@@ -444,7 +473,6 @@ namespace COCOAnnotator.ViewModels {
                         SuppressedImages.Add(DatasetForUndupe.Images[i]);
                     }
                 }
-                ProgressUndupeDatasetValue = 100;
                 if (TotalSuppressedBoxesCount == 0) {
                     AppendLogUndupeDataset("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                 } else {
@@ -458,6 +486,7 @@ namespace COCOAnnotator.ViewModels {
                         AppendLogUndupeDataset(UniqueImagePaths.ToArray());
                     }
                 }
+                ProgressUndupeDataset = 100;
             });
         }
         public ICommand CmdExportUndupedDataset { get; }
@@ -489,7 +518,7 @@ namespace COCOAnnotator.ViewModels {
             case TacticsForConvertDataset.CSVToCOCO: {
                 if (CommonDialogService.OpenCSVFileDialog(out string csvFilePath)) {
                     _ = Task.Run(async () => {
-                        ProgressConvertDatasetValue = 0;
+                        ProgressConvertDataset = 0;
                         DatasetRecord dataset = await SerializationService.DeserializeCSVAsync(csvFilePath, CSVFormat).ConfigureAwait(false);
                         if (Directory.GetParent(dataset.BasePath) is null) {
                             CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 루트 폴더가 아니어야 합니다.");
@@ -497,12 +526,12 @@ namespace COCOAnnotator.ViewModels {
                         }
                         for (int i = 0; i < dataset.Images.Count; i++) {
                             if (IsClosed) return;
-                            ProgressConvertDatasetValue = i * 100 / dataset.Images.Count;
+                            ProgressConvertDataset = i * 100 / dataset.Images.Count;
                             dataset.Images[i].LoadSize(dataset.BasePath);
                         }
                         string jsonFilePath = await SerializationService.SerializeAsync(dataset).ConfigureAwait(false);
-                        ProgressConvertDatasetValue = 100;
                         CommonDialogService.MessageBox($"\"{jsonFilePath}\"에 변환된 데이터셋이 저장되었습니다.");
+                        ProgressConvertDataset = 100;
                     });
                 }
                 break;

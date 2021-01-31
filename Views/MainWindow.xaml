@@ -53,7 +53,7 @@
             <Button DockPanel.Dock="Top" TabIndex="0" Content="데이터셋 불러오기" Command="{Binding CmdLoadDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="1" Content="데이터셋 저장하기" Command="{Binding CmdSaveDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="2" Content="{Binding Dataset.BasePath, Converter={StaticResource ButtonNameConverter}, ConverterParameter=CloseDataset}"
-                    Command="{Binding CmdCloseDataset}" />
+                    Command="{Binding CmdOpenFolderOrCloseDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="3" Content="데이터셋 관리" Command="{Binding CmdManageDataset}" />
             <Button DockPanel.Dock="Top" TabIndex="4" Content="설정" Command="{Binding CmdSetting}" />
             <Button DockPanel.Dock="Bottom" TabIndex="14" Content="아래로 (A)" Command="{Binding CmdCategoryDown}" />
