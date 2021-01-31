@@ -38,7 +38,7 @@
             </Grid>
         </ControlTemplate>
     </UserControl.Resources>
-    <ScrollViewer x:Name="ViewViewport" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer x:Name="ViewViewport" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled" PanningMode="Both">
         <Grid x:Name="ViewGrid">
             <Canvas x:Name="ViewImageCanvas" SizeChanged="ViewImageCanvas_SizeChanged" MouseMove="ViewImageCanvas_MouseMove" MouseLeftButtonDown="ViewImageCanvas_MouseLeftButtonDown"
                     MouseLeftButtonUp="ViewImageCanvas_MouseLeftButtonUp" MouseWheel="ViewImageCanvas_MouseWheel">

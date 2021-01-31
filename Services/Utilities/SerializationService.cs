@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services.Utilities {
     public static class SerializationService {
-        /// <summary>주어진 데이터셋을 UTF-8 COCO JSON으로 직렬화합니다.</summary>
+        /// <summary>주어진 데이터셋을 UTF-8 COCO JSON으로 직렬화하여 파일로 출력합니다.</summary>
         /// <returns>직렬화된 JSON 파일의 경로입니다.</returns>
         public static async Task<string> SerializeAsync(DatasetRecord Dataset) {
             string InstanceName = Path.GetFileName(Dataset.BasePath);
@@ -28,7 +28,7 @@ namespace COCOAnnotator.Services.Utilities {
                 int image_id = datasetcoco.Images.Count;
                 datasetcoco.Images.Add(new ImageCOCO {
                     ID = image_id,
-                    FileName = i.Path.Replace('\\', '/'),
+                    FileName = i.Path,
                     Width = i.Width,
                     Height = i.Height,
                 });
@@ -51,7 +51,7 @@ namespace COCOAnnotator.Services.Utilities {
             return JsonPath;
         }
 
-        /// <summary>주어진 UTF-8 바이트 배열을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
+        /// <summary>주어진 파일을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         /// <param name="JsonPath">역직렬화할 JSON 파일이 존재하는 경로입니다.</param>
         public static async Task<DatasetRecord> DeserializeAsync(string JsonPath) {
             string JsonFileName = Path.GetFileNameWithoutExtension(JsonPath);
@@ -74,30 +74,33 @@ namespace COCOAnnotator.Services.Utilities {
             return new DatasetRecord(BasePath, images.Values, categories.Values);
         }
 
+        /// <summary>주어진 파일을 COCO JSON으로 간주하여 역직렬화합니다. .</summary>
         public static async Task<DatasetCOCO> DeserializeRawAsync(string JsonPath) {
             using FileStream fileStream = File.OpenRead(JsonPath);
             return await JsonSerializer.DeserializeAsync<DatasetCOCO>(fileStream).ConfigureAwait(false) ?? new DatasetCOCO();
         }
 
-        public static async Task SerializeCSVAsync(string CSVPath, IEnumerable<ImageRecord> Images, CSVFormat CSVFormat) {
+        /// <summary>주어진 데이터셋을 CSV로 직렬화하여 파일로 출력합니다.</summary>
+        public static async Task<string> SerializeCSVAsync(DatasetRecord Dataset, CSVFormat CSVFormat) {
+            string CSVPath = Path.Combine(Dataset.BasePath, "instances.csv");
             using StreamWriter csv = File.CreateText(CSVPath);
-            foreach (ImageRecord image in Images) {
-                string imagePath = Path.GetRelativePath(Path.GetDirectoryName(CSVPath) ?? "", image.Path).Replace('\\', '/');
+            foreach (ImageRecord image in Dataset.Images) {
                 if (image.Annotations.Count == 0) {
-                    await csv.WriteLineAsync($"{imagePath},,,,,").ConfigureAwait(false);
+                    await csv.WriteLineAsync($"{image.Path},,,,,").ConfigureAwait(false);
                 } else {
                     foreach (AnnotationRecord annotation in image.Annotations) {
                         await csv.WriteLineAsync(CSVFormat switch {
-                            CSVFormat.LTRB => $"{imagePath},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#}," +
+                            CSVFormat.LTRB => $"{image.Path},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#}," +
                                 $"{annotation.Top + annotation.Height:0.#},{annotation.Category}",
-                            CSVFormat.CXCYWH => $"{imagePath},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#}," +
+                            CSVFormat.CXCYWH => $"{image.Path},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#}," +
                                 $"{annotation.Height:0.#},{annotation.Category}",
-                            CSVFormat.LTWH => $"{imagePath},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
+                            CSVFormat.LTWH => $"{image.Path},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
                             _ => throw new ArgumentException(null, nameof(CSVFormat)),
                         }).ConfigureAwait(false);
                     }
                 }
             }
+            return CSVPath;
         }
 
         public static async Task<DatasetRecord> DeserializeCSVAsync(string CSVPath, CSVFormat CSVFormat) {

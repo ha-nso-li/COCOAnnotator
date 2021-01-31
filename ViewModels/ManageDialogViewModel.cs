@@ -155,7 +155,7 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
                     foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyDataset = (int)((double)idx / total * 100);
+                        ProgressVerifyDataset = idx * 100 / total;
                         string fullPath = Path.GetFullPath(image.FileName, BasePathForVerify);
                         if (ImagesForVerify.ContainsKey(image.ID)) {
                             if (DuplicatedIDAlreadyDetected.Add(image.ID)) AppendLogVerifyDataset($"ID가 {image.ID}인 이미지가 2개 이상 발견되었습니다.");
@@ -196,7 +196,7 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
                     foreach ((int idx, CategoryCOCO category) in datasetcoco.Categories.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
-                        ProgressVerifyDataset = (int)((double)(datasetcoco.Images.Count + idx) / total * 100);
+                        ProgressVerifyDataset = (datasetcoco.Images.Count + idx) * 100 / total;
                         if (CategoriesForVerify.ContainsKey(category.ID)) {
                             if (DuplicationAlreadyDetected.Add(category.ID)) AppendLogVerifyDataset($"ID가 {category.ID}인 분류가 2개 이상 발견되었습니다.");
                             continue;
@@ -213,13 +213,13 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
                     SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
                     foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Select((s, idx) => (idx, s))) {
-                        ProgressVerifyDataset = (int)((double)(datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) / total * 100);
+                        ProgressVerifyDataset = (datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) * 100 / total;
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {
                             if (DuplicationAlreadyDetected.Add(annotation.ID)) AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 2개 이상 발견되었습니다.");
                             continue;
                         }
                         if (!CategoriesForVerify.TryGetValue(annotation.CategoryID, out CategoryRecord? category)) {
-                            AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 분류 ID를 참조합니다..");
+                            AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 분류 ID를 참조합니다.");
                             continue;
                         }
                         if (!ImagesForVerify.TryGetValue(annotation.ImageID, out ImageRecord? image)) {
@@ -428,7 +428,7 @@ namespace COCOAnnotator.ViewModels {
                 List<ImageRecord> SuppressedImages = new List<ImageRecord>();
                 for (int i = 0; i < DatasetForUndupe.Images.Count; i++) {
                     if (IsClosed) return;
-                    ProgressUndupeDatasetValue = (int)((double)i / DatasetForUndupe.Images.Count * 100);
+                    ProgressUndupeDatasetValue = i * 100 / DatasetForUndupe.Images.Count;
                     List<AnnotationRecord> UndupedAnnotations = new List<AnnotationRecord>();
                     if (UndupeWithoutCategory) {
                         UndupedAnnotations.AddRange(SuppressAnnotations(DatasetForUndupe.Images[i].Annotations));
@@ -449,8 +449,7 @@ namespace COCOAnnotator.ViewModels {
                     AppendLogUndupeDataset("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                 } else {
                     AppendLogUndupeDataset($"분석이 완료되었습니다. 중복된 경계 상자가 {SuppressedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                    SortedSet<string> UniqueImagePaths = new SortedSet<string>
-                        (SuppressedImages.Select(s => Path.GetRelativePath(Path.GetDirectoryName(filePath) ?? "", s.Path).Replace('\\', '/')));
+                    SortedSet<string> UniqueImagePaths = new SortedSet<string>(SuppressedImages.Select(s => Path.GetRelativePath(DatasetForUndupe.BasePath, s.Path)));
                     if (UniqueImagePaths.Count > 20) {
                         AppendLogUndupeDataset("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
                         AppendLogUndupeDataset(UniqueImagePaths.Take(20).ToArray());
@@ -482,8 +481,7 @@ namespace COCOAnnotator.ViewModels {
                         return;
                     }
                     DatasetRecord dataset = await SerializationService.DeserializeAsync(jsonFilePath).ConfigureAwait(false);
-                    string csvFilePath = Path.Combine(dataset.BasePath, Path.GetFileName(dataset.BasePath) + ".csv");
-                    await SerializationService.SerializeCSVAsync(csvFilePath, dataset.Images, CSVFormat).ConfigureAwait(false);
+                    string csvFilePath = await SerializationService.SerializeCSVAsync(dataset, CSVFormat).ConfigureAwait(false);
                     CommonDialogService.MessageBox($"\"{csvFilePath}\"에 변환된 데이터셋이 저장되었습니다.");
                 }
                 break;
@@ -497,10 +495,10 @@ namespace COCOAnnotator.ViewModels {
                             CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 루트 폴더가 아니어야 합니다.");
                             return;
                         }
-                        foreach ((int idx, ImageRecord image) in dataset.Images.Select((s, idx) => (idx, s))) {
+                        for (int i = 0; i < dataset.Images.Count; i++) {
                             if (IsClosed) return;
-                            ProgressConvertDatasetValue = (int)((double)idx / dataset.Images.Count * 100);
-                            image.LoadSize(dataset.BasePath);
+                            ProgressConvertDatasetValue = i * 100 / dataset.Images.Count;
+                            dataset.Images[i].LoadSize(dataset.BasePath);
                         }
                         string jsonFilePath = await SerializationService.SerializeAsync(dataset).ConfigureAwait(false);
                         ProgressConvertDatasetValue = 100;

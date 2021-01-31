@@ -5,13 +5,9 @@ using System.Linq;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Services.Utilities {
-    /// <summary>
-    /// 사소한 정적 유틸 메서드를 포함하는 서비스입니다.
-    /// </summary>
+    /// <summary>사소한 정적 유틸 메서드를 포함하는 서비스입니다.</summary>
     public static class Miscellaneous {
-        /// <summary>
-        /// 주어진 두 값을 비교하고 작아야 하는 값이 더 크면 두 값을 교환합니다.
-        /// </summary>
+        /// <summary>주어진 두 값을 비교하고 작아야 하는 값이 더 크면 두 값을 교환합니다.</summary>
         public static void SortTwoValues<T>(ref T ShouldSmaller, ref T ShouldBigger) where T : IComparable<T> {
             Comparer<T> comparer = Comparer<T>.Default;
             if (comparer.Compare(ShouldSmaller, ShouldBigger) > 0) {
@@ -21,9 +17,7 @@ namespace COCOAnnotator.Services.Utilities {
             }
         }
 
-        /// <summary>
-        /// 미리 정의된 HSV 기반의 색깔 생성 방법에 따라 주어진 개수 만큼의 색을 생성합니다.
-        /// </summary>
+        /// <summary>미리 정의된 HSV 기반의 색깔 생성 방법에 따라 주어진 개수 만큼의 색을 생성합니다.</summary>
         public static IEnumerable<Color> GenerateFixedColor(int ColorCount) {
             int TotalValue;
             if (ColorCount <= 20) TotalValue = 1;
@@ -63,9 +57,7 @@ namespace COCOAnnotator.Services.Utilities {
             };
         }
 
-        /// <summary>
-        /// 주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 생성합니다.
-        /// </summary>
+        /// <summary>주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 생성합니다.</summary>
         public static Color GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold) {
             Random random = new Random();
             while (true) {
@@ -74,9 +66,7 @@ namespace COCOAnnotator.Services.Utilities {
             }
         }
 
-        /// <summary>
-        /// 주어진 두 색의 색차를 구합니다.
-        /// </summary>
+        /// <summary>주어진 두 색의 색차를 구합니다.</summary>
         private static double GetColorDifference(Color color1, Color color2) {
             double rmean = (color1.R + color2.R) / 2.0;
             double rdelta = Math.Pow(color1.R - color2.R, 2);
@@ -85,15 +75,13 @@ namespace COCOAnnotator.Services.Utilities {
             return Math.Sqrt((512 + rmean) * rdelta / 256 + 4 * gdelta + (767 - rmean) * bdelta / 256);
         }
 
-        /// <summary>
-        /// 이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.
-        /// </summary>
+        /// <summary>이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.</summary>
         public static ISet<string> ApprovedImageExtensions => new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".png", ".jpeg", ".tif" };
 
+        /// <summary>파일을 지정한 경로로 복사합니다. 복사할 경로의 폴더가 존재하지 않으면 생성합니다.</summary>
         public static void CopyFile(string FromPath, string ToPath) {
             string? ToDirectory = Path.GetDirectoryName(ToPath);
-            if (ToDirectory is null) return;
-            Directory.CreateDirectory(ToDirectory);
+            if (ToDirectory is not null) Directory.CreateDirectory(ToDirectory);
             File.Copy(FromPath, ToPath);
         }
     }
