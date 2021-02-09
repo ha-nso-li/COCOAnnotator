@@ -27,6 +27,7 @@ namespace COCOAnnotator.ViewModels {
             _NValueForSplitDataset = 2;
             _LogUndupeDataset = "";
             _IoUThreshold = 0.5;
+            _TacticForUndupeDataset = TacticsForUndupeDataset.PreferSmaller;
             _UndupeWithoutCategory = true;
             _TacticForConvertDataset = TacticsForConvertDataset.COCOToCSV;
             _CSVFormat = CSVFormat.LTRB;
@@ -97,6 +98,11 @@ namespace COCOAnnotator.ViewModels {
         public bool UndupeWithoutCategory {
             get => _UndupeWithoutCategory;
             set => SetProperty(ref _UndupeWithoutCategory, value);
+        }
+        private TacticsForUndupeDataset _TacticForUndupeDataset;
+        public TacticsForUndupeDataset TacticForUndupeDataset {
+            get => _TacticForUndupeDataset;
+            set => SetProperty(ref _TacticForUndupeDataset, value);
         }
         private string _LogUndupeDataset;
         public string LogUndupeDataset {
@@ -554,8 +560,9 @@ namespace COCOAnnotator.ViewModels {
             LogUndupeDataset = LogUndupeDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         }
         private IEnumerable<AnnotationRecord> SuppressAnnotations(IEnumerable<AnnotationRecord> Annotations) {
-            List<AnnotationRecord> sortedBySize = Annotations.ToList(); // 넓이가 작은 경계 상자를 우선
+            List<AnnotationRecord> sortedBySize = Annotations.ToList();
             sortedBySize.Sort((a, b) => a.Area.CompareTo(b.Area));
+            if (TacticForUndupeDataset == TacticsForUndupeDataset.PreferBigger) sortedBySize.Reverse();
             while (sortedBySize.Count > 0) {
                 // pick
                 AnnotationRecord pick = sortedBySize[0];

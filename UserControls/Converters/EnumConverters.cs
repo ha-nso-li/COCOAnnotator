@@ -32,4 +32,7 @@ namespace COCOAnnotator.UserControls.Converters {
 
     [ValueConversion(typeof(TacticsForSplitDataset), typeof(bool))]
     public class TacticForSplitDatasetConverter : EnumConverter<TacticsForSplitDataset> { }
+
+    [ValueConversion(typeof(TacticsForUndupeDataset), typeof(bool))]
+    public class TacticForUndupeDatasetConverter : EnumConverter<TacticsForUndupeDataset> { }
 }

@@ -7,12 +7,13 @@
             <Setter Property="ShowInTaskbar" Value="False" />
             <Setter Property="Width" Value="550" />
             <Setter Property="Height" Value="400" />
-            <Setter Property="MinWidth" Value="450" />
+            <Setter Property="MinWidth" Value="500" />
             <Setter Property="MinHeight" Value="320" />
         </Style>
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
         <cvt:TacticForSplitDatasetConverter x:Key="TacticForSplitDatasetConverter" />
+        <cvt:TacticForUndupeDatasetConverter x:Key="TacticForUndupeDatasetConverter" />
         <cvt:TacticForConvertDatasetConverter x:Key="TacticForConvertDatasetConverter" />
         <cvt:CSVFormatConverter x:Key="CSVFormatConverter" />
     </UserControl.Resources>
@@ -68,14 +69,26 @@
                 </TabItem>
                 <TabItem Header="데이터셋 중복 제거">
                     <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="2,2,2,4">
+                            <StackPanel VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <Label DockPanel.Dock="Left" Content="IoU 임계값 설정:" Margin="2,0,2,0" />
+                                    <TextBox TabIndex="12" Text="{Binding IoUThreshold}" VerticalAlignment="Center" Width="80" />
+                                </StackPanel>
+                                <CheckBox TabIndex="13" IsChecked="{Binding UndupeWithoutCategory}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center" Margin="4,0,0,0">
+                                <RadioButton TabIndex="14" GroupName="TacticsForUndupeDataset" Content="넓이가 작은 경계 상자를 남김"
+                                        IsChecked="{Binding TacticForUndupeDataset, Converter={StaticResource TacticForUndupeDatasetConverter}, ConverterParameter=PreferSmaller}" Margin="1" />
+                                <RadioButton TabIndex="15" GroupName="TacticsForUndupeDataset" Content="넓이가 큰 경계 상자를 남김"
+                                        IsChecked="{Binding TacticForUndupeDataset, Converter={StaticResource TacticForUndupeDatasetConverter}, ConverterParameter=PreferBigger}" Margin="1" />
+                            </StackPanel>
+                        </StackPanel>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="15" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedDataset}" />
-                            <Button DockPanel.Dock="Right" TabIndex="14" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeDataset}" />
+                            <Button DockPanel.Dock="Right" TabIndex="17" Content="내보내기" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdExportUndupedDataset}" />
+                            <Button DockPanel.Dock="Right" TabIndex="16" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdUndupeDataset}" />
                             <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressUndupeDataset}" Margin="5" Height="20" />
                         </DockPanel>
-                        <Label DockPanel.Dock="Top" Content="IoU 임계값 설정:" />
-                        <TextBox DockPanel.Dock="Top" TabIndex="12" Text="{Binding IoUThreshold}" Width="150" HorizontalAlignment="Left" Margin="2" />
-                        <CheckBox DockPanel.Dock="Top" TabIndex="13" IsChecked="{Binding UndupeWithoutCategory}" Content="서로 분류가 다른 경계 상자도 중복으로 판단" Margin="2" />
                         <TextBox TextWrapping="Wrap" AcceptsReturn="True" DockPanel.Dock="Bottom" VerticalScrollBarVisibility="Auto" x:Name="TxtLogUndupeLabel" Text="{Binding LogUndupeDataset}"
                                 IsReadOnly="True" IsTabStop="False" />
                     </DockPanel>
@@ -84,21 +97,21 @@
                     <DockPanel LastChildFill="False">
                         <GroupBox DockPanel.Dock="Top" Header="데이터셋 변환 방법" Margin="3" Width="200" HorizontalAlignment="Left">
                             <StackPanel Margin="3">
-                                <RadioButton TabIndex="16" GroupName="TacticsForConvertDataset" Content="COCO에서 CSV로 변환"
+                                <RadioButton TabIndex="18" GroupName="TacticsForConvertDataset" Content="COCO에서 CSV로 변환"
                                         IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=COCOToCSV}" Margin="1" />
-                                <RadioButton TabIndex="17" GroupName="TacticsForConvertDataset" Content="CSV에서 COCO로 변환"
+                                <RadioButton TabIndex="19" GroupName="TacticsForConvertDataset" Content="CSV에서 COCO로 변환"
                                         IsChecked="{Binding TacticForConvertDataset, Converter={StaticResource TacticForConvertDatasetConverter}, ConverterParameter=CSVToCOCO}" Margin="1" />
                             </StackPanel>
                         </GroupBox>
                         <GroupBox DockPanel.Dock="Top" Header="CSV 파일 형식" Margin="3" Width="250" HorizontalAlignment="Left">
                             <StackPanel Margin="3">
-                                <RadioButton GroupName="CSVFormat" TabIndex="18" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTRB}">좌-상-우-하 (LTRB)</RadioButton>
-                                <RadioButton GroupName="CSVFormat" TabIndex="19" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTWH}">좌-상-가로-세로 (LTWH)</RadioButton>
-                                <RadioButton GroupName="CSVFormat" TabIndex="20" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="20" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTRB}">좌-상-우-하 (LTRB)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="21" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=LTWH}">좌-상-가로-세로 (LTWH)</RadioButton>
+                                <RadioButton GroupName="CSVFormat" TabIndex="22" IsChecked="{Binding CSVFormat, Converter={StaticResource CSVFormatConverter}, ConverterParameter=CXCYWH}">중앙X-중앙Y-가로-세로 (CXCYWH)</RadioButton>
                             </StackPanel>
                         </GroupBox>
                         <DockPanel DockPanel.Dock="Bottom">
-                            <Button DockPanel.Dock="Right" TabIndex="21" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertDataset}" />
+                            <Button DockPanel.Dock="Right" TabIndex="23" Content="데이터셋 선택" Margin="2" Padding="5" Height="28" VerticalAlignment="Center" Command="{Binding CmdConvertDataset}" />
                             <ProgressBar Maximum="100" Minimum="0" Value="{Binding ProgressConvertDataset}" Margin="5" Height="20" />
                         </DockPanel>
                     </DockPanel>
