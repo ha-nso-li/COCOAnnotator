@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace COCOAnnotator.Records {
-    public class FastObservableCollection<T> : ObservableCollection<T> {
+    public class ObservableCollection<T> : System.Collections.ObjectModel.ObservableCollection<T> {
         public void AddRange(IEnumerable<T> collection) {
             if (Items is List<T> ListItems) {
                 ListItems.AddRange(collection);
@@ -42,8 +41,8 @@ namespace COCOAnnotator.Records {
             return removedCount;
         }
 
-        public FastObservableCollection() : base() { }
-        public FastObservableCollection(IEnumerable<T> collection) : base(collection) { }
-        public FastObservableCollection(List<T> list) : base(list) { }
+        public ObservableCollection() : base() { }
+        public ObservableCollection(IEnumerable<T> collection) : base(collection) { }
+        public ObservableCollection(List<T> list) : base(list) { }
     }
 }

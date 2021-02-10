@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace COCOAnnotator.Records {
     public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
-        public FastObservableCollection<AnnotationRecord> Annotations { get; }
+        public ObservableCollection<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
         public int Height { get; set; }
         private string _Path;
@@ -22,7 +22,7 @@ namespace COCOAnnotator.Records {
 
         public ImageRecord(string Path, int Width, int Height) {
             _Path = Path;
-            Annotations = new FastObservableCollection<AnnotationRecord>();
+            Annotations = new ObservableCollection<AnnotationRecord>();
             Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;
             this.Height = Height;
