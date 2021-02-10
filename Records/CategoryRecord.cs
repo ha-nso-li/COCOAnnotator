@@ -40,9 +40,9 @@ namespace COCOAnnotator.Records {
         #endregion
 
         #region 비교
-        public int CompareTo(object? obj) {
+        int IComparable.CompareTo(object? obj) {
             return obj switch {
-                ImageRecord obj_r => CompareTo(obj_r),
+                CategoryRecord obj_r => CompareTo(obj_r),
                 null => 1,
                 _ => throw new ArgumentException(null, nameof(obj)),
             };

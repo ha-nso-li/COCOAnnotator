@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -177,20 +178,20 @@ namespace COCOAnnotator.ViewModels {
         #region 커맨드
         #region 레이블 불러오기, 내보내기, 설정
         public ICommand CmdViewportDrop { get; }
-        private void ViewportDrop(DragEventArgs e) {
+        private async void ViewportDrop(DragEventArgs e) {
             if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length >= 1) {
-                InternalLoadDataset(files[0]);
+                await InternalLoadDataset(files[0]).ConfigureAwait(false);
             }
         }
         public ICommand CmdLoadDataset { get; }
-        private void LoadDataset() {
+        private async void LoadDataset() {
             if (CommonDialogService.OpenJsonFileDialog(out string filePath)) {
-                InternalLoadDataset(filePath);
+                await InternalLoadDataset(filePath).ConfigureAwait(false);
             }
         }
         public ICommand CmdSaveDataset { get; }
         private async void SaveDataset() {
-            string jsonPath = await SerializationService.SerializeAsync(Dataset);
+            string jsonPath = await SerializationService.SerializeAsync(Dataset).ConfigureAwait(false);
             Title = $"COCO 데이터셋 편집기 - {jsonPath}";
             CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
         }
@@ -423,12 +424,12 @@ namespace COCOAnnotator.ViewModels {
             else visibleAnnotations = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
             foreach (AnnotationRecord i in visibleAnnotations) VisibleAnnotations.Add(i);
         }
-        private async void InternalLoadDataset(string filePath) {
+        private async Task InternalLoadDataset(string filePath) {
             if (!SerializationService.IsJsonPathValid(filePath)) {
                 CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
                 return;
             }
-            Dataset = await SerializationService.DeserializeAsync(filePath);
+            Dataset = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
             if (Dataset.Categories.Count > 0) {
                 Dataset.Categories.Insert(0, CategoryRecord.AsAll());
                 SelectedCategory = Dataset.Categories[0];
