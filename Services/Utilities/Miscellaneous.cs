@@ -59,9 +59,9 @@ namespace COCOAnnotator.Services.Utilities {
 
         /// <summary>주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 생성합니다.</summary>
         public static Color GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold) {
-            Random random = new Random();
+            Random rng = new();
             while (true) {
-                Color newColor = Color.FromRgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
+                Color newColor = Color.FromRgb((byte)rng.Next(256), (byte)rng.Next(256), (byte)rng.Next(256));
                 if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) return newColor;
             }
         }

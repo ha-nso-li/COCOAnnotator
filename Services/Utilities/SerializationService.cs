@@ -15,35 +15,19 @@ namespace COCOAnnotator.Services.Utilities {
         public static async Task<string> SerializeAsync(DatasetRecord Dataset) {
             string InstanceName = Path.GetFileName(Dataset.BasePath);
             string JsonPath = Path.GetFullPath($@"..\annotations\instances_{InstanceName}.json", Dataset.BasePath);
-            DatasetCOCO datasetcoco = new DatasetCOCO();
+            DatasetCOCO datasetcoco = new();
             foreach (CategoryRecord i in Dataset.Categories.Where(s => !s.All)) {
                 int id = datasetcoco.Categories.Count + 1;
-                datasetcoco.Categories.Add(new CategoryCOCO {
-                    ID = id,
-                    Name = i.Name,
-                    SuperCategory = i.Name,
-                });
+                datasetcoco.Categories.Add(new(id, i.Name, i.Name));
             }
             foreach (ImageRecord i in Dataset.Images) {
                 int image_id = datasetcoco.Images.Count;
-                datasetcoco.Images.Add(new ImageCOCO {
-                    ID = image_id,
-                    FileName = i.Path,
-                    Width = i.Width,
-                    Height = i.Height,
-                });
+                datasetcoco.Images.Add(new(image_id, i.Path, i.Width, i.Height));
                 foreach (AnnotationRecord j in i.Annotations) {
-                    int? category_id = datasetcoco.Categories.Find(s => s.Name == j.Category.Name)?.ID;
+                    int? category_id = datasetcoco.Categories.FirstOrDefault(s => s.Name == j.Category.Name)?.ID;
                     if (category_id is null) continue;
                     int annotation_id = datasetcoco.Annotations.Count;
-                    datasetcoco.Annotations.Add(new AnnotationCOCO {
-                        ID = annotation_id,
-                        CategoryID = category_id.Value,
-                        ImageID = image_id,
-                        IsCrowd = 0,
-                        BoundaryBox = new List<float> { j.Left, j.Top, j.Width, j.Height },
-                        Area = j.Area,
-                    });
+                    datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, new() { j.Left, j.Top, j.Width, j.Height }, j.Area));
                 }
             }
             using FileStream fileStream = File.Create(JsonPath);
@@ -58,26 +42,26 @@ namespace COCOAnnotator.Services.Utilities {
             string InstanceName = JsonFileName[(JsonFileName.IndexOf('_')+1)..];
             string BasePath = Path.GetFullPath($@"..\..\{InstanceName}", JsonPath);
             DatasetCOCO datasetcoco = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
-            SortedDictionary<int, ImageRecord> images = new SortedDictionary<int, ImageRecord>();
-            SortedDictionary<int, CategoryRecord> categories = new SortedDictionary<int, CategoryRecord>();
+            SortedDictionary<int, ImageRecord> images = new();
+            SortedDictionary<int, CategoryRecord> categories = new();
             foreach (ImageCOCO i in datasetcoco.Images) {
-                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new ImageRecord(i.FileName.Replace('/', '\\'), i.Width, i.Height));
+                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new(i.FileName.Replace('/', '\\'), i.Width, i.Height));
             }
             foreach (CategoryCOCO i in datasetcoco.Categories) {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
             }
             foreach (AnnotationCOCO i in datasetcoco.Annotations) {
-                if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBox.Count >= 4) {
-                    image.Annotations.Add(new AnnotationRecord(image, i.BoundaryBox[0], i.BoundaryBox[1], i.BoundaryBox[2], i.BoundaryBox[3], category));
+                if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBoxes.Count >= 4) {
+                    image.Annotations.Add(new(image, i.BoundaryBoxes[0], i.BoundaryBoxes[1], i.BoundaryBoxes[2], i.BoundaryBoxes[3], category));
                 }
             }
-            return new DatasetRecord(BasePath, images.Values, categories.Values);
+            return new(BasePath, images.Values, categories.Values);
         }
 
         /// <summary>주어진 파일을 COCO JSON으로 간주하여 역직렬화합니다. .</summary>
         public static async Task<DatasetCOCO> DeserializeRawAsync(string JsonPath) {
             using FileStream fileStream = File.OpenRead(JsonPath);
-            return await JsonSerializer.DeserializeAsync<DatasetCOCO>(fileStream).ConfigureAwait(false) ?? new DatasetCOCO();
+            return await JsonSerializer.DeserializeAsync<DatasetCOCO>(fileStream).ConfigureAwait(false) ?? new();
         }
 
         /// <summary>주어진 데이터셋을 CSV로 직렬화하여 파일로 출력합니다.</summary>
@@ -105,13 +89,13 @@ namespace COCOAnnotator.Services.Utilities {
 
         public static async Task<DatasetRecord> DeserializeCSVAsync(string CSVPath, CSVFormat CSVFormat) {
             using StreamReader csv = File.OpenText(CSVPath);
-            SortedSet<ImageRecord> images = new SortedSet<ImageRecord>();
-            SortedSet<CategoryRecord> categories = new SortedSet<CategoryRecord>();
+            SortedSet<ImageRecord> images = new();
+            SortedSet<CategoryRecord> categories = new();
             string? line;
             while ((line = await csv.ReadLineAsync().ConfigureAwait(false)) is not null) {
                 string[] split = line.Split(',');
                 if (split.Length < 6) continue;
-                ImageRecord image = new ImageRecord(Path.GetFullPath(split[0], Path.GetDirectoryName(CSVPath) ?? "").Replace('/', '\\'));
+                ImageRecord image = new(Path.GetFullPath(split[0], Path.GetDirectoryName(CSVPath) ?? "").Replace('/', '\\'));
                 string categoryName = split[5];
                 if (string.IsNullOrWhiteSpace(categoryName)) {
                     // Negative
@@ -128,24 +112,21 @@ namespace COCOAnnotator.Services.Utilities {
                     if (categories.TryGetValue(category, out CategoryRecord? realCategory)) category = realCategory;
                     else categories.Add(category);
                     image.Annotations.Add(CSVFormat switch {
-                        CSVFormat.LTRB => new AnnotationRecord(image, num1, num2, num3 - num1, num4 - num2, category),
-                        CSVFormat.CXCYWH => new AnnotationRecord(image, num1 - num3 / 2, num2 - num4 / 2, num3, num4, category),
-                        CSVFormat.LTWH => new AnnotationRecord(image, num1, num2, num3, num4, category),
+                        CSVFormat.LTRB => new(image, num1, num2, num3 - num1, num4 - num2, category),
+                        CSVFormat.CXCYWH => new(image, num1 - num3 / 2, num2 - num4 / 2, num3, num4, category),
+                        CSVFormat.LTWH => new(image, num1, num2, num3, num4, category),
                         _ => throw new ArgumentException(null, nameof(CSVFormat)),
                     });
                 }
             }
-            return new DatasetRecord(images.GetCommonParentPath(), images, categories);
+            return new(images.GetCommonParentPath(), images, categories);
         }
 
         public static bool IsJsonPathValid(string JsonPath) {
-            FileInfo JsonFileInfo = new FileInfo(JsonPath);
-            if (!JsonFileInfo.Extension.Equals(".json", StringComparison.OrdinalIgnoreCase)) return false;
-            if (!JsonFileInfo.Name.StartsWith("instances_", StringComparison.OrdinalIgnoreCase)) return false;
+            FileInfo JsonFileInfo = new(JsonPath);
             DirectoryInfo? JsonDirInfo = JsonFileInfo.Directory;
-            if (JsonDirInfo is null) return false;
-            if (JsonDirInfo.Parent is null) return false;
-            return true;
+            return JsonFileInfo.Extension.Equals(".json", StringComparison.OrdinalIgnoreCase) && JsonFileInfo.Name.StartsWith("instances_", StringComparison.OrdinalIgnoreCase)
+                && JsonDirInfo is not null && JsonDirInfo.Parent is not null;
         }
     }
 }

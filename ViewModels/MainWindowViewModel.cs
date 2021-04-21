@@ -34,8 +34,8 @@ namespace COCOAnnotator.ViewModels {
             _BboxInsertMode = false;
             _FitViewport = true;
             _CategoryNameToAdd = "";
-            _Dataset = new DatasetRecord();
-            VisibleAnnotations = new ObservableCollection<AnnotationRecord>();
+            _Dataset = new();
+            VisibleAnnotations = new();
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadDataset = new DelegateCommand(LoadDataset);
@@ -230,7 +230,7 @@ namespace COCOAnnotator.ViewModels {
             if (SelectedImage is null) return;
 
             foreach (AnnotationRecord i in e.Added) {
-                SelectedImage.Annotations.Add(new AnnotationRecord(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Category));
+                SelectedImage.Annotations.Add(new(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Category));
             }
             foreach ((AnnotationRecord old, AnnotationRecord @new) in e.ChangedOldItems.Zip(e.ChangedNewItems)) {
                 int idx = SelectedImage.Annotations.IndexOf(old);
@@ -331,7 +331,7 @@ namespace COCOAnnotator.ViewModels {
                 break;
             }
             case false: {
-                SortedSet<ImageRecord> ImagesFromDeletedClass = new SortedSet<ImageRecord>();
+                SortedSet<ImageRecord> ImagesFromDeletedClass = new();
                 foreach (ImageRecord i in Dataset.Images) {
                     int deletedCount = i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                     if (deletedCount > 0) ImagesFromDeletedClass.Add(i);
@@ -442,19 +442,19 @@ namespace COCOAnnotator.ViewModels {
             case SettingColors.Fixed:
                 Color[] colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Count - 1).ToArray();
                 // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
-                for (int i = 1; i < Dataset.Categories.Count; i++) Dataset.Categories[i].ColorBrush = new SolidColorBrush(colors[i - 1]);
+                for (int i = 1; i < Dataset.Categories.Count; i++) Dataset.Categories[i].ColorBrush = new(colors[i - 1]);
                 break;
             case SettingColors.Random:
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 for (int i = 1; i < Dataset.Categories.Count; i++) {
-                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) Dataset.Categories[i].ColorBrush = new SolidColorBrush(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
+                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) Dataset.Categories[i].ColorBrush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
                 }
                 break;
             }
         }
         public void InternalRefreshImagesList() {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
-            SortedSet<ImageRecord> currentImagesInFolder = new SortedSet<ImageRecord>(
+            SortedSet<ImageRecord> currentImagesInFolder = new(
                 Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
                     .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).Replace('\\', '/')))
             );

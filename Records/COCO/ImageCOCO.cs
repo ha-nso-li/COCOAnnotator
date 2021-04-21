@@ -1,17 +1,10 @@
 using System.Text.Json.Serialization;
 
 namespace COCOAnnotator.Records.COCO {
-    public class ImageCOCO {
-        [JsonPropertyName("id")]
-        public int ID { get; set; }
-
-        [JsonPropertyName("file_name")]
-        public string FileName { get; set; } = "";
-
-        [JsonPropertyName("width")]
-        public int Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public int Height { get; set; }
-    }
+    public record ImageCOCO(
+        [property: JsonPropertyName("id")] int ID,
+        [property: JsonPropertyName("file_name")] string FileName,
+        [property: JsonPropertyName("width")] int Width,
+        [property: JsonPropertyName("height")] int Height
+    ) { }
 }

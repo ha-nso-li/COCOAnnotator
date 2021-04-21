@@ -14,14 +14,14 @@ namespace COCOAnnotator.Records {
 
         public DatasetRecord() {
             _BasePath = "";
-            Images = new ObservableCollection<ImageRecord>();
-            Categories = new ObservableCollection<CategoryRecord>();
+            Images = new();
+            Categories = new();
         }
 
         public DatasetRecord(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             _BasePath = BasePath;
-            this.Images = new ObservableCollection<ImageRecord>(Images);
-            this.Categories = new ObservableCollection<CategoryRecord>(Categories);
+            this.Images = new(Images);
+            this.Categories = new(Categories);
         }
     }
 }

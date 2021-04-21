@@ -21,7 +21,7 @@ namespace COCOAnnotator.ViewModels {
             Title = "데이터셋 관리";
 
             _LogVerifyDataset = "";
-            FilesForUnionDataset = new ObservableCollection<string>();
+            FilesForUnionDataset = new();
             _TacticForSplitDataset = TacticsForSplitDataset.DevideToN;
             _NValueForSplitDataset = 2;
             _LogUndupeDataset = "";
@@ -47,9 +47,9 @@ namespace COCOAnnotator.ViewModels {
 
         #region 필드, 바인딩되지 않는 프로퍼티
         private string BasePathForVerify = "";
-        private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new SortedDictionary<int, ImageRecord>();
-        private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new SortedDictionary<int, CategoryRecord>();
-        private DatasetRecord DatasetForUndupe = new DatasetRecord();
+        private readonly SortedDictionary<int, ImageRecord> ImagesForVerify = new();
+        private readonly SortedDictionary<int, CategoryRecord> CategoriesForVerify = new();
+        private DatasetRecord DatasetForUndupe = new();
         #endregion
 
         #region 바인딩되는 프로퍼티
@@ -164,9 +164,9 @@ namespace COCOAnnotator.ViewModels {
                 }
                 int total = datasetcoco.Images.Count + datasetcoco.Annotations.Count + datasetcoco.Categories.Count;
                 {
-                    SortedSet<int> DuplicatedIDAlreadyDetected = new SortedSet<int>();
-                    SortedSet<ImageRecord> ImageRecords = new SortedSet<ImageRecord>();
-                    SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new SortedSet<ImageRecord>();
+                    SortedSet<int> DuplicatedIDAlreadyDetected = new();
+                    SortedSet<ImageRecord> ImageRecords = new();
+                    SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new();
                     foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = idx * 100 / total;
@@ -179,7 +179,7 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {image.ID}인 이미지가 주어진 경로에 존재하지 않습니다.");
                             continue;
                         }
-                        ImageRecord imageRecord = new ImageRecord(image.FileName, image.Width, image.Height);
+                        ImageRecord imageRecord = new(image.FileName, image.Width, image.Height);
                         if (ImageRecords.Contains(imageRecord)) {
                             if (DuplicatedImageAlreadyDetected.Add(imageRecord)) AppendLogVerifyDataset($"다음 경로의 이미지가 2번 이상 사용되었습니다: {fullPath}");
                             continue;
@@ -205,9 +205,9 @@ namespace COCOAnnotator.ViewModels {
                     }
                 }
                 {
-                    SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
-                    SortedSet<CategoryRecord> CategoryRecords = new SortedSet<CategoryRecord>();
-                    SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new SortedSet<CategoryRecord>();
+                    SortedSet<int> DuplicationAlreadyDetected = new();
+                    SortedSet<CategoryRecord> CategoryRecords = new();
+                    SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new();
                     foreach ((int idx, CategoryCOCO category) in datasetcoco.Categories.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (datasetcoco.Images.Count + idx) * 100 / total;
@@ -224,8 +224,8 @@ namespace COCOAnnotator.ViewModels {
                     }
                 }
                 {
-                    SortedSet<int> DuplicationAlreadyDetected = new SortedSet<int>();
-                    SortedSet<int> AnnotationAlreadyProcessed = new SortedSet<int>();
+                    SortedSet<int> DuplicationAlreadyDetected = new();
+                    SortedSet<int> AnnotationAlreadyProcessed = new();
                     foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Select((s, idx) => (idx, s))) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) * 100 / total;
@@ -241,14 +241,14 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 이미지 ID를 참조합니다.");
                             continue;
                         }
-                        if (annotation.BoundaryBox.Count != 4) {
+                        if (annotation.BoundaryBoxes.Count != 4) {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표 개수는 4개여야 합니다.");
                             continue;
                         }
-                        float left = annotation.BoundaryBox[0];
-                        float top = annotation.BoundaryBox[1];
-                        float width = annotation.BoundaryBox[2];
-                        float height = annotation.BoundaryBox[3];
+                        float left = annotation.BoundaryBoxes[0];
+                        float top = annotation.BoundaryBoxes[1];
+                        float width = annotation.BoundaryBoxes[2];
+                        float height = annotation.BoundaryBoxes[3];
                         if (left < 0 || top < 0 || left + width > image.Width || top + height > image.Height) {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표가 이미지의 크기 밖에 있습니다.");
                             continue;
@@ -257,7 +257,7 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 너비 또는 높이는 0 이하일 수 없습니다.");
                             continue;
                         }
-                        image.Annotations.Add(new AnnotationRecord(image, left, top, width, height, category));
+                        image.Annotations.Add(new(image, left, top, width, height, category));
                     }
                 }
                 AppendLogVerifyDataset(
@@ -286,7 +286,7 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             if (!CommonDialogService.MessageBoxOKCancel("분석한 데이터셋의 내용 중 유효한 내용만 남깁니다.")) return;
-            await SerializationService.SerializeAsync(new DatasetRecord(BasePathForVerify, ImagesForVerify.Values, CategoriesForVerify.Values)).ConfigureAwait(false);
+            await SerializationService.SerializeAsync(new(BasePathForVerify, ImagesForVerify.Values, CategoriesForVerify.Values)).ConfigureAwait(false);
         }
         #endregion
 
@@ -327,9 +327,9 @@ namespace COCOAnnotator.ViewModels {
                 string outFileName = Path.GetFileNameWithoutExtension(outFilePath);
                 string outInstanceName = outFileName[(outFileName.IndexOf('_') + 1)..];
                 string outBasePath = Path.GetFullPath($@"..\..\{outInstanceName}", outFilePath);
-                List<DatasetRecord> Datasets = new List<DatasetRecord>();
-                SortedSet<ImageRecord> Images = new SortedSet<ImageRecord>();
-                SortedSet<CategoryRecord> Categories = new SortedSet<CategoryRecord>();
+                List<DatasetRecord> Datasets = new();
+                SortedSet<ImageRecord> Images = new();
+                SortedSet<CategoryRecord> Categories = new();
                 foreach (string inFilePath in FilesForUnionDataset) {
                     if (IsClosed) return;
                     DatasetRecord dataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
@@ -337,7 +337,7 @@ namespace COCOAnnotator.ViewModels {
                     Categories.UnionWith(dataset.Categories);
                     Datasets.Add(dataset);
                 }
-                SortedSet<ImageRecord> AlreadyCopiedImages = new SortedSet<ImageRecord>();
+                SortedSet<ImageRecord> AlreadyCopiedImages = new();
                 foreach (DatasetRecord dataset in Datasets) {
                     foreach (ImageRecord image in dataset.Images) {
                         if (IsClosed) return;
@@ -346,7 +346,7 @@ namespace COCOAnnotator.ViewModels {
                     }
                 }
                 // 저장
-                await SerializationService.SerializeAsync(new DatasetRecord(outBasePath, Images, Categories)).ConfigureAwait(false);
+                await SerializationService.SerializeAsync(new(outBasePath, Images, Categories)).ConfigureAwait(false);
                 ProgressUnionDataset = 100;
             });
         }
@@ -374,12 +374,12 @@ namespace COCOAnnotator.ViewModels {
                 }
                 _ = Task.Run(async () => {
                     ProgressSplitDataset = 0;
-                    List<DatasetRecord> outDatasetByPartition = new List<DatasetRecord>();
-                    List<SortedSet<CategoryRecord>> categoriesByPartition = new List<SortedSet<CategoryRecord>>();
+                    List<DatasetRecord> outDatasetByPartition = new();
+                    List<SortedSet<CategoryRecord>> categoriesByPartition = new();
                     for (int i = 0; i < NValueForSplitDataset; i++) {
                         if (IsClosed) return;
-                        outDatasetByPartition.Add(new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
-                        categoriesByPartition.Add(new SortedSet<CategoryRecord>());
+                        outDatasetByPartition.Add(new(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
+                        categoriesByPartition.Add(new());
                     }
                     for (int i = 0; i < shuffledImages.Length; i++) {
                         if (IsClosed) return;
@@ -415,8 +415,8 @@ namespace COCOAnnotator.ViewModels {
                 }
                 _ = Task.Run(async () => {
                     ProgressSplitDataset = 0;
-                    DatasetRecord OriginalDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
-                    DatasetRecord SplitDataset = new DatasetRecord(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                    DatasetRecord OriginalDataset = new(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                    DatasetRecord SplitDataset = new(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
                     for (int i = 0; i < shuffledImages.Length; i++) {
                         if (IsClosed) return;
                         ProgressSplitDataset = i * 100 / shuffledImages.Length;
@@ -459,11 +459,11 @@ namespace COCOAnnotator.ViewModels {
                 DatasetForUndupe = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
                 // 중복 제거
                 int TotalSuppressedBoxesCount = 0;
-                List<ImageRecord> SuppressedImages = new List<ImageRecord>();
+                List<ImageRecord> SuppressedImages = new();
                 for (int i = 0; i < DatasetForUndupe.Images.Count; i++) {
                     if (IsClosed) return;
                     ProgressUndupeDataset = i * 100 / DatasetForUndupe.Images.Count;
-                    List<AnnotationRecord> UndupedAnnotations = new List<AnnotationRecord>();
+                    List<AnnotationRecord> UndupedAnnotations = new();
                     if (UndupeWithoutCategory) {
                         UndupedAnnotations.AddRange(SuppressAnnotations(DatasetForUndupe.Images[i].Annotations));
                     } else {
@@ -482,7 +482,7 @@ namespace COCOAnnotator.ViewModels {
                     AppendLogUndupeDataset("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                 } else {
                     AppendLogUndupeDataset($"분석이 완료되었습니다. 중복된 경계 상자가 {SuppressedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                    SortedSet<string> UniqueImagePaths = new SortedSet<string>(SuppressedImages.Select(s => Path.GetRelativePath(DatasetForUndupe.BasePath, s.Path)));
+                    SortedSet<string> UniqueImagePaths = new(SuppressedImages.Select(s => Path.GetRelativePath(DatasetForUndupe.BasePath, s.Path)));
                     if (UniqueImagePaths.Count > 20) {
                         AppendLogUndupeDataset("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
                         AppendLogUndupeDataset(UniqueImagePaths.Take(20).ToArray());

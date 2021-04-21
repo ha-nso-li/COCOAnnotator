@@ -34,12 +34,11 @@ namespace COCOAnnotator.UserControls {
         private ContentControl? PreviewBbox = null;
 
         #region Dependency Properties
-        public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport),
-            new PropertyMetadata(MainImageUriChanged));
+        public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport), new(MainImageUriChanged));
         private static void MainImageUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.NewValue is Uri bitmapUri) {
-                    BitmapImage bitmap = new BitmapImage();
+                    BitmapImage bitmap = new();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
@@ -65,8 +64,7 @@ namespace COCOAnnotator.UserControls {
             set => SetValue(MainImageUriProperty, value);
         }
 
-        public static readonly DependencyProperty FitViewportProperty = DependencyProperty.Register(nameof(FitViewport), typeof(bool), typeof(ImageViewport),
-            new PropertyMetadata(FitViewportChanged));
+        public static readonly DependencyProperty FitViewportProperty = DependencyProperty.Register(nameof(FitViewport), typeof(bool), typeof(ImageViewport), new(FitViewportChanged));
         private static void FitViewportChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc && uc.ViewImageControl.Source is BitmapSource bitmap && e.NewValue is bool FitToViewport) {
                 if (FitToViewport) {
@@ -99,7 +97,7 @@ namespace COCOAnnotator.UserControls {
         }
 
         public static readonly DependencyProperty AnnotationsProperty = DependencyProperty.Register(nameof(Annotations), typeof(IEnumerable<AnnotationRecord>), typeof(ImageViewport),
-            new PropertyMetadata(AnnotationsChanged));
+            new(AnnotationsChanged));
         private static void AnnotationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.OldValue is INotifyCollectionChanged old) old.CollectionChanged -= uc.AnnotationsCollectionChanged;
@@ -131,8 +129,7 @@ namespace COCOAnnotator.UserControls {
             set => SetValue(AnnotationsProperty, value);
         }
 
-        public static readonly DependencyProperty BboxInsertModeProperty = DependencyProperty.Register(nameof(BboxInsertMode), typeof(bool), typeof(ImageViewport),
-            new PropertyMetadata(BboxInsertModeChanged));
+        public static readonly DependencyProperty BboxInsertModeProperty = DependencyProperty.Register(nameof(BboxInsertMode), typeof(bool), typeof(ImageViewport), new(BboxInsertModeChanged));
         private static void BboxInsertModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc && e.NewValue is bool bboxInsertMode && !bboxInsertMode) {
                 // 크로스헤어 있으면 삭제
@@ -183,7 +180,7 @@ namespace COCOAnnotator.UserControls {
                 width *= CurrentScale;
                 height *= CurrentScale;
             }
-            ContentControl cont = new ContentControl {
+            ContentControl cont = new() {
                 Width = width,
                 Height = height,
                 Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
@@ -194,12 +191,12 @@ namespace COCOAnnotator.UserControls {
             Canvas.SetTop(cont, top);
             Panel.SetZIndex(cont, zindex);
             if (tag is AnnotationRecord) {
-                MenuItem delete = new MenuItem {
+                MenuItem delete = new() {
                     Header = "삭제",
                     Tag = tag,
                 };
                 delete.Click += DeleteLabel;
-                ContextMenu context = new ContextMenu();
+                ContextMenu context = new();
                 context.Items.Add(delete);
                 cont.ContextMenu = context;
                 cont.ToolTip = tag.ToString();
@@ -289,7 +286,7 @@ namespace COCOAnnotator.UserControls {
                         }
                     }
                 } else {
-                    Line hline = new Line {
+                    Line hline = new() {
                         X1 = 0,
                         X2 = ViewImageCanvas.ActualWidth,
                         Y1 = current.Y,
@@ -298,7 +295,7 @@ namespace COCOAnnotator.UserControls {
                         StrokeThickness = 2,
                         Tag = Tag_HorizontalCrosshair,
                     };
-                    Line vline = new Line {
+                    Line vline = new() {
                         X1 = current.X,
                         X2 = current.X,
                         Y1 = 0,
@@ -392,10 +389,10 @@ namespace COCOAnnotator.UserControls {
         public void TryCommitBbox() {
             if (ViewImageControl.Source is not BitmapSource bitmap) return;
 
-            List<AnnotationRecord> deleted = new List<AnnotationRecord>();
-            List<AnnotationRecord> added = new List<AnnotationRecord>();
-            List<AnnotationRecord> changed_old = new List<AnnotationRecord>();
-            List<AnnotationRecord> changed_new = new List<AnnotationRecord>();
+            List<AnnotationRecord> deleted = new();
+            List<AnnotationRecord> added = new();
+            List<AnnotationRecord> changed_old = new();
+            List<AnnotationRecord> changed_new = new();
             IEnumerable<ContentControl> bboxes = ViewImageCanvas.Children.OfType<ContentControl>();
             foreach (ContentControl bbox in bboxes) {
                 if (bbox.Visibility == Visibility.Collapsed) {
@@ -409,7 +406,7 @@ namespace COCOAnnotator.UserControls {
                         float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                         float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                         float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
-                        added.Add(new AnnotationRecord(ImageRecord.Empty, left, top, width, height, CurrentCategory));
+                        added.Add(new(new(), left, top, width, height, CurrentCategory));
                     }
                 } else {
                     // 이동
@@ -440,13 +437,13 @@ namespace COCOAnnotator.UserControls {
                         }
                         if (notChangedPositionsCount < 4) {
                             changed_old.Add(realBox);
-                            changed_new.Add(new AnnotationRecord(realBox.Image, left, top, width, height, realBox.Category));
+                            changed_new.Add(new(realBox.Image, left, top, width, height, realBox.Category));
                         }
                     }
                 }
             }
 
-            if (added.Count > 0 || deleted.Count > 0 || changed_old.Count > 0) CommitBbox?.Invoke(this, new CommitBboxEventArgs(added, changed_old, changed_new, deleted));
+            if (added.Count > 0 || deleted.Count > 0 || changed_old.Count > 0) CommitBbox?.Invoke(this, new(added, changed_old, changed_new, deleted));
         }
     }
 }

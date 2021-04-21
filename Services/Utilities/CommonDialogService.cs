@@ -5,7 +5,7 @@ using WPF = System.Windows;
 namespace COCOAnnotator.Services.Utilities {
     public static class CommonDialogService {
         public static bool OpenCSVFileDialog(out string FilePath) {
-            OpenFileDialog dlg = new OpenFileDialog {
+            OpenFileDialog dlg = new() {
                 Filter = "CSV 파일|*.csv",
                 Multiselect = false
             };
@@ -15,7 +15,7 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static bool OpenJsonFileDialog(out string FilePath) {
-            OpenFileDialog dlg = new OpenFileDialog {
+            OpenFileDialog dlg = new() {
                 Filter = "JSON 파일|*.json",
                 Multiselect = false
             };
@@ -25,7 +25,7 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static bool OpenJsonFilesDialog(out string[] FilePath) {
-            OpenFileDialog dlg = new OpenFileDialog {
+            OpenFileDialog dlg = new() {
                 Filter = "JSON 파일|*.json",
                 Multiselect = true
             };
@@ -35,7 +35,7 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static bool SaveJsonFileDialog(out string FilePath) {
-            SaveFileDialog dlg = new SaveFileDialog {
+            SaveFileDialog dlg = new() {
                 Filter = "JSON 파일|*.json",
                 DefaultExt = ".json"
             };
@@ -45,7 +45,7 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static bool OpenFolderDialog(out string FolderPath) {
-            WinForm.FolderBrowserDialog dlg = new WinForm.FolderBrowserDialog();
+            WinForm.FolderBrowserDialog dlg = new();
             WinForm.DialogResult result = dlg.ShowDialog();
             FolderPath = dlg.SelectedPath;
             return result == WinForm.DialogResult.OK;

@@ -69,7 +69,7 @@ namespace COCOAnnotator.Records {
         }
         public override string ToString() => Name;
 
-        public static CategoryRecord FromName(string Name) => new CategoryRecord(Name, Brushes.Transparent, false);
-        public static CategoryRecord AsAll() => new CategoryRecord("(전체)", Brushes.Black, true);
+        public static CategoryRecord FromName(string Name) => new(Name, Brushes.Transparent, false);
+        public static CategoryRecord AsAll() => new("(전체)", Brushes.Black, true);
     }
 }

@@ -9,10 +9,8 @@ namespace COCOAnnotator.Services {
         public SettingColors Color {
             get => _Color;
             set {
-                if (_Color != value) {
-                    _Color = value;
-                    NeedSave = true;
-                }
+                NeedSave = _Color != value;
+                _Color = value;
             }
         }
 
@@ -23,9 +21,9 @@ namespace COCOAnnotator.Services {
             if (File.Exists(SettingPath)) {
                 using FileStream fileStream = File.OpenRead(SettingPath);
                 byte[] bytes = File.ReadAllBytes(SettingPath);
-                return await JsonSerializer.DeserializeAsync<SettingService>(fileStream).ConfigureAwait(false) ?? new SettingService();
+                return await JsonSerializer.DeserializeAsync<SettingService>(fileStream).ConfigureAwait(false) ?? new();
             } else {
-                return new SettingService();
+                return new();
             }
         }
 
