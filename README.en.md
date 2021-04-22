@@ -1,6 +1,6 @@
 # COCOAnnotator
 
-This is a tool that creates, edits, manages custom annotation dataset files in the [COCO dataset](https://cocodataset.org/) format for object detection.
+This is a tool that creates, edits, manages custom annotation dataset files in [COCO dataset](https://cocodataset.org/) format for object detection.
 
 ## Features
 
