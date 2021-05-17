@@ -20,7 +20,6 @@ namespace COCOAnnotator.Services {
         public static async Task<SettingService> Read() {
             if (File.Exists(SettingPath)) {
                 using FileStream fileStream = File.OpenRead(SettingPath);
-                byte[] bytes = File.ReadAllBytes(SettingPath);
                 return await JsonSerializer.DeserializeAsync<SettingService>(fileStream).ConfigureAwait(false) ?? new();
             } else {
                 return new();
