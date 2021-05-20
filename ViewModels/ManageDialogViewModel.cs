@@ -566,7 +566,7 @@ namespace COCOAnnotator.ViewModels {
                 // pick
                 AnnotationRecord pick = sortedBySize[0];
                 sortedBySize.RemoveAt(0);
-                // supress
+                // suppress
                 for (int i = 0; i < sortedBySize.Count; i++) {
                     double left = Math.Max(pick.Left, sortedBySize[i].Left);
                     double top = Math.Max(pick.Top, sortedBySize[i].Top);
