@@ -12,15 +12,15 @@ namespace COCOAnnotator.Services.Utilities {
     /// </summary>
     public static class Extensions {
         /// <summary>
-        /// 컬렉션에 포함된 모든 이미지들이 위치한 경로의 공통 부모 폴더의 경로를 찾습니다.
+        /// 컬렉션에 포함된 모든 경로의 공통 부모 폴더의 경로를 찾습니다.
         /// </summary>
-        public static string GetCommonParentPath(this IEnumerable<ImageRecord> source) {
-            using IEnumerator<ImageRecord> etor = source.GetEnumerator();
+        public static string GetCommonParentPath(this IEnumerable<string> source) {
+            using IEnumerator<string> etor = source.GetEnumerator();
             if (!etor.MoveNext()) return "";
-            string first = etor.Current.Path;
+            string first = etor.Current;
             int len = first.Length;
             while (etor.MoveNext()) {
-                string current = etor.Current.Path;
+                string current = etor.Current;
                 len = Math.Min(len, current.Length);
                 for (int i = 0; i < len; i++) {
                     if (current[i] != first[i]) {

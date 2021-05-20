@@ -92,11 +92,13 @@ namespace COCOAnnotator.Services.Utilities {
             using StreamReader csv = File.OpenText(CSVPath);
             SortedSet<ImageRecord> images = new();
             SortedSet<CategoryRecord> categories = new();
+            List<string> fullPaths = new();
             string? line;
             while ((line = await csv.ReadLineAsync().ConfigureAwait(false)) is not null) {
                 string[] split = line.Split(',');
                 if (split.Length < 6) continue;
-                ImageRecord image = new(Path.GetFullPath(split[0], Path.GetDirectoryName(CSVPath) ?? "").Replace('/', '\\'));
+                fullPaths.Add(Path.GetFullPath(split[0], Path.GetDirectoryName(CSVPath) ?? "").Replace('/', '\\'));
+                ImageRecord image = new(split[0]);
                 string categoryName = split[5];
                 if (string.IsNullOrWhiteSpace(categoryName)) {
                     // Negative
@@ -120,7 +122,7 @@ namespace COCOAnnotator.Services.Utilities {
                     });
                 }
             }
-            return new(images.GetCommonParentPath(), images, categories);
+            return new(fullPaths.GetCommonParentPath(), images, categories);
         }
 
         public static bool IsJsonPathValid(string JsonPath) {
