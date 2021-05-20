@@ -30,6 +30,7 @@ namespace COCOAnnotator.Services.Utilities {
                     datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, new() { j.Left, j.Top, j.Width, j.Height }, j.Area));
                 }
             }
+            Directory.CreateDirectory(Path.GetDirectoryName(JsonPath) ?? string.Empty);
             using FileStream fileStream = File.Create(JsonPath);
             await JsonSerializer.SerializeAsync(fileStream, datasetcoco).ConfigureAwait(false);
             return JsonPath;
