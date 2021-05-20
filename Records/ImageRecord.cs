@@ -10,11 +10,7 @@ namespace COCOAnnotator.Records {
         public ObservableCollection<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
         public int Height { get; set; }
-        private string _Path;
-        public string Path {
-            get => _Path;
-            set => SetProperty(ref _Path, value);
-        }
+        public string Path { get; }
         public SolidColorBrush ColorBrush => Annotations.Count == 0 ? Brushes.DarkGray : Brushes.Black;
         #endregion
 
@@ -23,7 +19,7 @@ namespace COCOAnnotator.Records {
         public ImageRecord(string Path) : this(Path, 0, 0) { }
 
         public ImageRecord(string Path, int Width, int Height) {
-            _Path = Path;
+            this.Path = Path;
             Annotations = new();
             Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;
