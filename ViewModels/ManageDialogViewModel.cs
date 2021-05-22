@@ -526,7 +526,7 @@ namespace COCOAnnotator.ViewModels {
                         ProgressConvertDataset = 0;
                         DatasetRecord dataset = await SerializationService.DeserializeCSVAsync(csvFilePath, CSVFormat).ConfigureAwait(false);
                         if (Directory.GetParent(dataset.BasePath) is null) {
-                            CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 루트 폴더가 아니어야 합니다.");
+                            CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. CSV 파일이 존재하는 경로가 루트 폴더가 아니어야 합니다.");
                             return;
                         }
                         for (int i = 0; i < dataset.Images.Count; i++) {

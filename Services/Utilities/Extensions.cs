@@ -12,28 +12,6 @@ namespace COCOAnnotator.Services.Utilities {
     /// </summary>
     public static class Extensions {
         /// <summary>
-        /// 컬렉션에 포함된 모든 경로의 공통 부모 폴더의 경로를 찾습니다.
-        /// </summary>
-        public static string GetCommonParentPath(this IEnumerable<string> source) {
-            using IEnumerator<string> etor = source.GetEnumerator();
-            if (!etor.MoveNext()) return "";
-            string first = etor.Current;
-            int len = first.Length;
-            while (etor.MoveNext()) {
-                string current = etor.Current;
-                len = Math.Min(len, current.Length);
-                for (int i = 0; i < len; i++) {
-                    if (current[i] != first[i]) {
-                        len = i;
-                        break;
-                    }
-                }
-            }
-            string prefix = first[..len];
-            return prefix[..prefix.LastIndexOfAny(new[] { '\\', '/' })];
-        }
-
-        /// <summary>
         /// 주어진 로컬 파일 경로를 이스케이프를 고려하여 URI로 변환합니다.
         /// </summary>
         public static Uri ToUri(this string filePath) {
