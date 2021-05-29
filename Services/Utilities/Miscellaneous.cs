@@ -19,9 +19,7 @@ namespace COCOAnnotator.Services.Utilities {
 
         /// <summary>미리 정의된 HSV 기반의 색깔 생성 방법에 따라 주어진 개수 만큼의 색을 생성합니다.</summary>
         public static IEnumerable<Color> GenerateFixedColor(int ColorCount) {
-            int TotalValue;
-            if (ColorCount <= 20) TotalValue = 1;
-            else TotalValue = 2;
+            int TotalValue = ColorCount <= 20 ? 1 : 2;
             int TotalHue = (int)Math.Ceiling((double)ColorCount / TotalValue);
             double StepHue = 360d / TotalHue;
             int CurrentCount = 0;

@@ -373,9 +373,7 @@ namespace COCOAnnotator.UserControls {
         private void ViewImageCanvas_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (FitViewport || BboxInsertMode) return;
             if (ViewImageControl.Source is BitmapSource bitmap && Keyboard.IsKeyDown(Key.LeftCtrl)) {
-                double newScale;
-                if (e.Delta > 0) newScale = Math.Clamp(CurrentScale * 1.1, 0.5, 2);
-                else newScale = Math.Clamp(CurrentScale / 1.1, 0.5, 2);
+                double newScale = e.Delta > 0 ? Math.Clamp(CurrentScale * 1.1, 0.5, 2) : Math.Clamp(CurrentScale / 1.1, 0.5, 2);
                 double newWidth = bitmap.PixelWidth * newScale;
                 double newHeight = bitmap.PixelHeight * newScale;
                 ViewImageControl.MaxWidth = newWidth;

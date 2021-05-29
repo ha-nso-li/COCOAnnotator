@@ -418,9 +418,7 @@ namespace COCOAnnotator.ViewModels {
         private void UpdateBoundaryBoxes() {
             if (SelectedCategory is null || SelectedImage is null) return;
             VisibleAnnotations.Clear();
-            IEnumerable<AnnotationRecord> visibleAnnotations;
-            if (SelectedCategory.All) visibleAnnotations = SelectedImage.Annotations;
-            else visibleAnnotations = SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
+            IEnumerable<AnnotationRecord> visibleAnnotations = SelectedCategory.All ? SelectedImage.Annotations : SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
             foreach (AnnotationRecord i in visibleAnnotations) VisibleAnnotations.Add(i);
         }
         private async Task InternalLoadDataset(string filePath) {
