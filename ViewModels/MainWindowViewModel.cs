@@ -429,7 +429,7 @@ namespace COCOAnnotator.ViewModels {
                 return;
             }
             // 불러온 데이터셋으로 UI 갱신해야 하므로 컨텍스트 유지해야 함.
-            Dataset = await SerializationService.DeserializeAsync(filePath);
+            Dataset = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
             if (Dataset.Categories.Count > 0) {
                 Dataset.Categories.Insert(0, CategoryRecord.AsAll());
                 SelectedCategory = Dataset.Categories[0];
@@ -443,12 +443,18 @@ namespace COCOAnnotator.ViewModels {
             case SettingColors.Fixed:
                 Color[] colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Count - 1).ToArray();
                 // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
-                for (int i = 1; i < Dataset.Categories.Count; i++) Dataset.Categories[i].ColorBrush = new(colors[i - 1]);
+                for (int i = 1; i < Dataset.Categories.Count; i++) {
+                    Dataset.Categories[i].ColorBrush = new(colors[i - 1]);
+                    Dataset.Categories[i].ColorBrush.Freeze();
+                }
                 break;
             case SettingColors.Random:
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 for (int i = 1; i < Dataset.Categories.Count; i++) {
-                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) Dataset.Categories[i].ColorBrush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
+                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) {
+                        Dataset.Categories[i].ColorBrush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
+                        Dataset.Categories[i].ColorBrush.Freeze();
+                    }
                 }
                 break;
             }

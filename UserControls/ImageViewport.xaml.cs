@@ -165,44 +165,48 @@ namespace COCOAnnotator.UserControls {
             }
         }
         private void ClearBoundaryBoxes() {
-            ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
-            foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
+            Dispatcher.Invoke(() => {
+                ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
+                foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
+            });
         }
         /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
         /// <param name="tag">해당 경계 상자에 해당하는 <seealso cref="AnnotationRecord"/> 객체입니다. 특수 객체일 경우 정수 값을 가집니다.</param>
         /// <param name="needScale">크기 변환 여부입니다. 경계 상자 좌표값이 이미지 내 좌표이면 <see langword="true"/>, 컨트롤 내 위치 좌표이면 <see langword="false"/>입니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
         private ContentControl AddBoundaryBox(int zindex, object tag, double left, double top, double width, double height, CategoryRecord category, bool needScale) {
-            // 화면의 배율에 맞춰 스케일링
-            if (needScale) {
-                left *= CurrentScale;
-                top *= CurrentScale;
-                width *= CurrentScale;
-                height *= CurrentScale;
-            }
-            ContentControl cont = new() {
-                Width = width,
-                Height = height,
-                Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
-                DataContext = category,
-                Tag = tag,
-            };
-            Canvas.SetLeft(cont, left);
-            Canvas.SetTop(cont, top);
-            Panel.SetZIndex(cont, zindex);
-            if (tag is AnnotationRecord) {
-                MenuItem delete = new() {
-                    Header = "삭제",
+            return Dispatcher.Invoke(() => {
+                // 화면의 배율에 맞춰 스케일링
+                if (needScale) {
+                    left *= CurrentScale;
+                    top *= CurrentScale;
+                    width *= CurrentScale;
+                    height *= CurrentScale;
+                }
+                ContentControl cont = new() {
+                    Width = width,
+                    Height = height,
+                    Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
+                    DataContext = category,
                     Tag = tag,
                 };
-                delete.Click += DeleteLabel;
-                ContextMenu context = new();
-                context.Items.Add(delete);
-                cont.ContextMenu = context;
-                cont.ToolTip = tag.ToString();
-            }
-            ViewImageCanvas.Children.Add(cont);
-            return cont;
+                Canvas.SetLeft(cont, left);
+                Canvas.SetTop(cont, top);
+                Panel.SetZIndex(cont, zindex);
+                if (tag is AnnotationRecord) {
+                    MenuItem delete = new() {
+                        Header = "삭제",
+                        Tag = tag,
+                    };
+                    delete.Click += DeleteLabel;
+                    ContextMenu context = new();
+                    context.Items.Add(delete);
+                    cont.ContextMenu = context;
+                    cont.ToolTip = tag.ToString();
+                }
+                ViewImageCanvas.Children.Add(cont);
+                return cont;
+            });
         }
         private void DeleteLabel(object sender, RoutedEventArgs e) {
             if (sender is not MenuItem mn) return;
