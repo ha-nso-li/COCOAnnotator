@@ -457,7 +457,7 @@ namespace COCOAnnotator.ViewModels {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
             SortedSet<ImageRecord> currentImagesInFolder = new(
                 Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
-                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).Replace('\\', '/')))
+                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s)))
             );
             int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Dataset.Images);

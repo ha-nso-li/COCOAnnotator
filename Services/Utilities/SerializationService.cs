@@ -22,7 +22,7 @@ namespace COCOAnnotator.Services.Utilities {
             }
             foreach (ImageRecord i in Dataset.Images) {
                 int image_id = datasetcoco.Images.Count;
-                datasetcoco.Images.Add(new(image_id, i.Path, i.Width, i.Height));
+                datasetcoco.Images.Add(new(image_id, i.Path.Replace('\\', '/'), i.Width, i.Height));
                 foreach (AnnotationRecord j in i.Annotations) {
                     int? category_id = datasetcoco.Categories.FirstOrDefault(s => s.Name == j.Category.Name)?.ID;
                     if (category_id is null) continue;
@@ -46,7 +46,7 @@ namespace COCOAnnotator.Services.Utilities {
             SortedDictionary<int, ImageRecord> images = new();
             SortedDictionary<int, CategoryRecord> categories = new();
             foreach (ImageCOCO i in datasetcoco.Images) {
-                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new(i.FileName.Replace('/', '\\'), i.Width, i.Height));
+                if (!images.ContainsKey(i.ID)) images.Add(i.ID, new(i.FileName, i.Width, i.Height));
             }
             foreach (CategoryCOCO i in datasetcoco.Categories) {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
@@ -71,15 +71,15 @@ namespace COCOAnnotator.Services.Utilities {
             using StreamWriter csv = File.CreateText(CSVPath);
             foreach (ImageRecord image in Dataset.Images) {
                 if (image.Annotations.Count == 0) {
-                    await csv.WriteLineAsync($"{image.Path},,,,,").ConfigureAwait(false);
+                    await csv.WriteLineAsync($"{image.Path.Replace('\\', '/')},,,,,").ConfigureAwait(false);
                 } else {
                     foreach (AnnotationRecord annotation in image.Annotations) {
                         await csv.WriteLineAsync(CSVFormat switch {
-                            CSVFormat.LTRB => $"{image.Path},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#}," +
+                            CSVFormat.LTRB => $"{image.Path.Replace('\\', '/')},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Left + annotation.Width:0.#}," +
                                 $"{annotation.Top + annotation.Height:0.#},{annotation.Category}",
-                            CSVFormat.CXCYWH => $"{image.Path},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#}," +
+                            CSVFormat.CXCYWH => $"{image.Path.Replace('\\', '/')},{annotation.Left + annotation.Width / 2:0.#},{annotation.Top + annotation.Height / 2:0.#},{annotation.Width:0.#}," +
                                 $"{annotation.Height:0.#},{annotation.Category}",
-                            CSVFormat.LTWH => $"{image.Path},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
+                            CSVFormat.LTWH => $"{image.Path.Replace('\\', '/')},{annotation.Left:0.#},{annotation.Top:0.#},{annotation.Width:0.#},{annotation.Height:0.#},{annotation.Category}",
                             _ => throw new ArgumentException(null, nameof(CSVFormat)),
                         }).ConfigureAwait(false);
                     }
