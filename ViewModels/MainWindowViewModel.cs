@@ -426,7 +426,6 @@ namespace COCOAnnotator.ViewModels {
                 CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
                 return;
             }
-            // 불러온 데이터셋으로 UI 갱신해야 하므로 컨텍스트 유지해야 함.
             Dataset = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);
             if (Dataset.Categories.Count > 0) {
                 Dataset.Categories.Insert(0, CategoryRecord.AsAll());
