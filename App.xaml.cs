@@ -6,9 +6,7 @@ using System.Windows;
 
 namespace COCOAnnotator {
     public partial class App : PrismApplication {
-        protected override Window CreateShell() {
-            return Container.Resolve<MainWindow>();
-        }
+        protected override Window CreateShell() => Container.Resolve<MainWindow>();
 
         protected override async void RegisterTypes(IContainerRegistry containerRegistry) {
             containerRegistry.RegisterInstance(await SettingService.Read().ConfigureAwait(false));

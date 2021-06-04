@@ -24,15 +24,15 @@ namespace COCOAnnotator.Records {
         }
         public bool Equals([NotNullWhen(true)] CategoryRecord? other) {
             return other switch {
-                CategoryRecord _ when All => other.All,
-                CategoryRecord _ => Name.Equals(other.Name),
+                CategoryRecord when All => other.All,
+                CategoryRecord => Name.Equals(other.Name, StringComparison.Ordinal),
                 _ => false
             };
         }
         public override int GetHashCode() {
             return All switch {
                 true => true.GetHashCode(),
-                false => Name.GetHashCode()
+                _ => Name.GetHashCode()
             };
         }
         public static bool operator ==(CategoryRecord record1, CategoryRecord record2) => record1.Equals(record2);
@@ -49,11 +49,11 @@ namespace COCOAnnotator.Records {
         }
         public int CompareTo(CategoryRecord? other) {
             return other switch {
-                CategoryRecord _ when All && other.All => 0,
-                CategoryRecord _ when All && !other.All => -1,
-                CategoryRecord _ when !All && other.All => 1,
-                CategoryRecord _ => Name.CompareTo(other.Name),
-                null => 1
+                CategoryRecord when All && other.All => 0,
+                CategoryRecord when All && !other.All => -1,
+                CategoryRecord when !All && other.All => 1,
+                CategoryRecord => string.Compare(Name, other.Name, StringComparison.Ordinal),
+                _ => 1
             };
         }
         public static bool operator <(CategoryRecord record1, CategoryRecord record2) => record1.CompareTo(record2) < 0;

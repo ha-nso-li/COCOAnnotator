@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
 
 namespace COCOAnnotator.Records {
     public class ObservableCollection<T> : System.Collections.ObjectModel.ObservableCollection<T> {

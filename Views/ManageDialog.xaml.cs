@@ -10,12 +10,8 @@ namespace COCOAnnotator.Views {
             EventAggregator.GetEvent<ScrollTxtLogUndupeLabel>().Subscribe(ScrollTxtLogUndupeLabel, ThreadOption.UIThread);
         }
 
-        private void ScrollTxtLogVerifyLabel() {
-            TxtLogVerifyDataset.ScrollToEnd();
-        }
+        private void ScrollTxtLogVerifyLabel() => TxtLogVerifyDataset.ScrollToEnd();
 
-        private void ScrollTxtLogUndupeLabel() {
-            TxtLogUndupeLabel.ScrollToEnd();
-        }
+        private void ScrollTxtLogUndupeLabel() => TxtLogUndupeLabel.ScrollToEnd();
     }
 }

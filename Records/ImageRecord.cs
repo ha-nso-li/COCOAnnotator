@@ -27,7 +27,7 @@ namespace COCOAnnotator.Records {
         }
 
         private void AnnotationCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
-            if (e.Action == NotifyCollectionChangedAction.Replace || e.Action == NotifyCollectionChangedAction.Move) return;
+            if (e.Action is NotifyCollectionChangedAction.Replace or NotifyCollectionChangedAction.Move) return;
             RaisePropertyChanged(nameof(ColorBrush));
         }
 
@@ -40,7 +40,7 @@ namespace COCOAnnotator.Records {
         }
         public bool Equals([NotNullWhen(true)] ImageRecord? other) {
             return other switch {
-                ImageRecord _ => Path.Equals(other.Path),
+                ImageRecord => Path.Equals(other.Path, StringComparison.Ordinal),
                 _ => false
             };
         }
@@ -59,8 +59,8 @@ namespace COCOAnnotator.Records {
         }
         public int CompareTo(ImageRecord? other) {
             return other switch {
-                ImageRecord _ => Path.CompareTo(other.Path),
-                null => 1
+                ImageRecord => string.Compare(Path, other.Path, StringComparison.Ordinal),
+                _ => 1
             };
         }
         public static bool operator <(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) < 0;

@@ -30,8 +30,8 @@ namespace COCOAnnotator.UserControls {
         private const int Tag_PreviewBbox = 2;
         private const int Tag_UncommittedBbox = 3;
 
-        private Point? DragStartPoint = null;
-        private ContentControl? PreviewBbox = null;
+        private Point? DragStartPoint;
+        private ContentControl? PreviewBbox;
 
         #region Dependency Properties
         public static readonly DependencyProperty MainImageUriProperty = DependencyProperty.Register(nameof(MainImageUri), typeof(Uri), typeof(ImageViewport), new(MainImageUriChanged));

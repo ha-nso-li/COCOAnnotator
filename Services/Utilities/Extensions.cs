@@ -39,7 +39,7 @@ namespace COCOAnnotator.Services.Utilities {
         public static Uri ToUri(this string filePath) {
             StringBuilder uri = new();
             foreach (char v in filePath) {
-                if ((v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') || (v >= '0' && v <= '9') || v == '+' || v == '/' || v == ':' || v == '.' || v == '-' || v == '_' || v == '~' || v > '\xFF') {
+                if (v is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '+' or '/' or ':' or '.' or '-' or '_' or '~' or > '\xFF') {
                     uri.Append(v);
                 } else if (v == Path.DirectorySeparatorChar || v == Path.AltDirectorySeparatorChar) {
                     uri.Append('/');

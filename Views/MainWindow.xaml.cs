@@ -13,16 +13,10 @@ namespace COCOAnnotator.Views {
             EventAggregator.GetEvent<TryCommitBbox>().Subscribe(TryCommitBbox);
         }
 
-        private void ScrollViewCategoriesList(CategoryRecord e) {
-            ViewCategoriesList.ScrollIntoView(e);
-        }
+        private void ScrollViewCategoriesList(CategoryRecord e) => ViewCategoriesList.ScrollIntoView(e);
 
-        private void ScrollViewImagesList(ImageRecord e) {
-            ViewImagesList.ScrollIntoView(e);
-        }
+        private void ScrollViewImagesList(ImageRecord e) => ViewImagesList.ScrollIntoView(e);
 
-        private void TryCommitBbox() {
-            ViewViewport.TryCommitBbox();
-        }
+        private void TryCommitBbox() => ViewViewport.TryCommitBbox();
     }
 }

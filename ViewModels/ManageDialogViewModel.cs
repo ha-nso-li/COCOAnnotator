@@ -552,12 +552,8 @@ namespace COCOAnnotator.ViewModels {
         #endregion
 
         #region 프라이빗 메서드
-        private void AppendLogVerifyDataset(params string[] logs) {
-            LogVerifyDataset = LogVerifyDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
-        }
-        private void AppendLogUndupeDataset(params string[] logs) {
-            LogUndupeDataset = LogUndupeDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
-        }
+        private void AppendLogVerifyDataset(params string[] logs) => LogVerifyDataset = LogVerifyDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
+        private void AppendLogUndupeDataset(params string[] logs) => LogUndupeDataset = LogUndupeDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         private IEnumerable<AnnotationRecord> SuppressAnnotations(IEnumerable<AnnotationRecord> Annotations) {
             List<AnnotationRecord> sortedBySize = Annotations.ToList();
             sortedBySize.Sort((a, b) => a.Area.CompareTo(b.Area));

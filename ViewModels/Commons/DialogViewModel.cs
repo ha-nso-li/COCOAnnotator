@@ -6,17 +6,11 @@ namespace COCOAnnotator.ViewModels.Commons {
         protected bool IsClosed;
         public event Action<IDialogResult>? RequestClose;
 
-        protected void RaiseRequestClose(IDialogResult result) {
-            RequestClose?.Invoke(result);
-        }
+        protected void RaiseRequestClose(IDialogResult result) => RequestClose?.Invoke(result);
 
-        public virtual bool CanCloseDialog() {
-            return !IsClosed;
-        }
+        public virtual bool CanCloseDialog() => !IsClosed;
 
-        public virtual void OnDialogClosed() {
-            IsClosed = true;
-        }
+        public virtual void OnDialogClosed() => IsClosed = true;
 
         public virtual void OnDialogOpened(IDialogParameters parameters) {
 

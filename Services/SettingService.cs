@@ -14,7 +14,7 @@ namespace COCOAnnotator.Services {
             }
         }
 
-        private bool NeedSave = false;
+        private bool NeedSave;
         private const string SettingPath = "setting.json";
 
         public static async Task<SettingService> Read() {
