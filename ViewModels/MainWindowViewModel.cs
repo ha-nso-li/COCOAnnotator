@@ -438,20 +438,16 @@ namespace COCOAnnotator.ViewModels {
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
             case SettingColors.Fixed:
-                Color[] colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Count - 1).ToArray();
-                // 클래스 중에 제일 앞에 있는 하나는 (전체) 이므로 빼고 진행.
-                for (int i = 1; i < Dataset.Categories.Count; i++) {
-                    Dataset.Categories[i].ColorBrush = new(colors[i - 1]);
-                    Dataset.Categories[i].ColorBrush.Freeze();
+                IEnumerable<Color> colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Where(s => !s.All).Count());
+                foreach ((CategoryRecord category, Color color) in Enumerable.Zip(Dataset.Categories.Where(s => !s.All), colors)) {
+                    category.ColorBrush = new(color);
                 }
                 break;
             case SettingColors.Random:
+                Random rng = new();
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
-                for (int i = 1; i < Dataset.Categories.Count; i++) {
-                    if (Dataset.Categories[i].ColorBrush.Color == Colors.Transparent) {
-                        Dataset.Categories[i].ColorBrush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100));
-                        Dataset.Categories[i].ColorBrush.Freeze();
-                    }
+                foreach (CategoryRecord category in Dataset.Categories.Where(s => !s.All && s.ColorBrush.Color == Colors.Transparent)) {
+                    category.ColorBrush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100, rng));
                 }
                 break;
             }
