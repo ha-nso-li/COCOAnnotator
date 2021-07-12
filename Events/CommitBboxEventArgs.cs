@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 
 namespace COCOAnnotator.Events {
-    public delegate void CommitBboxEventHandler(object sender, CommitBboxEventArgs e);
     public class CommitBboxEventArgs : EventArgs {
         public CommitBboxEventArgs(IEnumerable<AnnotationRecord> added, IEnumerable<AnnotationRecord> changed_old, IEnumerable<AnnotationRecord> changed_new, IEnumerable<AnnotationRecord> deleted) {
             Added = added;

@@ -38,22 +38,26 @@ namespace COCOAnnotator.UserControls {
         private static void MainImageUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc) {
                 if (e.NewValue is Uri bitmapUri) {
-                    BitmapImage bitmap = new();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                    bitmap.UriSource = bitmapUri;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    uc.ViewImageControl.Source = bitmap;
-                    if (uc.FitViewport) {
-                        uc.ViewImageControl.MaxWidth = uc.ViewViewport.ViewportWidth;
-                        uc.ViewImageControl.MaxHeight = uc.ViewViewport.ViewportHeight;
-                    } else {
-                        uc.ViewImageControl.MaxWidth = bitmap.PixelWidth;
-                        uc.ViewImageControl.MaxHeight = bitmap.PixelHeight;
+                    try {
+                        BitmapImage bitmap = new();
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                        bitmap.UriSource = bitmapUri;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                        uc.ViewImageControl.Source = bitmap;
+                        if (uc.FitViewport) {
+                            uc.ViewImageControl.MaxWidth = uc.ViewViewport.ViewportWidth;
+                            uc.ViewImageControl.MaxHeight = uc.ViewViewport.ViewportHeight;
+                        } else {
+                            uc.ViewImageControl.MaxWidth = bitmap.PixelWidth;
+                            uc.ViewImageControl.MaxHeight = bitmap.PixelHeight;
+                        }
+                        uc.UpdateBoundaryBoxes();
+                    } catch (Exception) {
+                        uc.FailedToLoadImage?.Invoke(null, new FailToLoadImageEventArgs(bitmapUri));
                     }
-                    uc.UpdateBoundaryBoxes();
                 } else {
                     uc.ViewImageControl.Source = null;
                 }
@@ -386,7 +390,10 @@ namespace COCOAnnotator.UserControls {
         }
         #endregion
 
-        public event CommitBboxEventHandler? CommitBbox;
+        #region Public Events
+        public event EventHandler<CommitBboxEventArgs>? CommitBbox;
+        public event EventHandler<FailToLoadImageEventArgs>? FailedToLoadImage;
+        #endregion
 
         public void TryCommitBbox() {
             if (ViewImageControl.Source is not BitmapSource bitmap) return;

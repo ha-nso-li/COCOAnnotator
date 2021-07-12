@@ -43,6 +43,7 @@ namespace COCOAnnotator.ViewModels {
             CmdOpenFolderOrCloseDataset = new DelegateCommand(OpenFolderOrCloseDataset);
             CmdManageDataset = new DelegateCommand(ManageDataset);
             CmdSetting = new DelegateCommand(Setting);
+            CmdFailedToLoadImage = new DelegateCommand<FailToLoadImageEventArgs>(FailedToLoadImage);
             CmdTryCommitBbox = new DelegateCommand(TryCommitBbox);
             CmdCommitBbox = new DelegateCommand<CommitBboxEventArgs>(CommitBbox);
             CmdToggleBboxMode = new DelegateCommand(ToggleBboxMode);
@@ -78,15 +79,8 @@ namespace COCOAnnotator.ViewModels {
                         MainImageUri = null;
                     } else {
                         string imageFullPath = Path.Combine(Dataset.BasePath, value.Path);
-                        try {
-                            // 그림 업데이트
-                            MainImageUri = imageFullPath.ToUri();
-                            UpdateBoundaryBoxes();
-                        } catch (IOException) {
-                            CommonDialogService.MessageBox($"해당하는 이미지 파일이 존재하지 않습니다. ({imageFullPath})");
-                        } catch (NotSupportedException) {
-                            CommonDialogService.MessageBox($"이미지 파일을 읽어올 수 없습니다. 손상되었거나 지원하는 포맷이 아닙니다. ({imageFullPath})");
-                        }
+                        MainImageUri = imageFullPath.ToUri();
+                        UpdateBoundaryBoxes();
                     }
                 }
             }
@@ -217,6 +211,10 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdSetting { get; }
         private void Setting() {
             UserDialogSerivce.ShowDialog(nameof(SettingDialog), new DialogParameters(), _ => { });
+        }
+        public ICommand CmdFailedToLoadImage { get; }
+        private void FailedToLoadImage(FailToLoadImageEventArgs e) {
+            CommonDialogService.MessageBox($"이미지 파일을 읽어올 수 없습니다. 파일이 존재하지 않거나 지원하는 포맷이 아닙니다.{Environment.NewLine}{e.ImageUri.LocalPath}");
         }
         #endregion
 

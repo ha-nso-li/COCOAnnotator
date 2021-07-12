@@ -35,6 +35,9 @@
                 <b:EventTrigger EventName="CommitBbox">
                     <prism:InvokeCommandAction Command="{Binding CmdCommitBbox}" />
                 </b:EventTrigger>
+                <b:EventTrigger EventName="FailedToLoadImage">
+                    <prism:InvokeCommandAction Command="{Binding CmdFailedToLoadImage}" />
+                </b:EventTrigger>
             </b:Interaction.Triggers>
         </uc:ImageViewport>
         <DockPanel Grid.Column="1">
