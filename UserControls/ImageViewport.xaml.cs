@@ -45,7 +45,7 @@ namespace COCOAnnotator.UserControls {
                         bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                         bitmap.UriSource = bitmapUri;
                         bitmap.EndInit();
-                        if (bitmap.CanFreeze) bitmap.Freeze();
+                        bitmap.Freeze();
                         uc.ViewImageControl.Source = bitmap;
                         if (uc.FitViewport) {
                             uc.ViewImageControl.MaxWidth = uc.ViewViewport.ViewportWidth;

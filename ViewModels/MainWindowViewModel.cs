@@ -439,7 +439,7 @@ namespace COCOAnnotator.ViewModels {
                 IEnumerable<Color> colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Where(s => !s.All).Count());
                 foreach ((CategoryRecord category, Color color) in Enumerable.Zip(Dataset.Categories.Where(s => !s.All), colors)) {
                     SolidColorBrush brush = new(color);
-                    if (brush.CanFreeze) brush.Freeze();
+                    brush.Freeze();
                     category.ColorBrush = brush;
                 }
                 break;
@@ -448,7 +448,7 @@ namespace COCOAnnotator.ViewModels {
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 foreach (CategoryRecord category in Dataset.Categories.Where(s => !s.All && s.ColorBrush.Color == Colors.Transparent)) {
                     SolidColorBrush brush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 100, rng));
-                    if (brush.CanFreeze) brush.Freeze();
+                    brush.Freeze();
                     category.ColorBrush = brush;
                 }
                 break;
