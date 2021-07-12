@@ -11,13 +11,7 @@ namespace COCOAnnotator.Records {
         private SolidColorBrush _ColorBrush;
         public SolidColorBrush ColorBrush {
             get => _ColorBrush;
-            set {
-                if (_ColorBrush.Color != value.Color) {
-                    if (!value.IsFrozen && value.CanFreeze) value.Freeze();
-                    _ColorBrush = value;
-                    RaisePropertyChanged();
-                }
-            }
+            set => SetProperty(ref _ColorBrush, value);
         }
         #endregion
 
