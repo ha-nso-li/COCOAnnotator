@@ -53,7 +53,7 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static bool LoadSize(this ImageRecord Image, string BasePath) {
-            using FileStream stream = new(Path.Combine(BasePath, Image.Path), FileMode.Open, FileAccess.Read, FileShare.Read);
+            using FileStream stream = File.OpenRead(Path.Combine(BasePath, Image.Path));
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
             int oldWidth = Image.Width;
             int oldHeight = Image.Height;
