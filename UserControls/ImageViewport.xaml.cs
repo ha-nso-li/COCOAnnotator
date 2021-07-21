@@ -54,9 +54,10 @@ namespace COCOAnnotator.UserControls {
                             uc.ViewImageControl.MaxWidth = bitmap.PixelWidth;
                             uc.ViewImageControl.MaxHeight = bitmap.PixelHeight;
                         }
-                        uc.UpdateBoundaryBoxes();
+                        // FitViewport가 켜진 상태에서 이전 그림과 현재 그림의 원본 크기가 다르면 이미지 배율이 달라짐.
+                        uc.RefreshBoundaryBoxes();
                     } catch (Exception) {
-                        uc.FailedToLoadImage?.Invoke(null, new FailToLoadImageEventArgs(bitmapUri));
+                        uc.FailedToLoadImage?.Invoke(uc, new FailToLoadImageEventArgs(bitmapUri));
                     }
                 } else {
                     uc.ViewImageControl.Source = null;
@@ -110,23 +111,23 @@ namespace COCOAnnotator.UserControls {
             }
         }
         private void AnnotationsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) {
-            switch (e.Action) {
-            case NotifyCollectionChangedAction.Reset:
-                ClearBoundaryBoxes();
-                break;
-            case NotifyCollectionChangedAction.Remove:
-                if (e.OldItems is null) return;
-                ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
-                foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
-                break;
-            case NotifyCollectionChangedAction.Add:
-                if (e.NewItems is null) return;
-                foreach (AnnotationRecord? i in e.NewItems) {
-                    if (i is null) continue;
-                    AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
+            // 데이터셋 로드가 비동기라서 Annotations 변경이 별도 스레드에서 이루어지는 경우가 많음.
+            Dispatcher.Invoke(() => {
+                switch (e.Action) {
+                case NotifyCollectionChangedAction.Reset:
+                    UpdateBoundaryBoxes();
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems is null) return;
+                    ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
+                    foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
+                    break;
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems is null) return;
+                    foreach (AnnotationRecord i in e.NewItems.OfType<AnnotationRecord>()) AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
+                    break;
                 }
-                break;
-            }
+            });
         }
         public IEnumerable<AnnotationRecord>? Annotations {
             get => (IEnumerable<AnnotationRecord>?)GetValue(AnnotationsProperty);
@@ -156,61 +157,52 @@ namespace COCOAnnotator.UserControls {
         #region Private Logics
         private double CurrentScale;
 
+        /// <summary>현재 화면에 존재하는 경계 상자를 모두 삭제하고, <seealso cref="Annotations"/> 컬렉션의 경계 상자 정보에 기반한 새 경계 상자를 화면에 추가합니다.</summary>
         private void UpdateBoundaryBoxes() {
-            if (Annotations is null) return;
             ClearBoundaryBoxes();
-            if (ViewImageControl.Source is BitmapSource bitmap) {
-                Dispatcher.Invoke(() => {
-                    CurrentScale = ViewImageControl.ActualWidth / bitmap.PixelWidth;
-                }, DispatcherPriority.Loaded);
-            }
-            foreach (AnnotationRecord i in Annotations) {
-                AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
-            }
+            if (Annotations is null) return;
+            foreach (AnnotationRecord i in Annotations) AddBoundaryBox(ZIndex_Bbox, i, i.Left, i.Top, i.Width, i.Height, i.Category, true);
         }
+        /// <summary>현재 화면에 존재하는 경계 상자를 모두 삭제합니다.</summary>
         private void ClearBoundaryBoxes() {
-            Dispatcher.Invoke(() => {
-                ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
-                foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
-            });
+            ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
+            foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
         }
-        /// <summary>주어진 라벨에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
+        /// <summary>주어진 경계 상자 정보에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
         /// <param name="tag">해당 경계 상자에 해당하는 <seealso cref="AnnotationRecord"/> 객체입니다. 특수 객체일 경우 정수 값을 가집니다.</param>
         /// <param name="needScale">크기 변환 여부입니다. 경계 상자 좌표값이 이미지 내 좌표이면 <see langword="true"/>, 컨트롤 내 위치 좌표이면 <see langword="false"/>입니다.</param>
         /// <returns>추가한 경계 상자의 시각화 컨트롤을 반환합니다.</returns>
         private ContentControl AddBoundaryBox(int zindex, object tag, double left, double top, double width, double height, CategoryRecord category, bool needScale) {
-            return Dispatcher.Invoke(() => {
-                // 화면의 배율에 맞춰 스케일링
-                if (needScale) {
-                    left *= CurrentScale;
-                    top *= CurrentScale;
-                    width *= CurrentScale;
-                    height *= CurrentScale;
-                }
-                ContentControl cont = new() {
-                    Width = width,
-                    Height = height,
-                    Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
-                    DataContext = category,
+            // 화면의 배율에 맞춰 스케일링
+            if (needScale) {
+                left *= CurrentScale;
+                top *= CurrentScale;
+                width *= CurrentScale;
+                height *= CurrentScale;
+            }
+            ContentControl cont = new() {
+                Width = width,
+                Height = height,
+                Template = (ControlTemplate)FindResource("DesignerItemTemplate"),
+                DataContext = category,
+                Tag = tag,
+            };
+            Canvas.SetLeft(cont, left);
+            Canvas.SetTop(cont, top);
+            Panel.SetZIndex(cont, zindex);
+            if (tag is AnnotationRecord) {
+                MenuItem delete = new() {
+                    Header = "삭제",
                     Tag = tag,
                 };
-                Canvas.SetLeft(cont, left);
-                Canvas.SetTop(cont, top);
-                Panel.SetZIndex(cont, zindex);
-                if (tag is AnnotationRecord) {
-                    MenuItem delete = new() {
-                        Header = "삭제",
-                        Tag = tag,
-                    };
-                    delete.Click += DeleteLabel;
-                    ContextMenu context = new();
-                    context.Items.Add(delete);
-                    cont.ContextMenu = context;
-                    cont.ToolTip = tag.ToString();
-                }
-                ViewImageCanvas.Children.Add(cont);
-                return cont;
-            });
+                delete.Click += DeleteLabel;
+                ContextMenu context = new();
+                context.Items.Add(delete);
+                cont.ContextMenu = context;
+                cont.ToolTip = tag.ToString();
+            }
+            ViewImageCanvas.Children.Add(cont);
+            return cont;
         }
         private void DeleteLabel(object sender, RoutedEventArgs e) {
             if (sender is not MenuItem mn) return;
@@ -218,6 +210,7 @@ namespace COCOAnnotator.UserControls {
             ContentControl bbox = ViewImageCanvas.Children.OfType<ContentControl>().First(s => mn.Tag.Equals(s.Tag));
             bbox.Visibility = Visibility.Collapsed;
         }
+        /// <summary>현재 화면에 존재하는 경계 상자의 위치를 변화된 이미지 크기에 맞춰 재조정하고 <seealso cref="CurrentScale"/> 값을 갱신합니다.</summary>
         private void RefreshBoundaryBoxes() {
             if (ViewImageControl.Source is not BitmapSource bitmap) return;
             // 경계 상자 위치 갱신은 UI 이미지 크기 조정에 수반되는 경우가 많기 때문에 UI 로드가 끝난 다음에 수행함.
@@ -232,6 +225,7 @@ namespace COCOAnnotator.UserControls {
                     AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == box.Tag);
                     if (realBox is not null) {
                         // 원본에서 스케일링 한 결과와 UI 박스에서 스케일링 한 결과의 오차가 작으면 원본에서 스케일링한 결과로 반영
+                        // (창 크기를 조절하면 건드리지 않은 경계 상자 좌표도 바뀌는 문제 해결)
                         double errorThreshold = Math.Max(afterScale > CurrentScale ? afterScale : CurrentScale, 1);
                         double newLeftFromOriginal = realBox.Left * afterScale;
                         double newTopFromOriginal = realBox.Top * afterScale;
@@ -242,9 +236,6 @@ namespace COCOAnnotator.UserControls {
                         newWidth = Math.Abs(newWidthFromOriginal - newWidth) > errorThreshold ? newWidth : newWidthFromOriginal;
                         newHeight = Math.Abs(newHeightFromOriginal - newHeight) > errorThreshold ? newHeight : newHeightFromOriginal;
                     }
-                    // 원본이 없는 경우 (새로 추가될 경계상자이거나 기존 경계 상자의 위치를 조절한 경우가 해당)
-                    // 창 축소와 확대를 반복하다 보면 경계상자 위치가 약간씩 어긋나게 될 가능성이 있음.
-                    // 이는 부동소수점 연산 과정에서 발생하는 오차가 누적되어서 발생하는 문제이며 해결 불가능.
                     Canvas.SetLeft(box, newLeft);
                     Canvas.SetTop(box, newTop);
                     box.Width = newWidth;
@@ -260,8 +251,8 @@ namespace COCOAnnotator.UserControls {
             // 이미지 크기 재조정
             if (FitViewport) {
                 Dispatcher.Invoke(() => {
-                    ViewImageControl.MaxWidth = Math.Max(ViewViewport.ViewportWidth, 0);
-                    ViewImageControl.MaxHeight = Math.Max(ViewViewport.ViewportHeight, 0);
+                    ViewImageControl.MaxWidth = ViewViewport.ViewportWidth;
+                    ViewImageControl.MaxHeight = ViewViewport.ViewportHeight;
                 }, DispatcherPriority.Loaded);
                 RefreshBoundaryBoxes();
             }
