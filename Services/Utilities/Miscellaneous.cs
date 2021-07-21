@@ -70,7 +70,7 @@ namespace COCOAnnotator.Services.Utilities {
             double rdelta = Math.Pow(color1.R - color2.R, 2);
             double gdelta = Math.Pow(color1.G - color2.G, 2);
             double bdelta = Math.Pow(color1.B - color2.B, 2);
-            return Math.Sqrt((512 + rmean) * rdelta / 256 + 4 * gdelta + (767 - rmean) * bdelta / 256);
+            return Math.Sqrt((2 + rmean / 256) * rdelta + 4 * gdelta + (2 + (255 - rmean) / 256) * bdelta);
         }
 
         /// <summary>이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.</summary>
