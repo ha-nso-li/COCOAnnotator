@@ -59,13 +59,14 @@ namespace COCOAnnotator.Services.Utilities {
             return new(BasePath, images.Values, categories.Values);
         }
 
-        /// <summary>주어진 파일을 COCO JSON으로 간주하여 역직렬화합니다. .</summary>
+        /// <summary>주어진 파일을 COCO JSON으로 간주하여 역직렬화합니다.</summary>
         public static async Task<DatasetCOCO> DeserializeRawAsync(string JsonPath) {
             using FileStream fileStream = File.OpenRead(JsonPath);
             return await JsonSerializer.DeserializeAsync<DatasetCOCO>(fileStream).ConfigureAwait(false) ?? new();
         }
 
         /// <summary>주어진 데이터셋을 CSV로 직렬화하여 파일로 출력합니다.</summary>
+        /// <returns>직렬화된 CSV 파일의 경로입니다.</returns>
         public static async Task<string> SerializeCSVAsync(DatasetRecord Dataset, CSVFormat CSVFormat) {
             string CSVPath = Path.Combine(Dataset.BasePath, "instances.csv");
             using StreamWriter csv = File.CreateText(CSVPath);

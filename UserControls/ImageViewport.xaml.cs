@@ -120,7 +120,7 @@ namespace COCOAnnotator.UserControls {
                 case NotifyCollectionChangedAction.Remove:
                     if (e.OldItems is null) return;
                     ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
-                    foreach (ContentControl j in delete) ViewImageCanvas.Children.Remove(j);
+                    foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
                     break;
                 case NotifyCollectionChangedAction.Add:
                     if (e.NewItems is null) return;

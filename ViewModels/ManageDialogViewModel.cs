@@ -389,7 +389,7 @@ namespace COCOAnnotator.ViewModels {
                             // 양성 이미지인 경우.
                             // 분류 다양성이 증가하는 정도가 가장 높은 순 -> 파티션에 포함된 이미지 개수가 적은 순.
                             DatasetRecord datasetOfPartition = outDatasetByPartition
-                                .OrderByDescending(s => shuffledImages[i].Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(s => s.Category)).Count())
+                                .OrderByDescending(s => shuffledImages[i].Annotations.Select(t => t.Category).Except(s.Images.SelectMany(t => t.Annotations).Select(t => t.Category)).Count())
                                 .ThenBy(s => s.Images.Count).First();
                             Miscellaneous.CopyFile(Path.Combine(inDataset.BasePath, shuffledImages[i].Path), Path.Combine(datasetOfPartition.BasePath, shuffledImages[i].Path));
                             datasetOfPartition.Images.Add(shuffledImages[i]);
@@ -527,7 +527,7 @@ namespace COCOAnnotator.ViewModels {
                         ProgressConvertDataset = 0;
                         DatasetRecord dataset = await SerializationService.DeserializeCSVAsync(csvFilePath, CSVFormat).ConfigureAwait(false);
                         if (Directory.GetParent(dataset.BasePath) is null) {
-                            CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 루트 폴더가 아니어야 합니다.");
+                            CommonDialogService.MessageBox("데이터셋을 변환할 수 없습니다. 포함된 이미지의 공통 부모 폴더가 드라이브 최상위 폴더가 아니어야 합니다.");
                             return;
                         }
                         for (int i = 0; i < dataset.Images.Count; i++) {
