@@ -421,7 +421,7 @@ namespace COCOAnnotator.ViewModels {
         }
         private async Task InternalLoadDataset(string filePath) {
             if (!SerializationService.IsJsonPathValid(filePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             Dataset = await SerializationService.DeserializeAsync(filePath).ConfigureAwait(false);

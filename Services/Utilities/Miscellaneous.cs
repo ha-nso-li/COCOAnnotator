@@ -38,12 +38,12 @@ namespace COCOAnnotator.Services.Utilities {
         /// <param name="value">명도입니다. 0에서 1까지의 범위를 갖습니다.</param>
         private static Color ColorFromHSV(double hue, double saturation, double value) {
             int hi = (int)Math.Floor(hue / 60) % 6;
-            double f = hue / 60 - Math.Floor(hue / 60);
+            double f = hue / 60 - Math.Truncate(hue / 60);
 
-            byte v = (byte)(value * 255);
-            byte p = (byte)(v * (1 - saturation));
-            byte q = (byte)(v * (1 - f * saturation));
-            byte t = (byte)(v * (1 - (1 - f) * saturation));
+            byte v = (byte)Math.Round(value * 255);
+            byte p = (byte)Math.Round(value * 255 * (1 - saturation));
+            byte q = (byte)Math.Round(value * 255 * (1 - f * saturation));
+            byte t = (byte)Math.Round(value * 255 * (1 - (1 - f) * saturation));
 
             return hi switch {
                 0 => Color.FromRgb(v, t, p),

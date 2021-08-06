@@ -140,7 +140,7 @@ namespace COCOAnnotator.ViewModels {
         private void VerifyDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string filePath)) return;
             if (!SerializationService.IsJsonPathValid(filePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             bool? res = CommonDialogService.MessageBoxYesNoCancel("검증을 시작합니다. 이미지 크기 검사를 하기 원하시면 예 아니면 아니오를 선택하세요."
@@ -318,7 +318,7 @@ namespace COCOAnnotator.ViewModels {
         private void ExportUnionDataset() {
             if (!CommonDialogService.SaveJsonFileDialog(out string outFilePath)) return;
             if (!SerializationService.IsJsonPathValid(outFilePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 저장할 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 병합된 새 데이터셋을 만듭니다. 분류의 배열 순서는 병합 전후 유지되지 않을 수 있습니다.")) return;
@@ -358,7 +358,7 @@ namespace COCOAnnotator.ViewModels {
         private async void SplitDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string inFilePath)) return;
             if (!SerializationService.IsJsonPathValid(inFilePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             DatasetRecord inDataset = await SerializationService.DeserializeAsync(inFilePath).ConfigureAwait(false);
@@ -449,7 +449,7 @@ namespace COCOAnnotator.ViewModels {
         private void UndupeDataset() {
             if (!CommonDialogService.OpenJsonFileDialog(out string filePath)) return;
             if (!SerializationService.IsJsonPathValid(filePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             LogUndupeDataset = "";
@@ -512,7 +512,7 @@ namespace COCOAnnotator.ViewModels {
             case TacticsForConvertDataset.COCOToCSV: {
                 if (CommonDialogService.OpenJsonFileDialog(out string jsonFilePath)) {
                     if (!SerializationService.IsJsonPathValid(jsonFilePath)) {
-                        CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                        CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                         return;
                     }
                     DatasetRecord dataset = await SerializationService.DeserializeAsync(jsonFilePath).ConfigureAwait(false);
