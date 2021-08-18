@@ -303,7 +303,7 @@ namespace COCOAnnotator.ViewModels {
                 CommonDialogService.MessageBox("분류 2개를 선택하여야 합니다.");
                 return;
             }
-            CommonDialogService.MessageBox("선택한 두 분류의 위치를 교환합니다.");
+            CommonDialogService.MessageBox("첫번째로 선택한 분류를 두번째로 선택한 자리로 이동합니다.");
             int idx1 = Dataset.Categories.IndexOf(SelectedCategories[0]);
             int idx2 = Dataset.Categories.IndexOf(SelectedCategories[1]);
             Dataset.Categories.Move(idx1, idx2);
