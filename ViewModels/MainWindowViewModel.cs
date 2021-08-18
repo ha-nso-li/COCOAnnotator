@@ -458,7 +458,7 @@ namespace COCOAnnotator.ViewModels {
             ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
             SortedSet<ImageRecord> currentImagesInFolder = new(
                 Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
-                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s)))
+                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).NormalizePath()))
             );
             int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Dataset.Images);
@@ -468,6 +468,7 @@ namespace COCOAnnotator.ViewModels {
             if (removedCount > 0 && addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");
             else if (removedCount > 0 && addedCount == 0) CommonDialogService.MessageBox($"{removedCount}개의 이미지가 제거되었습니다.");
             else if (removedCount == 0 && addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되었습니다.");
+            else CommonDialogService.MessageBox("데이터셋의 이미지 목록이 이미 최신입니다.");
         }
         #endregion
     }

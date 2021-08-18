@@ -52,6 +52,10 @@ namespace COCOAnnotator.Services.Utilities {
             return new(uri.ToString());
         }
 
+        public static string NormalizePath(this string FilePath) {
+            return FilePath.Replace('\\', '/');
+        }
+
         public static bool LoadSize(this ImageRecord Image, string BasePath) {
             using FileStream stream = File.OpenRead(Path.Combine(BasePath, Image.Path));
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
