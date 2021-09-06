@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace COCOAnnotator.Records {
     public class ObservableCollection<T> : System.Collections.ObjectModel.ObservableCollection<T> {
@@ -13,9 +14,12 @@ namespace COCOAnnotator.Records {
                 }
             }
 
-            OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
-            OnPropertyChanged(new(nameof(Count)));
-            OnPropertyChanged(new("Item[]"));
+            int addedCount = collection.Count();
+            if (addedCount > 0) {
+                OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
+                OnPropertyChanged(new(nameof(Count)));
+                OnPropertyChanged(new("Item[]"));
+            }
         }
 
         public int RemoveAll(Predicate<T> match) {
@@ -33,9 +37,11 @@ namespace COCOAnnotator.Records {
                 }
             }
 
-            OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
-            OnPropertyChanged(new(nameof(Count)));
-            OnPropertyChanged(new("Item[]"));
+            if (removedCount > 0) {
+                OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
+                OnPropertyChanged(new(nameof(Count)));
+                OnPropertyChanged(new("Item[]"));
+            }
 
             return removedCount;
         }
