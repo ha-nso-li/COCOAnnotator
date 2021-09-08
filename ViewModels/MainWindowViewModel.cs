@@ -184,9 +184,13 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdSaveDataset { get; }
         private async void SaveDataset() {
-            string jsonPath = await SerializationService.SerializeAsync(Dataset).ConfigureAwait(false);
-            Title = $"COCO 데이터셋 편집기 - {jsonPath}";
-            CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
+            try {
+                string jsonPath = await SerializationService.SerializeAsync(Dataset).ConfigureAwait(false);
+                Title = $"COCO 데이터셋 편집기 - {jsonPath}";
+                CommonDialogService.MessageBox("현재 데이터셋이 JSON 파일로 저장되었습니다.");
+            } catch (ArgumentException) {
+                CommonDialogService.MessageBox("열린 데이터셋이 없습니다.");
+            }
         }
         public ICommand CmdOpenFolderOrCloseDataset { get; }
         private void OpenFolderOrCloseDataset() {
@@ -455,7 +459,7 @@ namespace COCOAnnotator.ViewModels {
             }
         }
         public void InternalRefreshImagesList() {
-            ISet<string> ApprovedImageExtensions = Miscellaneous.ApprovedImageExtensions;
+            ISet<string> ApprovedImageExtensions = SettingService.SetSupportedFormats;
             SortedSet<ImageRecord> currentImagesInFolder = new(
                 Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
                     .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).NormalizePath()))
