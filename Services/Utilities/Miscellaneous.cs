@@ -73,9 +73,6 @@ namespace COCOAnnotator.Services.Utilities {
             return Math.Sqrt((2 + rmean / 256) * rdelta + 4 * gdelta + (2 + (255 - rmean) / 256) * bdelta);
         }
 
-        /// <summary>이 애플리케이션에서 이미지로서 허용하는 확장자의 집합을 제공합니다.</summary>
-        public static ISet<string> ApprovedImageExtensions => new SortedSet<string>(StringComparer.OrdinalIgnoreCase) { ".jpg", ".png", ".jpeg", ".tif" };
-
         /// <summary>파일을 지정한 경로로 복사합니다. 복사할 경로의 폴더가 존재하지 않으면 생성합니다.</summary>
         public static void CopyFile(string FromPath, string ToPath) {
             string? ToDirectory = Path.GetDirectoryName(ToPath);

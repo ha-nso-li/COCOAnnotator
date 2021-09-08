@@ -9,6 +9,7 @@ namespace COCOAnnotator.ViewModels {
         public SettingDialogViewModel() {
             Title = "설정";
             Color = SettingService.Color;
+            _SupportedFormats = SettingService.SupportedFormats;
 
             CmdClose = new DelegateCommand(Close);
         }
@@ -19,10 +20,17 @@ namespace COCOAnnotator.ViewModels {
             set => SetProperty(ref _Color, value);
         }
 
+        private string _SupportedFormats;
+        public string SupportedFormats {
+            get => _SupportedFormats;
+            set => SetProperty(ref _SupportedFormats, value);
+        }
+
         public override async void OnDialogClosed() {
             base.OnDialogClosed();
 
             SettingService.Color = Color;
+            SettingService.SupportedFormats = SupportedFormats;
             await SettingService.Write().ConfigureAwait(false);
         }
 
