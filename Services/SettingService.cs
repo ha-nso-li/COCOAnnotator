@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services {
@@ -25,6 +26,7 @@ namespace COCOAnnotator.Services {
             }
         }
 
+        [JsonIgnore]
         public ISet<string> SetSupportedFormats => new SortedSet<string>(SupportedFormats.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             StringComparer.OrdinalIgnoreCase);
 

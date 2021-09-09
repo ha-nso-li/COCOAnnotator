@@ -56,7 +56,7 @@
                         <StackPanel DockPanel.Dock="Top">
                             <RadioButton TabIndex="8" GroupName="TacticsForSplitDataset" Content="균등한 갯수의 이미지가 포함되도록 n개의 데이터셋으로 분할"
                                     IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=DevideToN}" Margin="1" />
-                            <RadioButton TabIndex="9" GroupName="TacticsForSplitDataset" Content="데이터셋에 포함된 이미지중 n개를 다른 파일로 분리"
+                            <RadioButton TabIndex="9" GroupName="TacticsForSplitDataset" Content="데이터셋에 포함된 이미지중 n개를 다른 데이터셋으로 분리"
                                     IsChecked="{Binding TacticForSplitDataset, Converter={StaticResource TacticForSplitDatasetConverter}, ConverterParameter=TakeNSamples}" Margin="1" />
                         </StackPanel>
                         <Label DockPanel.Dock="Top" Content="n의 값 입력:" />
