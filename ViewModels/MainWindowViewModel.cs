@@ -466,7 +466,14 @@ namespace COCOAnnotator.ViewModels {
             );
             int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Dataset.Images);
-            foreach (ImageRecord i in currentImagesInFolder) i.LoadSize(Dataset.BasePath);
+            foreach (ImageRecord i in currentImagesInFolder) {
+                try {
+                    i.LoadSize(Dataset.BasePath);
+                } catch (NotSupportedException) {
+                    i.Width = 0;
+                    i.Height = 0;
+                }
+            }
             Dataset.Images.AddRange(currentImagesInFolder);
             int addedCount = currentImagesInFolder.Count;
             if (removedCount > 0 && addedCount > 0) CommonDialogService.MessageBox($"{addedCount}개의 이미지가 새로 추가되고 {removedCount}개의 이미지가 제거되었습니다.");

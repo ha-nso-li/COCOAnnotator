@@ -7,13 +7,9 @@ using System.Text;
 using System.Windows.Media.Imaging;
 
 namespace COCOAnnotator.Services.Utilities {
-    /// <summary>
-    /// 각종 확장 메서드를 포함하는 유틸 클래스입니다.
-    /// </summary>
+    /// <summary>각종 확장 메서드를 포함하는 유틸 클래스입니다.</summary>
     public static class Extensions {
-        /// <summary>
-        /// 컬렉션에 포함된 모든 이미지들이 위치한 경로의 공통 부모 폴더의 경로를 찾습니다.
-        /// </summary>
+        /// <summary>컬렉션에 포함된 모든 이미지들이 위치한 경로의 공통 부모 폴더의 경로를 찾습니다.</summary>
         public static string GetCommonParentPath(this IEnumerable<ImageRecord> source) {
             using IEnumerator<ImageRecord> etor = source.GetEnumerator();
             if (!etor.MoveNext()) return "";
@@ -33,9 +29,7 @@ namespace COCOAnnotator.Services.Utilities {
             return prefix[..prefix.LastIndexOfAny(new[] { '\\', '/' })];
         }
 
-        /// <summary>
-        /// 주어진 로컬 파일 경로를 이스케이프를 고려하여 URI로 변환합니다.
-        /// </summary>
+        /// <summary>주어진 로컬 파일 경로를 이스케이프를 고려하여 URI로 변환합니다.</summary>
         public static Uri ToUri(this string filePath) {
             StringBuilder uri = new();
             foreach (char v in filePath) {
@@ -56,6 +50,9 @@ namespace COCOAnnotator.Services.Utilities {
             return FilePath.Replace('\\', '/');
         }
 
+        /// <summary>이 <seealso cref="ImageRecord"/>에 해당하는 이미지의 실제 크기를 읽어와서 갱신합니다.</summary>
+        /// <returns><seealso cref="ImageRecord"/>가 가지고 있었던 크기 값과 실제 크기값이 똑같았으면 <see langword="false"/>, 아니면 <see langword="true"/>입니다.</returns>
+        /// <exception cref="NotSupportedException">이미지의 크기를 읽어오는데 실패한 경우 발생하는 예외입니다.</exception>
         public static bool LoadSize(this ImageRecord Image, string BasePath) {
             using FileStream stream = File.OpenRead(Path.Combine(BasePath, Image.Path));
             BitmapFrame bitmap = BitmapFrame.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);

@@ -6,8 +6,8 @@
             <Setter Property="prism:Dialog.WindowStartupLocation" Value="CenterOwner" />
             <Setter Property="ResizeMode" Value="NoResize" />
             <Setter Property="ShowInTaskbar" Value="False" />
-            <Setter Property="Width" Value="300" />
-            <Setter Property="Height" Value="300" />
+            <Setter Property="Width" Value="310" />
+            <Setter Property="Height" Value="322" />
         </Style>
     </prism:Dialog.WindowStyle>
     <UserControl.Resources>
@@ -26,8 +26,8 @@
                 <StackPanel Orientation="Vertical">
                     <TextBox Margin="2" Padding="2" TabIndex="2" Text="{Binding SupportedFormats}" />
                     <TextBlock TextWrapping="Wrap" Margin="2,3,2,2">
-                        프로그램에서 열 수 있는 이미지 확장자를 지정합니다.
-                        avif 이미지를 열기 위해서는 마이크로소프트 스토어에서 설치할 수 있는 AV1 Video Extension의 설치가 필요합니다.
+                        프로그램에서 열 수 있는 이미지 확장자를 지정합니다. <LineBreak />
+                        webp, avif 이미지를 열기 위해서는 마이크로소프트 스토어에서 Webp 이미지 확장, AV1 Video Extension을 설치해야 합니다.
                     </TextBlock>
                 </StackPanel>
             </GroupBox>

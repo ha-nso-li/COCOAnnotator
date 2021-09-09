@@ -533,7 +533,12 @@ namespace COCOAnnotator.ViewModels {
                         for (int i = 0; i < dataset.Images.Count; i++) {
                             if (IsClosed) return;
                             ProgressConvertDataset = i * 100 / dataset.Images.Count;
-                            dataset.Images[i].LoadSize(dataset.BasePath);
+                            try {
+                                dataset.Images[i].LoadSize(dataset.BasePath);
+                            } catch (NotSupportedException) {
+                                dataset.Images[i].Width = 0;
+                                dataset.Images[i].Height = 0;
+                            }
                         }
                         string jsonFilePath = await SerializationService.SerializeAsync(dataset).ConfigureAwait(false);
                         CommonDialogService.MessageBox($"\"{jsonFilePath}\"에 변환된 데이터셋이 저장되었습니다.");

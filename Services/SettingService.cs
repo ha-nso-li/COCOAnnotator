@@ -31,6 +31,7 @@ namespace COCOAnnotator.Services {
         public SettingService() {
             _Color = SettingColors.Fixed;
             _SupportedFormats = ".jpg;.jpeg;.png;.tif;.webp;.avif";
+            NeedSave = false;
         }
 
         private bool NeedSave;
