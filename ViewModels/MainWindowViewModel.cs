@@ -420,8 +420,8 @@ namespace COCOAnnotator.ViewModels {
         private void UpdateBoundaryBoxes() {
             if (SelectedCategory is null || SelectedImage is null) return;
             VisibleAnnotations.Clear();
-            IEnumerable<AnnotationRecord> visibleAnnotations = SelectedCategory.All ? SelectedImage.Annotations : SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
-            foreach (AnnotationRecord i in visibleAnnotations) VisibleAnnotations.Add(i);
+            IEnumerable<AnnotationRecord> anns = SelectedCategory.All ? SelectedImage.Annotations : SelectedImage.Annotations.Where(s => s.Category == SelectedCategory);
+            VisibleAnnotations.AddRange(anns);
         }
         private async Task InternalLoadDataset(string filePath) {
             if (!SerializationService.IsJsonPathValid(filePath)) {
@@ -440,7 +440,7 @@ namespace COCOAnnotator.ViewModels {
         private void RefreshColorOfCategories() {
             switch (SettingService.Color) {
             case SettingColors.Fixed:
-                IEnumerable<Color> colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Where(s => !s.All).Count());
+                IEnumerable<Color> colors = Miscellaneous.GenerateFixedColor(Dataset.Categories.Count(s => !s.All));
                 foreach ((CategoryRecord category, Color color) in Enumerable.Zip(Dataset.Categories.Where(s => !s.All), colors)) {
                     SolidColorBrush brush = new(color);
                     brush.Freeze();

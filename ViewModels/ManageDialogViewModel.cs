@@ -154,7 +154,7 @@ namespace COCOAnnotator.ViewModels {
                 CategoriesForVerify.Clear();
                 DatasetCOCO datasetcoco = await SerializationService.DeserializeRawAsync(filePath).ConfigureAwait(false);
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
-                string instanceName = fileName[(fileName.IndexOf('_')+1)..];
+                string instanceName = fileName[(fileName.IndexOf('_') + 1)..];
                 BasePathForVerify = Path.GetFullPath($@"..\..\{instanceName}", filePath);
                 AppendLogVerifyDataset($"\"{filePath}\"의 분석을 시작합니다.");
                 if (!Directory.Exists(BasePathForVerify)) {
