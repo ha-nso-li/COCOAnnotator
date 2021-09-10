@@ -33,9 +33,9 @@ namespace COCOAnnotator.Services.Utilities {
         public static Uri ToUri(this string filePath) {
             StringBuilder uri = new();
             foreach (char v in filePath) {
-                if (v is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '+' or '/' or ':' or '.' or '-' or '_' or '~' or > '\xFF') {
+                if (v is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '+' or ':' or '.' or '-' or '_' or '~' or > '\xFF') {
                     uri.Append(v);
-                } else if (v == Path.DirectorySeparatorChar || v == Path.AltDirectorySeparatorChar) {
+                } else if (v is '/' or '\\') {
                     uri.Append('/');
                 } else {
                     uri.Append($"%{Convert.ToByte(v):X2}");
@@ -46,9 +46,7 @@ namespace COCOAnnotator.Services.Utilities {
             return new(uri.ToString());
         }
 
-        public static string NormalizePath(this string FilePath) {
-            return FilePath.Replace('\\', '/');
-        }
+        public static string NormalizePath(this string FilePath) => FilePath.Replace('\\', '/');
 
         /// <summary>이 <seealso cref="ImageRecord"/>에 해당하는 이미지의 실제 크기를 읽어와서 갱신합니다.</summary>
         /// <returns><seealso cref="ImageRecord"/>가 가지고 있었던 크기 값과 실제 크기값이 똑같았으면 <see langword="false"/>, 아니면 <see langword="true"/>입니다.</returns>

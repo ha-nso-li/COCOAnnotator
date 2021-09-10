@@ -40,7 +40,7 @@ namespace COCOAnnotator.Services.Utilities {
         /// <param name="JsonPath">역직렬화할 JSON 파일이 존재하는 경로입니다.</param>
         public static async Task<DatasetRecord> DeserializeAsync(string JsonPath) {
             string JsonFileName = Path.GetFileNameWithoutExtension(JsonPath);
-            string InstanceName = JsonFileName[(JsonFileName.IndexOf('_')+1)..];
+            string InstanceName = JsonFileName[(JsonFileName.IndexOf('_') + 1)..];
             string BasePath = Path.GetFullPath($@"..\..\{InstanceName}", JsonPath);
             DatasetCOCO datasetcoco = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
             SortedDictionary<int, ImageRecord> images = new();
@@ -68,7 +68,7 @@ namespace COCOAnnotator.Services.Utilities {
         /// <summary>주어진 데이터셋을 CSV로 직렬화하여 파일로 출력합니다.</summary>
         /// <returns>직렬화된 CSV 파일의 경로입니다.</returns>
         public static async Task<string> SerializeCSVAsync(DatasetRecord Dataset, CSVFormat CSVFormat) {
-            string CSVPath = Path.Combine(Dataset.BasePath, "instances.csv");
+            string CSVPath = Path.Combine(Dataset.BasePath, "annotations.csv");
             using StreamWriter csv = File.CreateText(CSVPath);
             foreach (ImageRecord image in Dataset.Images) {
                 if (image.Annotations.Count == 0) {
