@@ -410,12 +410,12 @@ namespace COCOAnnotator.UserControls {
                     }
                 } else {
                     // 이동
-                    float left = (float)Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
-                    float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
-                    float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
-                    float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
                     AnnotationRecord? realBox = Annotations?.FirstOrDefault(s => s == bbox.Tag);
                     if (realBox is not null) {
+                        float left = (float)Math.Clamp(Canvas.GetLeft(bbox) / CurrentScale, 0, bitmap.PixelWidth);
+                        float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
+                        float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
+                        float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 새 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)

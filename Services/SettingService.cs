@@ -21,7 +21,7 @@ namespace COCOAnnotator.Services {
         public string SupportedFormats {
             get => _SupportedFormats;
             set {
-                NeedSave |= !value.Equals(_SupportedFormats, StringComparison.OrdinalIgnoreCase);
+                NeedSave |= _SupportedFormats != value;
                 _SupportedFormats = value;
             }
         }
