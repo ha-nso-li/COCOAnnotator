@@ -9,8 +9,7 @@ namespace COCOAnnotator.Services.Utilities {
     public static class Miscellaneous {
         /// <summary>주어진 두 값을 비교하고 작아야 하는 값이 더 크면 두 값을 교환합니다.</summary>
         public static void SortTwoValues<T>(ref T ShouldSmaller, ref T ShouldBigger) where T : IComparable<T> {
-            Comparer<T> comparer = Comparer<T>.Default;
-            if (comparer.Compare(ShouldSmaller, ShouldBigger) > 0) {
+            if (ShouldSmaller.CompareTo(ShouldBigger) > 0) {
                 T temp = ShouldBigger;
                 ShouldBigger = ShouldSmaller;
                 ShouldSmaller = temp;

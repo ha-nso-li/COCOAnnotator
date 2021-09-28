@@ -65,7 +65,7 @@ namespace COCOAnnotator.UserControls {
             }
         }
         public Uri? MainImageUri {
-            get => (Uri?)GetValue(MainImageUriProperty);
+            get => GetValue(MainImageUriProperty) as Uri;
             set => SetValue(MainImageUriProperty, value);
         }
 
@@ -130,7 +130,7 @@ namespace COCOAnnotator.UserControls {
             });
         }
         public IEnumerable<AnnotationRecord>? Annotations {
-            get => (IEnumerable<AnnotationRecord>?)GetValue(AnnotationsProperty);
+            get => GetValue(AnnotationsProperty) as IEnumerable<AnnotationRecord>;
             set => SetValue(AnnotationsProperty, value);
         }
 
@@ -149,7 +149,7 @@ namespace COCOAnnotator.UserControls {
 
         public static readonly DependencyProperty CurrentCategoryProperty = DependencyProperty.Register(nameof(CurrentCategory), typeof(CategoryRecord), typeof(ImageViewport));
         public CategoryRecord? CurrentCategory {
-            get => (CategoryRecord?)GetValue(CurrentCategoryProperty);
+            get => GetValue(CurrentCategoryProperty) as CategoryRecord;
             set => SetValue(CurrentCategoryProperty, value);
         }
         #endregion
