@@ -332,7 +332,7 @@ namespace COCOAnnotator.UserControls {
                             Canvas.SetLeft(PreviewBbox, startX);
                             Canvas.SetTop(PreviewBbox, startY);
                         }
-                    } else if (e.LeftButton == MouseButtonState.Released) {
+                    } else {
                         // 마우스를 이미지 밖에서 뗀 경우, 마지막 정보를 기준으로 경계 상자로 반영함.
                         if (PreviewBbox is not null) {
                             PreviewBbox.Tag = Tag_UncommittedBbox;

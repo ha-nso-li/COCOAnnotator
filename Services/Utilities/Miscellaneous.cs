@@ -8,6 +8,8 @@ namespace COCOAnnotator.Services.Utilities {
     /// <summary>사소한 정적 유틸 메서드를 포함하는 서비스입니다.</summary>
     public static class Miscellaneous {
         /// <summary>주어진 두 값을 비교하고 작아야 하는 값이 더 크면 두 값을 교환합니다.</summary>
+        /// <param name="ShouldSmaller">교환 후에 다른 한 쪽에 비해 작거나 같아야 할 값입니다.</param>
+        /// <param name="ShouldBigger">교환 후에 다른 한 쪽에 비해 크거나 같아야 할 값입니다.</param>
         public static void SortTwoValues<T>(ref T ShouldSmaller, ref T ShouldBigger) where T : IComparable<T> {
             if (ShouldSmaller.CompareTo(ShouldBigger) > 0) {
                 T temp = ShouldBigger;
