@@ -168,7 +168,7 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<int> DuplicatedIDAlreadyDetected = new();
                     SortedSet<ImageRecord> ImageRecords = new();
                     SortedSet<ImageRecord> DuplicatedImageAlreadyDetected = new();
-                    foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Select((s, idx) => (idx, s))) {
+                    foreach ((int idx, ImageCOCO image) in datasetcoco.Images.Enumerate()) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = idx * 100 / total;
                         string fullPath = Path.GetFullPath(image.FileName, BasePathForVerify);
@@ -209,7 +209,7 @@ namespace COCOAnnotator.ViewModels {
                     SortedSet<int> DuplicationAlreadyDetected = new();
                     SortedSet<CategoryRecord> CategoryRecords = new();
                     SortedSet<CategoryRecord> DuplicatedCategoryAlreadyDetected = new();
-                    foreach ((int idx, CategoryCOCO category) in datasetcoco.Categories.Select((s, idx) => (idx, s))) {
+                    foreach ((int idx, CategoryCOCO category) in datasetcoco.Categories.Enumerate()) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (datasetcoco.Images.Count + idx) * 100 / total;
                         if (CategoriesForVerify.ContainsKey(category.ID)) {
@@ -227,7 +227,7 @@ namespace COCOAnnotator.ViewModels {
                 {
                     SortedSet<int> DuplicationAlreadyDetected = new();
                     SortedSet<int> AnnotationAlreadyProcessed = new();
-                    foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Select((s, idx) => (idx, s))) {
+                    foreach ((int idx, AnnotationCOCO annotation) in datasetcoco.Annotations.Enumerate()) {
                         if (IsClosed) return;
                         ProgressVerifyDataset = (datasetcoco.Images.Count + datasetcoco.Categories.Count + idx) * 100 / total;
                         if (AnnotationAlreadyProcessed.Contains(annotation.ID)) {

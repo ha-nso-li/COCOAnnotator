@@ -70,5 +70,7 @@ namespace COCOAnnotator.Services.Utilities {
                 elements[j] = elements[i];
             }
         }
+
+        public static IEnumerable<(int Index, T Element)> Enumerate<T>(this IEnumerable<T> source) => source.Select((s, idx) => (idx, s));
     }
 }
