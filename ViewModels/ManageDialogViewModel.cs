@@ -438,6 +438,7 @@ namespace COCOAnnotator.ViewModels {
                     }
                     await SerializationService.SerializeAsync(OriginalDataset).ConfigureAwait(false);
                     await SerializationService.SerializeAsync(SplitDataset).ConfigureAwait(false);
+                    ProgressSplitDataset = 100;
                 });
                 break;
             }
