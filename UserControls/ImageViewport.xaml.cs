@@ -406,6 +406,7 @@ namespace COCOAnnotator.UserControls {
                         float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                         float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                         float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                        if (width < 1 || height < 1) continue;
                         added.Add(new(new(), left, top, width, height, CurrentCategory));
                     }
                 } else {
@@ -416,6 +417,7 @@ namespace COCOAnnotator.UserControls {
                         float top = (float)Math.Clamp(Canvas.GetTop(bbox) / CurrentScale, 0, bitmap.PixelHeight);
                         float width = (float)Math.Clamp(bbox.Width / CurrentScale, 0, bitmap.PixelWidth - left);
                         float height = (float)Math.Clamp(bbox.Height / CurrentScale, 0, bitmap.PixelHeight - top);
+                        if (width < 1 || height < 1) continue;
                         double errorThreshold = Math.Max(1 / CurrentScale, 1);
                         int notChangedPositionsCount = 0;
                         // 새 좌표와 현재 좌표의 오차가 작으면 새 좌표 무시. (좌표 변환 과정에서의 잠재적 오차 감안)

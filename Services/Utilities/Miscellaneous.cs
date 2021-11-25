@@ -60,11 +60,12 @@ namespace COCOAnnotator.Services.Utilities {
         public static Color GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold, Random? RandomGenerator = null) {
             RandomGenerator ??= new();
             Span<byte> buffer = stackalloc byte[3];
-            while (true) {
+            Color newColor;
+            do {
                 RandomGenerator.NextBytes(buffer);
-                Color newColor = Color.FromRgb(buffer[0], buffer[1], buffer[2]);
-                if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) return newColor;
-            }
+                newColor = Color.FromRgb(buffer[0], buffer[1], buffer[2]);
+            } while (!ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold));
+            return newColor;
         }
 
         /// <summary>주어진 두 색의 색차를 구합니다.</summary>
