@@ -27,7 +27,7 @@ namespace COCOAnnotator.Services.Utilities {
                     int? category_id = datasetcoco.Categories.FirstOrDefault(s => s.Name == j.Category.Name)?.ID;
                     if (category_id is null) continue;
                     int annotation_id = datasetcoco.Annotations.Count;
-                    datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, new() { j.Left, j.Top, j.Width, j.Height }, j.Area));
+                    datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, new[] { j.Left, j.Top, j.Width, j.Height }, j.Area));
                 }
             }
             Directory.CreateDirectory(Path.GetDirectoryName(JsonPath) ?? string.Empty);
@@ -52,7 +52,7 @@ namespace COCOAnnotator.Services.Utilities {
                 if (!categories.ContainsKey(i.ID)) categories.Add(i.ID, CategoryRecord.FromName(i.Name));
             }
             foreach (AnnotationCOCO i in datasetcoco.Annotations) {
-                if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBoxes.Count >= 4) {
+                if (categories.TryGetValue(i.CategoryID, out CategoryRecord? category) && images.TryGetValue(i.ImageID, out ImageRecord? image) && i.BoundaryBoxes.Length >= 4) {
                     image.Annotations.Add(new(image, i.BoundaryBoxes[0], i.BoundaryBoxes[1], i.BoundaryBoxes[2], i.BoundaryBoxes[3], category));
                 }
             }

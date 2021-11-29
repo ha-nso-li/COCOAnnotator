@@ -30,10 +30,7 @@ namespace COCOAnnotator.Records {
             };
         }
         public override int GetHashCode() {
-            return All switch {
-                true => true.GetHashCode(),
-                _ => Name.GetHashCode()
-            };
+            return All ? true.GetHashCode() : Name.GetHashCode();
         }
         public static bool operator ==(CategoryRecord record1, CategoryRecord record2) => record1.Equals(record2);
         public static bool operator !=(CategoryRecord record1, CategoryRecord record2) => !record1.Equals(record2);

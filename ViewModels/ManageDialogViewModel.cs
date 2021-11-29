@@ -242,7 +242,7 @@ namespace COCOAnnotator.ViewModels {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션이 존재하지 않는 이미지 ID를 참조합니다.");
                             continue;
                         }
-                        if (annotation.BoundaryBoxes.Count != 4) {
+                        if (annotation.BoundaryBoxes.Length != 4) {
                             AppendLogVerifyDataset($"ID가 {annotation.ID}인 어노테이션의 좌표가 유효하지 않습니다. 좌표 개수는 4개여야 합니다.");
                             continue;
                         }
