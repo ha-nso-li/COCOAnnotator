@@ -318,7 +318,7 @@ namespace COCOAnnotator.ViewModels {
         private void ExportUnionDataset() {
             if (!CommonDialogService.SaveJsonFileDialog(out string outFilePath)) return;
             if (!SerializationService.IsJsonPathValid(outFilePath)) {
-                CommonDialogService.MessageBox("데이터셋 파일을 읽어올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
+                CommonDialogService.MessageBox("데이터셋 파일을 내보낼 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
                 return;
             }
             if (!CommonDialogService.MessageBoxOKCancel("기존 이미지를 복사하여 병합된 새 데이터셋을 만듭니다. 분류의 배열 순서는 병합 전후 유지되지 않을 수 있습니다.")) return;
