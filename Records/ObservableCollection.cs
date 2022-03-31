@@ -6,44 +6,36 @@ using System.Linq;
 namespace COCOAnnotator.Records {
     public class ObservableCollection<T> : System.Collections.ObjectModel.ObservableCollection<T> {
         public void AddRange(IEnumerable<T> collection) {
-            if (Items is List<T> ListItems) {
-                ListItems.AddRange(collection);
-            } else {
-                foreach (T i in collection) {
-                    Items.Add(i);
-                }
-            }
+            CheckReentrancy();
 
-            int addedCount = collection.Count();
-            if (addedCount > 0) {
-                OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
+            List<T> add = collection.ToList();
+            List<T> items = (List<T>)Items;
+            items.AddRange(add);
+
+            if (add.Count > 0) {
+                OnCollectionChanged(new(NotifyCollectionChangedAction.Add, add));
                 OnPropertyChanged(new(nameof(Count)));
                 OnPropertyChanged(new("Item[]"));
             }
         }
 
         public int RemoveAll(Predicate<T> match) {
-            int removedCount;
-            if (Items is List<T> ListItems) {
-                removedCount = ListItems.RemoveAll(match);
-            } else {
-                removedCount = 0;
-                for (int i = 0; i < Items.Count; i++) {
-                    if (match(Items[i])) {
-                        Items.RemoveAt(i);
-                        i--;
-                        removedCount++;
-                    }
-                }
-            }
+            CheckReentrancy();
 
-            if (removedCount > 0) {
-                OnCollectionChanged(new(NotifyCollectionChangedAction.Reset));
+            List<T> removed = new();
+            List<T> items = (List<T>)Items;
+            foreach (T i in items) {
+                if (match(i)) removed.Add(i);
+            }
+            items.RemoveAll(match);
+
+            if (removed.Count > 0) {
+                OnCollectionChanged(new(NotifyCollectionChangedAction.Remove, removed));
                 OnPropertyChanged(new(nameof(Count)));
                 OnPropertyChanged(new("Item[]"));
             }
 
-            return removedCount;
+            return removed.Count;
         }
 
         public ObservableCollection() : base() { }

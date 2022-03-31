@@ -231,9 +231,7 @@ namespace COCOAnnotator.ViewModels {
         private void CommitBbox(CommitBboxEventArgs e) {
             if (SelectedImage is null) return;
 
-            foreach (AnnotationRecord i in e.Added) {
-                SelectedImage.Annotations.Add(new(SelectedImage, i.Left, i.Top, i.Width, i.Height, i.Category));
-            }
+            SelectedImage.Annotations.AddRange(e.Added.Select(s => new AnnotationRecord(SelectedImage, s.Left, s.Top, s.Width, s.Height, s.Category)));
             foreach ((AnnotationRecord old, AnnotationRecord @new) in e.ChangedOldItems.Zip(e.ChangedNewItems)) {
                 int idx = SelectedImage.Annotations.IndexOf(old);
                 SelectedImage.Annotations[idx].Left = @new.Left;
@@ -241,9 +239,7 @@ namespace COCOAnnotator.ViewModels {
                 SelectedImage.Annotations[idx].Width = @new.Width;
                 SelectedImage.Annotations[idx].Height = @new.Height;
             }
-            foreach (AnnotationRecord i in e.Deleted) {
-                SelectedImage.Annotations.Remove(i);
-            }
+            SelectedImage.Annotations.RemoveAll(s => e.Deleted.Contains(s));
             UpdateBoundaryBoxes();
         }
         public ICommand CmdToggleBboxMode { get; }

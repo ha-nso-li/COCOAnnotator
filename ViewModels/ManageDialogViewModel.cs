@@ -295,20 +295,31 @@ namespace COCOAnnotator.ViewModels {
         public ICommand CmdAddFileForUnionDataset { get; }
         private void AddFileForUnionDataset() {
             if (CommonDialogService.OpenJsonFilesDialog(out string[] filePaths)) {
-                bool error = false;
+                bool fail = false;
+                bool success = false;
                 foreach (string filePath in filePaths) {
-                    if (SerializationService.IsJsonPathValid(filePath)) FilesForUnionDataset.Add(filePath);
-                    else error = true;
+                    if (SerializationService.IsJsonPathValid(filePath)) {
+                        FilesForUnionDataset.Add(filePath);
+                        success = true;
+                    } else {
+                        fail = true;
+                    }
                 }
-                if (error) CommonDialogService.MessageBox("데이터셋 파일을 가져올 수 없습니다. 파일명이 instances_XX.json이며 상위 폴더가 존재해야 합니다.");
+                if (fail) {
+                    if (success)
+                        CommonDialogService.MessageBox(
+                            "일부 데이터셋 파일을 가져올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다. " +
+                            "유효한 데이터셋 파일만을 목록에 추가합니다."
+                        );
+                    else
+                        CommonDialogService.MessageBox("데이터셋 파일을 가져올 수 없습니다. 파일명이 instances_*.json이며 드라이브 최상위 폴더 이외의 장소에 있어야 합니다.");
+                }
             }
         }
         public ICommand CmdRemoveFileForUnionDataset { get; }
         private void RemoveFileForUnionDataset(IList SelectedItems) {
             string[] remove = SelectedItems.OfType<string>().ToArray();
-            foreach (string i in remove) {
-                FilesForUnionDataset.Remove(i);
-            }
+            FilesForUnionDataset.RemoveAll(s => Array.IndexOf(remove, s) >= 0);
         }
         public ICommand CmdResetFileForUnionDataset { get; }
         private void ResetFileForUnionDataset() {
