@@ -11,11 +11,7 @@ namespace COCOAnnotator.Services.Utilities {
         /// <param name="ShouldSmaller">교환 후에 다른 한 쪽에 비해 작거나 같아야 할 값입니다.</param>
         /// <param name="ShouldBigger">교환 후에 다른 한 쪽에 비해 크거나 같아야 할 값입니다.</param>
         public static void SortTwoValues<T>(ref T ShouldSmaller, ref T ShouldBigger) where T : IComparable<T> {
-            if (ShouldSmaller.CompareTo(ShouldBigger) > 0) {
-                T temp = ShouldBigger;
-                ShouldBigger = ShouldSmaller;
-                ShouldSmaller = temp;
-            }
+            if (ShouldSmaller.CompareTo(ShouldBigger) > 0) (ShouldSmaller, ShouldBigger) = (ShouldBigger, ShouldSmaller);
         }
 
         /// <summary>미리 정의된 HSV 기반의 색깔 생성 방법에 따라 주어진 개수 만큼의 색을 생성합니다.</summary>
