@@ -21,6 +21,6 @@ You need a Windows PC with .NET 6.0 SDK installed. Download and install .NET 6.0
 dotnet publish -c Release -p:PublishProfile=Properties\PublishProfiles\ReleaseBuild.pubxml
 ```
 
-Alternatively, you can build it with open the solution in Visual Studio 2022 and run `Build - Publish COCOAnnotator` from menu. Once build finished, `COCOAnnotator.exe`, a standalone exe executable file, will be generated under `bin\Release\net6.0-windows\publish\win-x64` folder. You can run the executable file by moving it to the PC you want to run.
+Alternatively, you can build it with open the solution in Visual Studio 2022 and run `Build - Publish Selection` from menu. Once build finished, `COCOAnnotator.exe`, a standalone exe executable file, will be generated under `bin\Release\net6.0-windows\publish\win-x64` folder. You can run the executable file by moving it to the PC you want to run.
 
 If you only want to run, not build, then you can install smaller .NET 6.0 runtime instead of SDK.
