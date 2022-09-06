@@ -18,7 +18,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 namespace COCOAnnotator.ViewModels {
-    public class MainWindowViewModel : ViewModel {
+    public sealed class MainWindowViewModel : ViewModel {
         #region 생성자
         public MainWindowViewModel() {
             Title = "COCO 데이터셋 편집기";

@@ -5,7 +5,7 @@ using Prism.Services.Dialogs;
 using System.Windows.Input;
 
 namespace COCOAnnotator.ViewModels {
-    public class SettingDialogViewModel : DialogViewModel {
+    public sealed class SettingDialogViewModel : DialogViewModel {
         public SettingDialogViewModel() {
             Title = "설정";
             Color = SettingService.Color;

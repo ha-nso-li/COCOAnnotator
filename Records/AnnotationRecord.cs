@@ -1,5 +1,5 @@
 namespace COCOAnnotator.Records {
-    public class AnnotationRecord {
+    public sealed class AnnotationRecord {
         public ImageRecord Image { get; set; }
 
         public float Left { get; set; }

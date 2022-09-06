@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
-    public class CategoryRecord : BindableBase, IEquatable<CategoryRecord>, IComparable, IComparable<CategoryRecord> {
+    public sealed class CategoryRecord : BindableBase, IEquatable<CategoryRecord>, IComparable, IComparable<CategoryRecord> {
         #region 필드와 프로퍼티
         public bool All { get; }
         public string Name { get; }

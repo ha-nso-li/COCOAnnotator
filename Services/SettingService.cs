@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace COCOAnnotator.Services {
-    public class SettingService {
+    public sealed class SettingService {
         private SettingColors _Color;
         public SettingColors Color {
             get => _Color;

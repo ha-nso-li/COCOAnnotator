@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 
 namespace COCOAnnotator.Records.COCO {
-    public record AnnotationCOCO(
+    public sealed record AnnotationCOCO(
         [property: JsonPropertyName("id")] int ID,
         [property: JsonPropertyName("category_id")] int CategoryID,
         [property: JsonPropertyName("image_id")] int ImageID,

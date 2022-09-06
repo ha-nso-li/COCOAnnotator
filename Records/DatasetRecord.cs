@@ -2,7 +2,7 @@ using Prism.Mvvm;
 using System.Collections.Generic;
 
 namespace COCOAnnotator.Records {
-    public class DatasetRecord : BindableBase {
+    public sealed class DatasetRecord : BindableBase {
         private string _BasePath;
         public string BasePath {
             get => _BasePath;

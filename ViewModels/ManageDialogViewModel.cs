@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace COCOAnnotator.ViewModels {
-    public class ManageDialogViewModel : DialogViewModel {
+    public sealed class ManageDialogViewModel : DialogViewModel {
         #region 생성자
         public ManageDialogViewModel() {
             Title = "데이터셋 관리";

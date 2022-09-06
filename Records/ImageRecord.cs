@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
-    public class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
+    public sealed class ImageRecord : BindableBase, IEquatable<ImageRecord>, IComparable<ImageRecord>, IComparable {
         #region 프로퍼티
         public ObservableCollection<AnnotationRecord> Annotations { get; }
         public int Width { get; set; }
