@@ -445,11 +445,19 @@ namespace COCOAnnotator.ViewModels {
                 break;
             case SettingColors.Random:
                 Random rng = new();
+                double ColorDifferenceThreshold = 250;
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 foreach (CategoryRecord category in Dataset.Categories.Where(s => !s.All && s.ColorBrush.Color == Colors.Transparent)) {
-                    SolidColorBrush brush = new(Miscellaneous.GenerateRandomColor(ExistingColors, 95, rng));
-                    brush.Freeze();
-                    category.ColorBrush = brush;
+                    while (true) {
+                        Color? color = Miscellaneous.GenerateRandomColor(ExistingColors, ColorDifferenceThreshold, rng);
+                        if (color is not null) {
+                            SolidColorBrush brush = new(color.Value);
+                            brush.Freeze();
+                            category.ColorBrush = brush;
+                            break;
+                        }
+                        ColorDifferenceThreshold /= 1.2;
+                    }
                 }
                 break;
             }

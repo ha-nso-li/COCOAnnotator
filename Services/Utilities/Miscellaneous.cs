@@ -52,16 +52,18 @@ namespace COCOAnnotator.Services.Utilities {
             };
         }
 
-        /// <summary>주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 생성합니다.</summary>
-        public static Color GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold, Random? RandomGenerator = null) {
+        /// <summary>주어진 모든 색과의 색차가 주어진 값보다 같거나 큰 새로운 색 하나를 무작위로 생성합니다.</summary>
+        /// <returns>100회 시도 내에 색의 생성에 실패한 경우 <see langword="null"/>을 반환합니다.</returns>
+        public static Color? GenerateRandomColor(IEnumerable<Color> ExistingColors, double ColorDifferenceThreshold, Random? RandomGenerator = null) {
             RandomGenerator ??= new();
             Span<byte> buffer = stackalloc byte[3];
             Color newColor;
-            do {
+            for (int i = 0; i < 100; i++) {
                 RandomGenerator.NextBytes(buffer);
                 newColor = Color.FromRgb(buffer[0], buffer[1], buffer[2]);
-            } while (!ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold));
-            return newColor;
+                if (ExistingColors.All(s => GetColorDifference(newColor, s) >= ColorDifferenceThreshold)) return newColor;
+            }
+            return null;
         }
 
         /// <summary>주어진 두 색의 색차를 구합니다.</summary>
