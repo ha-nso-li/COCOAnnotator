@@ -1,6 +1,6 @@
 # COCOAnnotator
 
-This is a tool that creates, edits, manages custom annotation dataset files in [COCO dataset](https://cocodataset.org/) format for object detection.
+This is a tool that creates, edits, manages custom annotation dataset files in [COCO dataset](https://cocodataset.org/#home) format for object detection.
 
 ## Features
 
@@ -15,12 +15,12 @@ This is a tool that creates, edits, manages custom annotation dataset files in [
 
 ## How to build and run
 
-You need a Windows PC with .NET 6.0 SDK installed. Download and install .NET 6.0 SDK from [.NET download website](https://dotnet.microsoft.com/download), then execute the following command from the top folder of the repository.
+You need a Windows PC with .NET 8.0 SDK installed. Download and install .NET 8.0 SDK from [.NET download website](https://dotnet.microsoft.com/en-us/download), then execute the following command from the top folder of the repository.
 
 ```
 dotnet publish -c Release -p:PublishProfile=Properties\PublishProfiles\ReleaseBuild.pubxml
 ```
 
-Alternatively, you can build it with open the solution in Visual Studio 2022 and run `Build - Publish Selection` from menu. Once build finished, `COCOAnnotator.exe`, a standalone exe executable file, will be generated under `bin\Release\net6.0-windows\publish\win-x64` folder. You can run the executable file by moving it to the PC you want to run.
+Alternatively, you can build it with open the solution in Visual Studio 2022 and run `Build - Publish Selection` from menu. Once build finished, `COCOAnnotator.exe`, a standalone exe executable file, will be generated under `bin\Release\net8.0-windows7.0\publish\win-x64` folder. You can run the executable file by moving it to the PC you want to run.
 
-If you only want to run, not build, then you can install smaller .NET 6.0 runtime instead of SDK.
+If you only want to run, not build, then you can install smaller .NET 8.0 runtime instead of SDK.

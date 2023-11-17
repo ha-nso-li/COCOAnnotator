@@ -27,7 +27,7 @@ namespace COCOAnnotator.Services.Utilities {
                     int? category_id = datasetcoco.Categories.FirstOrDefault(s => s.Name == j.Category.Name)?.ID;
                     if (category_id is null) continue;
                     int annotation_id = datasetcoco.Annotations.Count;
-                    datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, new[] { j.Left, j.Top, j.Width, j.Height }, j.Area));
+                    datasetcoco.Annotations.Add(new(annotation_id, category_id.Value, image_id, 0, [j.Left, j.Top, j.Width, j.Height], j.Area));
                 }
             }
             Directory.CreateDirectory(Path.GetDirectoryName(JsonPath) ?? string.Empty);
@@ -43,8 +43,8 @@ namespace COCOAnnotator.Services.Utilities {
             string InstanceName = JsonFileName[(JsonFileName.IndexOf('_') + 1)..];
             string BasePath = Path.GetFullPath($@"..\..\{InstanceName}", JsonPath);
             DatasetCOCO datasetcoco = await DeserializeRawAsync(JsonPath).ConfigureAwait(false);
-            SortedDictionary<int, ImageRecord> images = new();
-            SortedDictionary<int, CategoryRecord> categories = new();
+            SortedDictionary<int, ImageRecord> images = [];
+            SortedDictionary<int, CategoryRecord> categories = [];
             foreach (ImageCOCO i in datasetcoco.Images) {
                 if (!images.ContainsKey(i.ID)) images.Add(i.ID, new(i.FileName.NormalizePath(), i.Width, i.Height));
             }
@@ -91,8 +91,8 @@ namespace COCOAnnotator.Services.Utilities {
 
         public static async Task<DatasetRecord> DeserializeCSVAsync(string CSVPath, CSVFormat CSVFormat) {
             using StreamReader csv = File.OpenText(CSVPath);
-            SortedSet<ImageRecord> images = new();
-            SortedSet<CategoryRecord> categories = new();
+            SortedSet<ImageRecord> images = [];
+            SortedSet<CategoryRecord> categories = [];
             string basePath = Path.GetDirectoryName(CSVPath) ?? "";
             string? line;
             while ((line = await csv.ReadLineAsync().ConfigureAwait(false)) is not null) {
@@ -102,7 +102,7 @@ namespace COCOAnnotator.Services.Utilities {
                 string categoryName = split[5];
                 if (string.IsNullOrWhiteSpace(categoryName)) {
                     // Negative
-                    if (!images.Contains(image)) images.Add(image);
+                    images.Add(image);
                 } else {
                     // Positive
                     if (!float.TryParse(split[1], out float num1)) continue;

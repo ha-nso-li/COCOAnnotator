@@ -7,6 +7,6 @@ namespace COCOAnnotator.Records.COCO {
         [property: JsonPropertyName("annotations")] List<AnnotationCOCO> Annotations,
         [property: JsonPropertyName("categories")] List<CategoryCOCO> Categories
     ) {
-        public DatasetCOCO(): this(new(), new(), new()) { }
+        public DatasetCOCO() : this([], [], []) { }
     }
 }

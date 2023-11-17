@@ -22,7 +22,7 @@ namespace COCOAnnotator.Records {
         public int RemoveAll(Predicate<T> match) {
             CheckReentrancy();
 
-            List<T> removed = new();
+            List<T> removed = [];
             List<T> items = (List<T>)Items;
             foreach (T i in items) {
                 if (match(i)) removed.Add(i);

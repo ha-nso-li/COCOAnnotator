@@ -119,7 +119,7 @@ namespace COCOAnnotator.UserControls {
                     break;
                 case NotifyCollectionChangedAction.Remove:
                     if (e.OldItems is null) return;
-                    ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag)).ToArray();
+                    ContentControl[] delete = [..ViewImageCanvas.Children.OfType<ContentControl>().Where(s => e.OldItems.Contains(s.Tag))];
                     foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
                     break;
                 case NotifyCollectionChangedAction.Add:
@@ -138,7 +138,7 @@ namespace COCOAnnotator.UserControls {
         private static void BboxInsertModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
             if (d is ImageViewport uc && e.NewValue is bool bboxInsertMode && !bboxInsertMode) {
                 // 크로스헤어 있으면 삭제
-                Line[] line = uc.ViewImageCanvas.Children.OfType<Line>().ToArray();
+                Line[] line = [..uc.ViewImageCanvas.Children.OfType<Line>()];
                 foreach (Line i in line) uc.ViewImageCanvas.Children.Remove(i);
             }
         }
@@ -165,7 +165,7 @@ namespace COCOAnnotator.UserControls {
         }
         /// <summary>현재 화면에 존재하는 경계 상자를 모두 삭제합니다.</summary>
         private void ClearBoundaryBoxes() {
-            ContentControl[] delete = ViewImageCanvas.Children.OfType<ContentControl>().ToArray();
+            ContentControl[] delete = [..ViewImageCanvas.Children.OfType<ContentControl>()];
             foreach (ContentControl i in delete) ViewImageCanvas.Children.Remove(i);
         }
         /// <summary>주어진 경계 상자 정보에 기반한 새로운 경계 상자를 화면에 추가합니다.</summary>
@@ -264,7 +264,7 @@ namespace COCOAnnotator.UserControls {
         private void ViewImageCanvas_MouseMove(object sender, MouseEventArgs e) {
             if (!BboxInsertMode || CurrentCategory is null) {
                 // 크로스헤어 있으면 삭제
-                Line[] line = ViewImageCanvas.Children.OfType<Line>().ToArray();
+                Line[] line = [..ViewImageCanvas.Children.OfType<Line>()];
                 foreach (Line i in line) ViewImageCanvas.Children.Remove(i);
             } else {
                 Point current = e.GetPosition(ViewImageControl);
@@ -389,10 +389,10 @@ namespace COCOAnnotator.UserControls {
         public void TryCommitBbox() {
             if (ViewImageControl.Source is not BitmapSource bitmap) return;
 
-            List<AnnotationRecord> deleted = new();
-            List<AnnotationRecord> added = new();
-            List<AnnotationRecord> changed_old = new();
-            List<AnnotationRecord> changed_new = new();
+            List<AnnotationRecord> deleted = [];
+            List<AnnotationRecord> added = [];
+            List<AnnotationRecord> changed_old = [];
+            List<AnnotationRecord> changed_new = [];
             IEnumerable<ContentControl> bboxes = ViewImageCanvas.Children.OfType<ContentControl>();
             foreach (ContentControl bbox in bboxes) {
                 if (bbox.Visibility == Visibility.Collapsed) {

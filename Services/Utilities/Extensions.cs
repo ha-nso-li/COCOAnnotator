@@ -26,7 +26,7 @@ namespace COCOAnnotator.Services.Utilities {
                 }
             }
             string prefix = first[..len];
-            return prefix[..prefix.LastIndexOfAny(new[] { '\\', '/' })];
+            return prefix[..prefix.LastIndexOfAny(['\\', '/'])];
         }
 
         /// <summary>주어진 로컬 파일 경로를 이스케이프를 고려하여 URI로 변환합니다.</summary>
@@ -62,10 +62,9 @@ namespace COCOAnnotator.Services.Utilities {
         }
 
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
-            Random rng = new();
-            T[] elements = source.ToArray();
+            T[] elements = [..source];
             for (int i = elements.Length - 1; i >= 0; i--) {
-                int j = rng.Next(i + 1);
+                int j = Random.Shared.Next(i + 1);
                 yield return elements[j];
                 elements[j] = elements[i];
             }

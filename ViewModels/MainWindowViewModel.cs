@@ -35,7 +35,7 @@ namespace COCOAnnotator.ViewModels {
             _FitViewport = true;
             _CategoryNameToAdd = "";
             _Dataset = new();
-            VisibleAnnotations = new();
+            VisibleAnnotations = [];
 
             CmdViewportDrop = new DelegateCommand<DragEventArgs>(ViewportDrop);
             CmdLoadDataset = new DelegateCommand(LoadDataset);
@@ -298,7 +298,7 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdMoveCategory { get; }
         private void MoveCategory(IList SelectedItems) {
-            CategoryRecord[] SelectedCategories = SelectedItems.OfType<CategoryRecord>().ToArray();
+            CategoryRecord[] SelectedCategories = [..SelectedItems.OfType<CategoryRecord>()];
             if (SelectedCategories.Length != 2 || SelectedCategories.Any(s => s.All)) {
                 CommonDialogService.MessageBox("분류 2개를 선택하여야 합니다.");
                 return;
@@ -329,7 +329,7 @@ namespace COCOAnnotator.ViewModels {
                 break;
             }
             case false: {
-                SortedSet<ImageRecord> ImagesFromDeletedClass = new();
+                SortedSet<ImageRecord> ImagesFromDeletedClass = [];
                 foreach (ImageRecord i in Dataset.Images) {
                     int deletedCount = i.Annotations.RemoveAll(s => s.Category == SelectedCategory);
                     if (deletedCount > 0) ImagesFromDeletedClass.Add(i);
@@ -444,12 +444,11 @@ namespace COCOAnnotator.ViewModels {
                 }
                 break;
             case SettingColors.Random:
-                Random rng = new();
                 double ColorDifferenceThreshold = 250;
                 IEnumerable<Color> ExistingColors = Dataset.Categories.Select(s => s.ColorBrush.Color).Distinct().Append(Colors.White);
                 foreach (CategoryRecord category in Dataset.Categories.Where(s => !s.All && s.ColorBrush.Color == Colors.Transparent)) {
                     while (true) {
-                        Color? color = Miscellaneous.GenerateRandomColor(ExistingColors, ColorDifferenceThreshold, rng);
+                        Color? color = Miscellaneous.GenerateRandomColor(ExistingColors, ColorDifferenceThreshold);
                         if (color is not null) {
                             SolidColorBrush brush = new(color.Value);
                             brush.Freeze();

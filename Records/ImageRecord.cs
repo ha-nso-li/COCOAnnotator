@@ -20,7 +20,7 @@ namespace COCOAnnotator.Records {
 
         public ImageRecord(string Path, int Width, int Height) {
             this.Path = Path;
-            Annotations = new();
+            Annotations = [];
             Annotations.CollectionChanged += AnnotationCollectionChanged;
             this.Width = Width;
             this.Height = Height;
