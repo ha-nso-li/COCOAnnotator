@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 
 namespace COCOAnnotator.Records {
     public class ObservableCollection<T> : System.Collections.ObjectModel.ObservableCollection<T> {
         public void AddRange(IEnumerable<T> collection) {
             CheckReentrancy();
 
-            List<T> add = collection.ToList();
+            List<T> add = [.. collection];
             List<T> items = (List<T>)Items;
             items.AddRange(add);
 

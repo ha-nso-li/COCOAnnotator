@@ -20,8 +20,8 @@ namespace COCOAnnotator.Records {
 
         public DatasetRecord(string BasePath, IEnumerable<ImageRecord> Images, IEnumerable<CategoryRecord> Categories) {
             _BasePath = BasePath;
-            this.Images = new(Images);
-            this.Categories = new(Categories);
+            this.Images = [.. Images];
+            this.Categories = [.. Categories];
         }
     }
 }

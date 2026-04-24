@@ -45,8 +45,6 @@ namespace COCOAnnotator.Records {
             };
         }
         public override int GetHashCode() => Path.GetHashCode();
-        public static bool operator ==(ImageRecord record1, ImageRecord record2) => record1.Equals(record2);
-        public static bool operator !=(ImageRecord record1, ImageRecord record2) => !record1.Equals(record2);
         #endregion
 
         #region 비교
@@ -63,10 +61,6 @@ namespace COCOAnnotator.Records {
                 _ => 1
             };
         }
-        public static bool operator <(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) < 0;
-        public static bool operator <=(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) <= 0;
-        public static bool operator >(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) > 0;
-        public static bool operator >=(ImageRecord record1, ImageRecord record2) => record1.CompareTo(record2) >= 0;
         #endregion
 
         public override string ToString() => Path;

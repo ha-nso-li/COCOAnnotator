@@ -298,7 +298,7 @@ namespace COCOAnnotator.ViewModels {
         }
         public ICommand CmdMoveCategory { get; }
         private void MoveCategory(IList SelectedItems) {
-            CategoryRecord[] SelectedCategories = [..SelectedItems.OfType<CategoryRecord>()];
+            CategoryRecord[] SelectedCategories = [.. SelectedItems.OfType<CategoryRecord>()];
             if (SelectedCategories.Length != 2 || SelectedCategories.Any(s => s.All)) {
                 CommonDialogService.MessageBox("분류 2개를 선택하여야 합니다.");
                 return;
@@ -449,8 +449,8 @@ namespace COCOAnnotator.ViewModels {
                 foreach (CategoryRecord category in Dataset.Categories.Where(s => !s.All && s.ColorBrush.Color == Colors.Transparent)) {
                     while (true) {
                         Color? color = Miscellaneous.GenerateRandomColor(ExistingColors, ColorDifferenceThreshold);
-                        if (color is not null) {
-                            SolidColorBrush brush = new(color.Value);
+                        if (color is Color colorValue) {
+                            SolidColorBrush brush = new(colorValue);
                             brush.Freeze();
                             category.ColorBrush = brush;
                             break;
@@ -463,10 +463,8 @@ namespace COCOAnnotator.ViewModels {
         }
         public void InternalRefreshImagesList() {
             ISet<string> ApprovedImageExtensions = SettingService.SetSupportedFormats;
-            SortedSet<ImageRecord> currentImagesInFolder = new(
-                Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
-                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).NormalizePath()))
-            );
+            SortedSet<ImageRecord> currentImagesInFolder = [.. Directory.EnumerateFiles(Dataset.BasePath, "*.*", SearchOption.AllDirectories).Where(s => ApprovedImageExtensions.Contains(Path.GetExtension(s)))
+                    .Select(s => new ImageRecord(Path.GetRelativePath(Dataset.BasePath, s).NormalizePath()))];
             int removedCount = Dataset.Images.RemoveAll(s => !currentImagesInFolder.Contains(s));
             currentImagesInFolder.ExceptWith(Dataset.Images);
             foreach (ImageRecord i in currentImagesInFolder) {

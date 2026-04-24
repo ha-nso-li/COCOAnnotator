@@ -48,7 +48,7 @@ namespace COCOAnnotator.Services.Utilities {
                 2 => Color.FromRgb(p, v, t),
                 3 => Color.FromRgb(p, q, v),
                 4 => Color.FromRgb(t, p, v),
-                _ => Color.FromRgb(v, p, q),
+                _ => Color.FromRgb(v, p, q)
             };
         }
 

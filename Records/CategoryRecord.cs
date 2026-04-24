@@ -1,10 +1,11 @@
 using Prism.Mvvm;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Windows.Media;
 
 namespace COCOAnnotator.Records {
-    public sealed class CategoryRecord : BindableBase, IEquatable<CategoryRecord>, IComparable, IComparable<CategoryRecord> {
+    public sealed class CategoryRecord : BindableBase, IEquatable<CategoryRecord>, IComparable, IComparable<CategoryRecord>, IEqualityOperators<CategoryRecord, CategoryRecord, bool> {
         #region 필드와 프로퍼티
         public bool All { get; }
         public string Name { get; }
@@ -32,8 +33,8 @@ namespace COCOAnnotator.Records {
         public override int GetHashCode() {
             return All ? true.GetHashCode() : Name.GetHashCode();
         }
-        public static bool operator ==(CategoryRecord record1, CategoryRecord record2) => record1.Equals(record2);
-        public static bool operator !=(CategoryRecord record1, CategoryRecord record2) => !record1.Equals(record2);
+        public static bool operator ==(CategoryRecord? record1, CategoryRecord? record2) => record1?.Equals(record2) ?? (record2 is null);
+        public static bool operator !=(CategoryRecord? record1, CategoryRecord? record2) => !(record1 == record2);
         #endregion
 
         #region 비교
@@ -53,10 +54,6 @@ namespace COCOAnnotator.Records {
                 _ => 1
             };
         }
-        public static bool operator <(CategoryRecord record1, CategoryRecord record2) => record1.CompareTo(record2) < 0;
-        public static bool operator <=(CategoryRecord record1, CategoryRecord record2) => record1.CompareTo(record2) <= 0;
-        public static bool operator >(CategoryRecord record1, CategoryRecord record2) => record1.CompareTo(record2) > 0;
-        public static bool operator >=(CategoryRecord record1, CategoryRecord record2) => record1.CompareTo(record2) >= 0;
         #endregion
 
         private CategoryRecord(string Name, SolidColorBrush ColorBrush, bool All) {

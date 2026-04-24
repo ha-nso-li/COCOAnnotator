@@ -124,11 +124,11 @@ namespace COCOAnnotator.Services.Utilities {
             }
             // 공통 상위 폴더를 찾아 해당 폴더 기준으로 상대 경로로 변경
             string commonParentPath = images.GetCommonParentPath();
-            images = new(images.Select(s => {
+            images = [.. images.Select(s => {
                 ImageRecord result = new(Path.GetRelativePath(commonParentPath, s.Path), 0, 0);
                 result.Annotations.AddRange(s.Annotations);
                 return result;
-            }));
+            })];
             return new(commonParentPath, images, categories);
         }
 

@@ -390,7 +390,7 @@ namespace COCOAnnotator.ViewModels {
                     List<SortedSet<CategoryRecord>> categoriesByPartition = [];
                     for (int i = 0; i < NValueForSplitDataset; i++) {
                         if (IsClosed) return;
-                        outDatasetByPartition.Add(new(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories));
+                        outDatasetByPartition.Add(new(Path.GetFullPath($@"..\{inInstanceName}_{i + 1}", inDataset.BasePath), [], inDataset.Categories));
                         categoriesByPartition.Add([]);
                     }
                     for (int i = 0; i < shuffledImages.Length; i++) {
@@ -427,8 +427,8 @@ namespace COCOAnnotator.ViewModels {
                 }
                 _ = Task.Run(async () => {
                     ProgressSplitDataset = 0;
-                    DatasetRecord OriginalDataset = new(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
-                    DatasetRecord SplitDataset = new(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), Enumerable.Empty<ImageRecord>(), inDataset.Categories);
+                    DatasetRecord OriginalDataset = new(Path.GetFullPath($@"..\{inInstanceName}_1", inDataset.BasePath), [], inDataset.Categories);
+                    DatasetRecord SplitDataset = new(Path.GetFullPath($@"..\{inInstanceName}_2", inDataset.BasePath), [], inDataset.Categories);
                     for (int i = 0; i < shuffledImages.Length; i++) {
                         if (IsClosed) return;
                         ProgressSplitDataset = i * 100 / shuffledImages.Length;
@@ -495,7 +495,7 @@ namespace COCOAnnotator.ViewModels {
                     AppendLogUndupeDataset("분석이 완료되었습니다. 중복된 경계 상자가 없습니다.");
                 } else {
                     AppendLogUndupeDataset($"분석이 완료되었습니다. 중복된 경계 상자가 {SuppressedImages.Count}개의 이미지에서 {TotalSuppressedBoxesCount}개 검출되었습니다.");
-                    SortedSet<string> UniqueImagePaths = new(SuppressedImages.Select(s => Path.GetRelativePath(DatasetForUndupe.BasePath, s.Path)));
+                    SortedSet<string> UniqueImagePaths = [.. SuppressedImages.Select(s => Path.GetRelativePath(DatasetForUndupe.BasePath, s.Path))];
                     if (UniqueImagePaths.Count > 20) {
                         AppendLogUndupeDataset("중복된 경계 상자가 있었던 이미지의 일부를 출력합니다.");
                         AppendLogUndupeDataset([..UniqueImagePaths.Take(20)]);
@@ -573,7 +573,7 @@ namespace COCOAnnotator.ViewModels {
         private void AppendLogVerifyDataset(params string[] logs) => LogVerifyDataset = LogVerifyDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         private void AppendLogUndupeDataset(params string[] logs) => LogUndupeDataset = LogUndupeDataset + string.Join(Environment.NewLine, logs) + Environment.NewLine;
         private IEnumerable<AnnotationRecord> SuppressAnnotations(IEnumerable<AnnotationRecord> Annotations) {
-            List<AnnotationRecord> sortedBySize = Annotations.ToList();
+            List<AnnotationRecord> sortedBySize = [.. Annotations];
             sortedBySize.Sort((a, b) => a.Area.CompareTo(b.Area));
             if (TacticForUndupeDataset == TacticsForUndupeDataset.PreferBigger) sortedBySize.Reverse();
             while (sortedBySize.Count > 0) {
